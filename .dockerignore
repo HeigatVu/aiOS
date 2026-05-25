@@ -1,0 +1,16 @@
+# Exclude heavy folders, cache databases, and agent memory from the Docker build context
+agent-configs/
+working-space/
+data/
+outputs/
+
+# Exclude git repository and temporary files
+.git
+.github
+.idea
+.vscode
+**/.DS_Store
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd

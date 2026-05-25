@@ -1,0 +1,30 @@
+# --- SECURE WORKSPACE CONFIGS & PRIVATE DATA ---
+
+# Exclude sensitive agent API keys, secure configs, and backups
+agent-configs/*
+!agent-configs/.gitkeep
+
+# Exclude heavy audio datasets and large binary archives
+data/*
+!data/.gitkeep
+
+# Exclude AI agent-generated outputs and results
+outputs/*
+!outputs/.gitkeep
+
+# Track working-space code files but exclude Python compiled bytecode and caches
+working-space/**/__pycache__/
+working-space/**/*.pyc
+working-space/**/*.pyo
+!working-space/.gitkeep
+
+# --- GENERAL EXCLUSIONS ---
+.uv-cache/
+.streamlit/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.DS_Store
+
+.env

@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv tool *)",
+      "Bash(rtk ls *)",
+      "Bash(rtk read *)",
+      "Bash(rtk find *)",
+      "Bash(rtk grep *)",
+      "Bash(python3 *)",
+      "Bash(rtk wc *)",
+      "Bash(graphify export *)",
+      "Bash(graphify benchmark *)"
+    ]
+  }
+}

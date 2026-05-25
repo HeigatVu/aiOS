@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  sandbox:
+    build:
+      context: .
+      args:
+        USER_ID: ${UID:-1000}
+        GROUP_ID: ${GID:-1000}
+    container_name: ai_tui_sandbox
+
+    ports:
+      - "3113:3113"
+      - "8501:8501"
+      - "8888:8888"
+
+    volumes:
+      # 1. Your Code & Data
+      - ./working-space:/workspace:rw
+      - ./data:/data:rw
+      - ./outputs:/outputs:rw
+
+      # 2. Your Agent Configurations (Mapped from your migrated folders)
+      - ./agent-configs/.agentmemory:/home/ai_user/.agentmemory:rw, z
+      - ./agent-configs/.claude:/home/ai_user/.claude:rw, z
+      - ./agent-configs/.hermes:/home/ai_user/.hermes:rw, z
+      - ./agent-configs/.gemini:/home/ai_user/.gemini:rw, z
+      - ./agent-configs/.antigravitycli:/home/ai_user/.antigravitycli:rw, z
+      - ./agent-configs/.agents:/home/ai_user/.agents:rw, z
+      - ./agent-configs/.fcc:/home/ai_user/.fcc:rw, z
+      - ./agent-configs/.iii:/home/ai_user/.iii:rw, z
+      
+      # 3. Your Shell & Package Caches (Read-Only)
+      - ~/.zshrc:/home/ai_user/.zshrc:ro
+      - ~/.p10k.zsh:/home/ai_user/.p10k.zsh:ro
+      - ~/.cache/uv:/home/ai_user/.cache/uv:ro
+      - ~/miniconda3/pkgs:/opt/conda/pkgs:ro
+      
+    # Hardware isolation: Passes the RTX GPU through safely
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+    stdin_open: true
+    tty: true
+    network_mode: "bridge"
+
+  sidecar:
+    build:
+      context: ./sidecar-ui
+      dockerfile: Dockerfile.sidecar
+    container_name: ai_sidecar_controller
+    ports:
+      - "8502:8502"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - .:/workspace:rw
+    network_mode: "bridge"
+

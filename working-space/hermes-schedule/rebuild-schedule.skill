@@ -1,0 +1,92 @@
+---
+name: rebuild-schedule
+description: Rebuild the weekly schedule every Sunday. Reads current schedule, asks what changed, updates SCHEDULE.md, proposes a Google Calendar plan, and creates a recurring Sunday reminder event.
+triggers:
+  - rebuild schedule
+  - rebuild my schedule
+  - sunday schedule
+  - weekly rebuild
+platforms: [linux, macos]
+requires:
+  - Google Calendar MCP
+  - SCHEDULE.md
+  - deadlines/tracker.md
+---
+
+# Skill: rebuild-schedule
+
+Run this every Sunday to rebuild the weekly schedule.
+
+## Steps
+
+### 1. Load current state
+- Read `/home/heigatvu/MyFile/my-project/my-assistance/working-space/hermes-schedule/SCHEDULE.md`
+- Read `/home/heigatvu/MyFile/my-project/my-assistance/working-space/hermes-schedule/deadlines/tracker.md`
+- Read `/home/heigatvu/MyFile/my-project/my-assistance/working-space/hermes-schedule/youtube/pipeline.md`
+- Read last entry of each journal in `/home/heigatvu/MyFile/my-project/my-assistance/working-space/lab-run/*/docs/journal.md`
+- Read Google Calendar for the coming week (Monday–Sunday)
+
+### 2. Ask the user these questions (one message, wait for answers)
+```
+Before I rebuild your schedule, tell me:
+1. Any new deadlines or changes to existing ones?
+2. Any tasks completed this week I should remove?
+3. Any priorities that shifted?
+4. Any days or times next week you want fully protected (rest, social, travel)?
+5. Anything else I should know before planning the week?
+```
+
+### 3. Update SCHEDULE.md
+- Apply any changes the user mentioned in step 2
+- Update the "Last updated" date to today
+- Show the user a diff of what changed before saving
+- Wait for approval, then save
+
+### 4. Propose Google Calendar plan
+Build a week plan based on:
+- Fixed commitments already in Google Calendar (never move these)
+- Academic deadlines from tracker.md — allocate morning deep work sessions
+- Rest blocks from SCHEDULE.md — never touch these
+- YouTube work — only if no academic deadline within 7 days
+- Piano practice — minimum 20 min/day, flexible slot
+
+Format the proposal as a readable table before creating anything:
+```
+Monday
+  08:00–10:00  [Project name] — deep work
+  10:00–12:00  [Project name] — deep work
+  12:00–13:00  Daily English (fixed)
+  20:00–22:00  Study — [topic]
+  22:00–22:30  Piano practice
+
+Tuesday
+  ...
+```
+
+Show the full week. Ask: "Approve this plan? Or tell me what to change."
+
+### 5. Write to Google Calendar (only after approval)
+- Create each proposed event in Google Calendar
+- Skip any slot that already has an event
+- Add a 10-minute reminder to every work session event
+- Add a 30-minute reminder to any deadline within 7 days
+
+### 6. Create or refresh the recurring Sunday reminder
+Check if a recurring event "Rebuild weekly schedule — /rebuild-schedule" exists in Google Calendar.
+- If it does not exist: create it as a recurring event every Sunday at 7 PM (GMT+7), 30 min duration, reminder 10 min before, description: "Run /rebuild-schedule in Hermes"
+- If it already exists: leave it alone
+
+### 7. Send confirmation to Telegram
+```
+Weekly schedule rebuilt.
+- SCHEDULE.md updated: [yes/no, what changed]
+- Calendar events created: [count]
+- Next urgent deadline: [project — task — date — days remaining]
+- Sunday reminder event: [created / already exists]
+```
+
+## Notes
+- Always use GMT+7 for all times
+- Never create calendar events during: 12 AM–7 AM, 3 PM–8 PM weekdays, weekends before 10 AM
+- Always show the proposed plan and wait for approval before writing to calendar
+- If the user skips a Sunday rebuild, the next run picks up from the last SCHEDULE.md state — no data is lost

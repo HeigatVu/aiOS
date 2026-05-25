@@ -1,0 +1,25 @@
+FROM python:3.11-slim
+
+# Install uv using the official pre-built binary
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Set working directory inside the container for the Streamlit app
+WORKDIR /app
+
+# Create a virtual environment using uv
+RUN uv venv /opt/venv
+
+# Force the virtual environment to be the default PATH
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Install Streamlit, Docker SDK, and PyYAML using uv pip install
+RUN uv pip install --no-cache streamlit docker pyyaml
+
+# Copy sidecar controller application files
+COPY . .
+
+# Expose port 8502 for the Streamlit dashboard
+EXPOSE 8502
+
+# Run Streamlit with the proper server configuration
+CMD ["streamlit", "run", "app.py", "--server.port=8502", "--server.address=0.0.0.0"]
