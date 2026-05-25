@@ -73,28 +73,6 @@ Use this matrix to determine which file to modify when expanding the workspace:
 * **"ResolvePackageNotFound" during Conda build:** Conda strict hashes don't match the OS. Open `environment.yml` and delete the strict hash suffixes (e.g., change `python=3.12.13=hd63d673_0` to simply `python=3.12.13`), then rebuild.
 * **Ghost CLI commands on Host:** Zsh remembers uninstalled apps. Run `hash -r` in the Host terminal to clear cached execution paths.
 """
-
-file_path = "/mnt/data/ai-workspace-blueprint-v2.md"
-with open(file_path, "w") as f:
-f.write(markdown_content)
-print(f"File saved to {file_path}")
-
-```
-Your MD file is ready
-[file-tag: code-generated-file-0-1779738968768438545]
-
-I have created an updated `ai-workspace-blueprint-v2.md` file for you. 
-
-This version includes everything from the previous file, plus:
-* A complete mapping of your new `environment.yml` and `.zshrc_docker` files.
-* The explicit "Dual-Terminal Workflow" guide so the AI knows exactly when to execute commands on the host versus inside the sandbox.
-* The rules for using Conda vs. `uv` inside your auto-activated `ai-baseline` environment.
-* The specific fix for Conda `ResolvePackageNotFound` hash errors in case you run into them during the build process.
-
-If you ever need assistance expanding this workspace in the future, just drop this file into the chat. The AI will instantly understand your entire architecture, your strict air-gapped setup, and the exact commands needed to help you!
-
-```
-
 # Notes
 
 * **[2026-05-25 21:41:46]** Installed package 'htop' via dnf using the Sidecar UI.
