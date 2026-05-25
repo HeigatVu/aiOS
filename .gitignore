@@ -12,10 +12,8 @@ data/*
 outputs/*
 !outputs/.gitkeep
 
-# Track working-space code files but exclude Python compiled bytecode and caches
-working-space/**/__pycache__/
-working-space/**/*.pyc
-working-space/**/*.pyo
+# Exclude user working-space scripts and codes (only track the directory)
+working-space/*
 !working-space/.gitkeep
 
 # --- GENERAL EXCLUSIONS ---
