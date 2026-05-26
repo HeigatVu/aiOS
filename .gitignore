@@ -1,8 +1,8 @@
 # --- SECURE WORKSPACE CONFIGS & PRIVATE DATA ---
 
-# Exclude sensitive agent API keys, secure configs, and backups
-agent-configs/*
-!agent-configs/.gitkeep
+# Exclude persistent agent configs, caches, and ML environments
+persistent/*
+!persistent/.gitkeep
 
 # Exclude heavy audio datasets and large binary archives
 data/*
@@ -15,14 +15,6 @@ outputs/*
 # Exclude user working-space scripts and codes (only track the directory)
 working-space/*
 !working-space/.gitkeep
-
-# Exclude persistent caching folders inside sidecar-ui
-sidecar-ui/ml-env/*
-!sidecar-ui/ml-env/.gitkeep
-sidecar-ui/uv-cache/*
-!sidecar-ui/uv-cache/.gitkeep
-sidecar-ui/conda-cache/*
-!sidecar-ui/conda-cache/.gitkeep
 
 
 # --- GENERAL EXCLUSIONS ---
@@ -37,3 +29,5 @@ sidecar-ui/conda-cache/*
 .env
 
 how-to-use.md
+
+agent-configs/*

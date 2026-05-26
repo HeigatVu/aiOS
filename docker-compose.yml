@@ -20,26 +20,26 @@ services:
       - ./working-space:/workspace:rw,z
       - ./data:/data:rw,z
       - ./outputs:/outputs:rw,z
-      
-      # 2. Persistent ML Environments & Caches (Centralized inside sidecar-ui/)
-      - ./sidecar-ui/ml-env:/home/ai_user/miniconda3/envs/ai-baseline:rw,z
-      - ./sidecar-ui/uv-cache:/home/ai_user/.cache/uv:rw,z
-      - ./sidecar-ui/conda-cache:/opt/conda/pkgs:rw,z
 
-      # 3. Agent Configurations (Fixed Syntax: No spaces after commas)
-      - ./agent-configs/.agentmemory:/home/ai_user/.agentmemory:rw,z
-      - ./agent-configs/.claude:/home/ai_user/.claude:rw,z
-      - ./agent-configs/.hermes:/home/ai_user/.hermes:rw,z
-      - ./agent-configs/.gemini:/home/ai_user/.gemini:rw,z
-      - ./agent-configs/.antigravitycli:/home/ai_user/.antigravitycli:rw,z
-      - ./agent-configs/.agents:/home/ai_user/.agents:rw,z
-      - ./agent-configs/.fcc:/home/ai_user/.fcc:rw,z
-      - ./agent-configs/.iii:/home/ai_user/.iii:rw,z
+      # 2. Persistent Caches & Environments
+      - ./persistent/ml-env:/home/ai_user/miniconda3/envs/ai-baseline:rw,z
+      - ./persistent/uv-cache:/home/ai_user/.cache/uv:rw,z
+      - ./persistent/conda-pkgs:/home/ai_user/miniconda3/pkgs:rw,z
+
+      # 3. Agent Configurations
+      - ./persistent/agentmemory:/home/ai_user/.agentmemory:rw,z
+      - ./persistent/claude:/home/ai_user/.claude:rw,z
+      - ./persistent/hermes:/home/ai_user/.hermes:rw,z
+      - ./persistent/gemini:/home/ai_user/.gemini:rw,z
+      - ./persistent/antigravitycli:/home/ai_user/.antigravitycli:rw,z
+      - ./persistent/agents:/home/ai_user/.agents:rw,z
+      - ./persistent/fcc:/home/ai_user/.fcc:rw,z
+      - ./persistent/iii:/home/ai_user/.iii:rw,z
 
       # 4. Shell Configurations (Read-Only)
       - ~/.p10k.zsh:/home/ai_user/.p10k.zsh:ro,z
       - ~/.zshrc:/home/ai_user/.zshrc_host:ro,z
-      - ./agent-configs/.zshrc_docker:/home/ai_user/.zshrc:ro,z
+      - ./persistent/zshrc_docker:/home/ai_user/.zshrc:ro,z
 
     deploy:
       resources:
@@ -64,4 +64,3 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - .:/workspace:rw,z
     network_mode: "bridge"
-
