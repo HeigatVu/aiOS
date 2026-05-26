@@ -32,12 +32,10 @@ RUN mkdir -p /home/${USERNAME}/miniconda3 && \
     bash miniconda.sh -b -u -p /home/${USERNAME}/miniconda3 && \
     rm miniconda.sh
 
-# 6. Bake the ai-baseline environment (With ToS Bypass)
+# 6. Prepare environment files (Do NOT bake the heavy ML environment here)
 COPY --chown=${USERNAME}:${GROUP_ID} environment.yml /home/${USERNAME}/environment.yml
 RUN /home/${USERNAME}/miniconda3/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
-    /home/${USERNAME}/miniconda3/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r && \
-    /home/${USERNAME}/miniconda3/bin/conda env create -f /home/${USERNAME}/environment.yml && \
-    /home/${USERNAME}/miniconda3/bin/conda clean -afy
+    /home/${USERNAME}/miniconda3/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
 
 # 7. Update PATH so the terminal can find installed agents and Conda
 ENV PATH="/home/${USERNAME}/.local/bin:/home/${USERNAME}/miniconda3/bin:${PATH}"
@@ -56,7 +54,7 @@ RUN curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/in
 RUN curl -fsSL https://feynman.is/install | bash
 
 # --- AI SIDECAR AUTO-INSTALLS ---
-RUN dnf install -y htop && dnf clean all
+RUN sudo dnf install -y htop && sudo dnf clean all
 
 
 # Default command

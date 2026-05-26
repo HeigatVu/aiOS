@@ -3,6 +3,10 @@ agent-configs/
 working-space/
 data/
 outputs/
+sidecar-ui/ml-env/
+sidecar-ui/uv-cache/
+sidecar-ui/conda-cache/
+
 
 # Exclude git repository and temporary files
 .git

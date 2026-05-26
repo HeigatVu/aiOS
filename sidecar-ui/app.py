@@ -40,18 +40,19 @@ st.markdown("""
         margin-bottom: 0.5rem !important;
     }
     
-    /* Glassmorphism Cards */
-    .glass-card {
-        background: rgba(22, 27, 34, 0.6);
-        border: 1px solid #30363d;
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    /* Inline Code Blocks inside headers */
+    code {
+        font-family: 'JetBrains Mono', monospace !important;
+        background-color: #1f2937 !important;
+        color: #34d399 !important; /* Radiant green text */
+        -webkit-text-fill-color: #34d399 !important; /* Forces visible text inside headers */
+        border: 1px solid #30363d !important;
+        border-radius: 6px !important;
+        padding: 2px 6px !important;
     }
     
-    /* Code Blocks and Fallbacks */
-    code, .stCodeBlock {
+    /* Standard Code Blocks */
+    .stCodeBlock {
         font-family: 'JetBrains Mono', monospace !important;
         background-color: #0d1117 !important;
         border: 1px solid #30363d !important;
@@ -89,11 +90,11 @@ st.markdown("""
         border: 1px solid #30363d !important;
         border-radius: 10px !important;
         font-family: 'JetBrains Mono', monospace !important;
-        font-size: 14px !important;
-        padding: 16px !important;
+        font-size: 13px !important;
+        padding: 14px !important;
         color: #38bdf8 !important; /* Sky blue */
         overflow-y: auto !important;
-        max-height: 380px !important;
+        max-height: 250px !important;
         box-shadow: inset 0 2px 8px rgba(0,0,0,0.8) !important;
         white-space: pre-wrap !important;
     }
@@ -149,6 +150,7 @@ st.markdown("""
         background-color: #ef4444;
         box-shadow: 0 0 8px #ef4444;
     }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -204,47 +206,57 @@ with st.sidebar:
     st.markdown(f"**Root Directory:**")
     st.code(config_editors.WORKSPACE_DIR)
 
-# Main Application Panel
-st.title("🤖 AI Workspace Sidecar Controller")
-st.markdown("##### Control Panel & Background Package Installer for `ai_tui_sandbox`")
+# Main content area
+st.title("🤖 AI Workspace Sidecar")
+st.markdown("##### Control Panel & Caching Manager for `ai_tui_sandbox`")
 
 # Tabs for separate features
 tab_install, tab_mount, tab_notes = st.tabs([
     "📦 Install Packages", 
-    "📁 Mount Shared Folders", 
+    "🔌 Mount Shared Folders", 
     "✍️ Save Notes & Blueprint"
 ])
 
 # Tab 1: Installer UI
 with tab_install:
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.subheader("Install Tool / Package")
-    st.write("Specify package name and ecosystem to run inside the sandbox. Changes are automatically baked into infrastructure definitions.")
-    
-    col1, col2 = st.columns([1, 2])
-    
-    with col1:
+    with st.container(border=True):
+        st.subheader("Install Tool / Package")
+        st.write("Specify package name and ecosystem to run inside the sandbox. Changes are automatically baked into infrastructure definitions.")
+        
         ecosystem = st.selectbox(
             "Select Installation Ecosystem",
-            ("uv", "conda", "dnf"),
-            help="uv = Python standard libraries, conda = complex binary architectures, dnf = OS-level utilities"
+            ("uv", "conda", "dnf", "npm"),
+            help="uv = Python libraries, conda = ML packages, dnf = system tools, npm = global Node/JS packages"
         )
         package_name = st.text_input(
             "Package Name",
-            placeholder="e.g. htop, librosa, requests",
+            placeholder="e.g. htop, librosa, requests, @agentmemory/agentmemory",
             key="install_pkg"
         )
         
+        # Dynamic sudo checkbox: default to True for system/npm, False for user managers
+        use_sudo = st.checkbox(
+            "Use sudo (Root privileges)", 
+            value=ecosystem in ("dnf", "npm"),
+            key=f"use_sudo_{ecosystem}",
+            help="Toggle on if this package requires root privileges to install"
+        )
+        
+        sudo_prefix = "sudo " if use_sudo else ""
+        
         # Determine the fallback instruction and the live command to run inside sandbox
         if ecosystem == "uv":
-            run_cmd = f"uv pip install {package_name}"
-            fallback_cmd = f"docker exec -it ai_tui_sandbox uv pip install {package_name}"
+            run_cmd = f"{sudo_prefix}uv pip install {package_name}"
+            fallback_cmd = f"docker exec -it ai_tui_sandbox {sudo_prefix}uv pip install {package_name}"
         elif ecosystem == "conda":
-            run_cmd = f"conda install -y -c conda-forge {package_name}"
-            fallback_cmd = f"docker exec -it ai_tui_sandbox conda install -y -c conda-forge {package_name}"
-        else: # dnf
-            run_cmd = f"sudo dnf install -y {package_name}"
-            fallback_cmd = f"docker exec -it ai_tui_sandbox sudo dnf install -y {package_name}"
+            run_cmd = f"{sudo_prefix}conda install -y -c conda-forge {package_name}"
+            fallback_cmd = f"docker exec -it ai_tui_sandbox {sudo_prefix}conda install -y -c conda-forge {package_name}"
+        elif ecosystem == "dnf":
+            run_cmd = f"{sudo_prefix}dnf install -y {package_name}"
+            fallback_cmd = f"docker exec -it ai_tui_sandbox {sudo_prefix}dnf install -y {package_name}"
+        elif ecosystem == "npm":
+            run_cmd = f"{sudo_prefix}npm install -g {package_name}"
+            fallback_cmd = f"docker exec -it ai_tui_sandbox {sudo_prefix}npm install -g {package_name}"
             
         st.markdown("**Manual Fallback Guide:**")
         st.caption("If background installation fails, copy and run this in your host terminal:")
@@ -252,7 +264,6 @@ with tab_install:
         
         install_button = st.button("🚀 Trigger Installation", disabled=not package_name.strip())
         
-    with col2:
         st.markdown("**Installation Console Output:**")
         console_placeholder = st.empty()
         # Initial empty state
@@ -261,8 +272,6 @@ with tab_install:
             unsafe_allow_html=True
         )
         
-    st.markdown('</div>', unsafe_allow_html=True)
-    
     # Handle installation submit trigger
     if install_button and package_name.strip():
         # Clear console and prepare streaming logs
@@ -299,9 +308,13 @@ with tab_install:
         
         success = False
         try:
-            if ecosystem == "dnf":
-                config_editors.append_to_dockerfile(package_name, "dnf")
-                log_content += f"✔️ Appended 'RUN dnf install -y {package_name}' to root Dockerfile\n"
+            if ecosystem in ("dnf", "npm"):
+                config_editors.append_to_dockerfile(package_name, ecosystem, use_sudo=use_sudo)
+                prefix = "sudo " if use_sudo else ""
+                if ecosystem == "dnf":
+                    log_content += f"✔️ Appended 'RUN {prefix}dnf install -y {package_name}' to root Dockerfile\n"
+                else:
+                    log_content += f"✔️ Appended 'RUN {prefix}npm install -g {package_name}' to root Dockerfile\n"
             elif ecosystem in ("uv", "conda"):
                 config_editors.append_to_environment(package_name)
                 log_content += f"✔️ Appended dependency '{package_name}' to environment.yml\n"
@@ -325,12 +338,10 @@ with tab_install:
 
 # Tab 2: Volume Mounter UI
 with tab_mount:
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.subheader("Mount Host Shared Folder")
-    st.write("Surgically map folders from the host laptop directly into the Sandbox environment.")
-    
-    col1, col2 = st.columns([1, 1])
-    with col1:
+    with st.container(border=True):
+        st.subheader("Mount Host Shared Folder")
+        st.write("Surgically map folders from the host laptop directly into the Sandbox environment.")
+        
         host_path = st.text_input(
             "Host Path (Absolute or relative to workspace)",
             placeholder="e.g. ./datasets/audio-files or /home/user/downloads"
@@ -342,14 +353,11 @@ with tab_mount:
         
         mount_button = st.button("🔌 Map Volume & Restart warning", disabled=not (host_path.strip() and container_path.strip()))
         
-    with col2:
         st.warning("⚠️ **Volume Mapping Warning:** Modifying ports or volumes in `docker-compose.yml` requires reloading the service container layers. You must run `docker compose down && docker compose up -d` on your host machine to apply volume mounts.")
         st.markdown("**Example Output Map:**")
         if host_path and container_path:
             st.code(f"- {host_path}:{container_path}:rw, z", language="yaml")
             
-    st.markdown('</div>', unsafe_allow_html=True)
-    
     if mount_button and host_path.strip() and container_path.strip():
         try:
             config_editors.add_volume_to_compose(host_path.strip(), container_path.strip())
@@ -365,19 +373,17 @@ with tab_mount:
 
 # Tab 3: Note Saver UI
 with tab_notes:
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.subheader("Workspace Notebook & Quick Notes")
-    st.write("Write quick notes, timestamps, or blueprint instructions to persist memory directly under the designated `# Notes` section in `README.md`.")
-    
-    note_text = st.text_area(
-        "Enter note content",
-        placeholder="e.g. Remember to run python test_signal.py with CUDA enabled next time.",
-        height=150
-    )
-    
-    save_button = st.button("✍️ Commit Note to README.md", disabled=not note_text.strip())
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+    with st.container(border=True):
+        st.subheader("Workspace Notebook & Quick Notes")
+        st.write("Write quick notes, timestamps, or blueprint instructions to persist memory directly under the designated `# Notes` section in `README.md`.")
+        
+        note_text = st.text_area(
+            "Enter note content",
+            placeholder="e.g. Remember to run python test_signal.py with CUDA enabled next time.",
+            height=150
+        )
+        
+        save_button = st.button("✍️ Commit Note to README.md", disabled=not note_text.strip())
     
     if save_button and note_text.strip():
         try:

@@ -16,6 +16,15 @@ outputs/*
 working-space/*
 !working-space/.gitkeep
 
+# Exclude persistent caching folders inside sidecar-ui
+sidecar-ui/ml-env/*
+!sidecar-ui/ml-env/.gitkeep
+sidecar-ui/uv-cache/*
+!sidecar-ui/uv-cache/.gitkeep
+sidecar-ui/conda-cache/*
+!sidecar-ui/conda-cache/.gitkeep
+
+
 # --- GENERAL EXCLUSIONS ---
 .uv-cache/
 .streamlit/

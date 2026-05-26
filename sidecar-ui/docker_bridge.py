@@ -128,6 +128,17 @@ def execute_in_sandbox(cmd: str):
             yield f"  Verifying        : {pkg}-2.1.4-1.fc44.x86_64                               1/1\n"
             yield f"\nInstalled:\n  {pkg}-2.1.4-1.fc44.x86_64\n\nComplete!\n"
             
+        elif "npm install" in cmd_stripped:
+            pkg = cmd_stripped.split()[-1]
+            yield f"npm WARN deprecated harmless-library@1.0.2: no longer supported\n"
+            time.sleep(0.3)
+            yield f"npm HTTP GET https://registry.npmjs.org/{pkg}\n"
+            yield f"npm HTTP 200 https://registry.npmjs.org/{pkg}\n"
+            time.sleep(0.5)
+            yield f"added 18 packages, and audited 19 packages in 1.87s\n"
+            yield f"found 0 vulnerabilities\n\n"
+            yield f"Successfully installed {pkg} globally!\n"
+            
         elif "echo" in cmd_stripped:
             # Echo command
             val = cmd_stripped.replace("echo", "").strip().replace('"', '').replace("'", "")

@@ -15,9 +15,9 @@ DOCKER_COMPOSE_PATH = os.path.join(WORKSPACE_DIR, "docker-compose.yml")
 ENVIRONMENT_PATH = os.path.join(WORKSPACE_DIR, "environment.yml")
 README_PATH = os.path.join(WORKSPACE_DIR, "README.md")
 
-def append_to_dockerfile(package: str, ecosystem: str):
+def append_to_dockerfile(package: str, ecosystem: str, use_sudo: bool = True):
     """
-    Appends a RUN instruction for dnf install under the auto-installs marker in Dockerfile.
+    Appends a RUN instruction for installing packages under the auto-installs marker in Dockerfile.
     """
     if not os.path.exists(DOCKERFILE_PATH):
         raise FileNotFoundError(f"Dockerfile not found at {DOCKERFILE_PATH}")
@@ -29,15 +29,19 @@ def append_to_dockerfile(package: str, ecosystem: str):
     if marker not in content:
         raise ValueError(f"Marker '{marker}' not found in Dockerfile")
         
+    sudo_prefix = "sudo " if use_sudo else ""
+    
     # Standard instruction for installing
     if ecosystem.lower() == 'dnf':
-        instruction = f"RUN dnf install -y {package} && dnf clean all\n"
+        instruction = f"RUN {sudo_prefix}dnf install -y {package} && {sudo_prefix}dnf clean all\n"
     elif ecosystem.lower() == 'uv':
-        instruction = f"RUN uv pip install {package}\n"
+        instruction = f"RUN {sudo_prefix}uv pip install {package}\n"
     elif ecosystem.lower() == 'conda':
-        instruction = f"RUN conda install -y {package} && conda clean -afy\n"
+        instruction = f"RUN {sudo_prefix}conda install -y {package} && {sudo_prefix}conda clean -afy\n"
+    elif ecosystem.lower() == 'npm':
+        instruction = f"RUN {sudo_prefix}npm install -g {package}\n"
     else:
-        instruction = f"RUN {ecosystem} install {package}\n"
+        instruction = f"RUN {sudo_prefix}{ecosystem} install {package}\n"
         
     # Check if already present to avoid duplicates
     if instruction.strip() in content:
