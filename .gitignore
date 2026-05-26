@@ -26,3 +26,5 @@ working-space/*
 .DS_Store
 
 .env
+
+how-to-use.md

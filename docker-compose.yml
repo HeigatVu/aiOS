@@ -7,6 +7,12 @@ services:
         GROUP_ID: ${GID:-1000}
     container_name: ai_tui_sandbox
 
+    environment:
+      - TERM=xterm-256color
+      - COLORTERM=truecolor
+      - LANG=C.UTF-8
+      - LC_ALL=C.UTF-8
+
     ports:
       - "3113:3113"
       - "8501:8501"
@@ -27,13 +33,13 @@ services:
       - ./agent-configs/.agents:/home/ai_user/.agents:rw, z
       - ./agent-configs/.fcc:/home/ai_user/.fcc:rw, z
       - ./agent-configs/.iii:/home/ai_user/.iii:rw, z
-      
+
       # 3. Your Shell & Package Caches (Read-Only)
       - ~/.zshrc:/home/ai_user/.zshrc:ro
       - ~/.p10k.zsh:/home/ai_user/.p10k.zsh:ro
       - ~/.cache/uv:/home/ai_user/.cache/uv:ro
       - ~/miniconda3/pkgs:/opt/conda/pkgs:ro
-      
+
     # Hardware isolation: Passes the RTX GPU through safely
     deploy:
       resources:
@@ -41,7 +47,7 @@ services:
           devices:
             - driver: nvidia
               count: 1
-              capabilities: [gpu]
+              capabilities: [ gpu ]
 
     stdin_open: true
     tty: true
@@ -58,4 +64,3 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - .:/workspace:rw
     network_mode: "bridge"
-
