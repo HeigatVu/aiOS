@@ -12,11 +12,11 @@ services:
       - LANG=C.UTF-8
       - LC_ALL=C.UTF-8
     ports:
-      - "3113:3113"
+      - "127.0.0.1:3113:3113"
       - "8501:8501"
       - "8888:8888"
-      - "8082:8082"
-      - "9119:9119"
+      - "0.0.0.0:8082:8082"
+      - "127.0.0.1:9119:9119"
     volumes:
       # 1. Code & Data
       - ./working-space:/workspace:rw,z
@@ -37,10 +37,11 @@ services:
       - ./persistent/agents:/home/ai_user/.agents:rw,z
       - ./persistent/fcc:/home/ai_user/.fcc:rw,z
       - ./persistent/iii:/home/ai_user/.iii:rw,z
+      - ~/Downloads:/workspace/Downloads:rw,z
 
       # 4. Shell Configurations (Read-Only)
       - ~/.p10k.zsh:/home/ai_user/.p10k.zsh:ro,z
-      - ~/.zshrc:/home/ai_user/.zshrc_host:ro,z
+      - ~/.zshrc:/home/ai_user/.zshrc_host:rw,z
       - ./persistent/zshrc_docker:/home/ai_user/.zshrc:ro,z
 
     deploy:
@@ -49,7 +50,7 @@ services:
           devices:
             - driver: nvidia
               count: 1
-              capabilities: [ gpu ]
+              capabilities: [gpu]
 
     restart: unless-stopped
     stdin_open: true

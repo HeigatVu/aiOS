@@ -137,4 +137,7 @@ git commit -m "chore: secure all private directories and workspaces"
 
 # Notes
 
+* **[2026-05-26 16:59:49]** Mounted folder mapping '/home/HeigatWorkspace/Downloads:/workspace/Downloads' in docker-compose.yml.
+
+
 * **[2026-05-25 21:41:46]** Installed package 'htop' via dnf using the Sidecar UI.
