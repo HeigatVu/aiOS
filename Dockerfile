@@ -72,8 +72,7 @@ RUN curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/in
 RUN curl -fsSL https://feynman.is/install | bash
 
 # --- AI SIDECAR AUTO-INSTALLS ---
-RUN sudo dnf install -y htop && sudo dnf clean all
-
+# (Sidecar UI injects new RUN layers directly under this marker. Do not remove.)
 
 # Default entrypoint fixes bind-mount permissions, then runs CMD
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

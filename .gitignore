@@ -31,3 +31,6 @@ working-space/*
 how-to-use.md
 
 agent-configs/*
+
+# Tabby Terminal experiment artifacts (not wired up)
+sidecar-ui/tabby-*/

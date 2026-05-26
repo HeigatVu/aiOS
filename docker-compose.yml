@@ -15,6 +15,8 @@ services:
       - "3113:3113"
       - "8501:8501"
       - "8888:8888"
+      - "8082:8082"
+      - "9119:9119"
     volumes:
       # 1. Code & Data
       - ./working-space:/workspace:rw,z
@@ -47,8 +49,9 @@ services:
           devices:
             - driver: nvidia
               count: 1
-              capabilities: [gpu]
+              capabilities: [ gpu ]
 
+    restart: unless-stopped
     stdin_open: true
     tty: true
     network_mode: "bridge"
@@ -63,4 +66,5 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - .:/workspace:rw,z
+    restart: unless-stopped
     network_mode: "bridge"

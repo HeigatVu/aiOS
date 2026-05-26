@@ -1,35 +1,6 @@
 #!/bin/bash
 set -e
 
-# Migrate old agent-configs folder to persistent/ if it still exists
-if [ -d "/workspace/agent-configs" ]; then
-  echo "Found legacy agent-configs/ folder. Migrating to persistent/..."
-  # Map of old subdirectories to new subdirectories under /workspace/persistent/
-  declare -A MIGRATE_MAP=(
-    [".agentmemory"]="agentmemory"
-    [".claude"]="claude"
-    [".hermes"]="hermes"
-    [".gemini"]="gemini"
-    [".antigravitycli"]="antigravitycli"
-    [".agents"]="agents"
-    [".fcc"]="fcc"
-    [".iii"]="iii"
-  )
-
-  for old_dir in "${!MIGRATE_MAP[@]}"; do
-    new_dir="${MIGRATE_MAP[$old_dir]}"
-    if [ -d "/workspace/agent-configs/$old_dir" ]; then
-      sudo mkdir -p "/workspace/persistent/$new_dir"
-      # Move files using sudo to avoid permission issues
-      sudo cp -aT "/workspace/agent-configs/$old_dir/" "/workspace/persistent/$new_dir/" 2>/dev/null || true
-    fi
-  done
-  
-  # Remove old agent-configs folder completely
-  sudo rm -rf "/workspace/agent-configs"
-  echo "Migration complete!"
-fi
-
 # Fix ownership of bind-mounted directories.
 # Docker creates host dirs as root when they don't exist,
 # so mounted paths may not be writable by ai_user.
@@ -52,5 +23,13 @@ for dir in "${DIRS[@]}"; do
     sudo chown -R "$(id -u):$(id -g)" "$dir"
   fi
 done
+
+# Build the Conda ai-baseline env on first launch if the bind-mount is empty.
+ENV_DIR="$HOME/miniconda3/envs/ai-baseline"
+if [ ! -f "$ENV_DIR/conda-meta/history" ]; then
+  echo "[entrypoint] Building Conda env 'ai-baseline' from environment.yml (first launch — slow)..."
+  "$HOME/miniconda3/bin/conda" env create -f "$HOME/environment.yml" -p "$ENV_DIR" || \
+    echo "[entrypoint] WARNING: conda env create failed — continuing without it."
+fi
 
 exec "$@"
