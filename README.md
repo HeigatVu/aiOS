@@ -1,78 +1,140 @@
-```python
-markdown_content = """# Master AI & Signal Processing Workspace Blueprint (v2.0)
+# Outrider AI: Master AI & Signal Processing Workspace (v2.0)
 
-This document serves as the permanent memory and architectural guide for the isolated Docker workspace. It outlines the dual-terminal workflow, the Conda/UV machine learning integration, and the "Etch-A-Sketch" philosophy for maintaining the environment.
+This repository houses a secure, indestructible, and highly accelerated multi-container workspace designed for AI agents and advanced signal processing. 
 
-## 1. Core Architecture & Directory Structure
-The master folder (`my-assistance/`) must maintain the following structure to ensure the environment remains perfectly portable and indestructible:
+By leveraging the **Sidecar Pattern**, it safely isolates the heavy, GPU-accelerated AI sandbox from your host laptop, while providing a stunning, secure web control panel to manage installations and shared directories.
 
+---
 
-```
+## 📖 Table of Contents
+1. [What is Contained in the Project](#1-what-is-contained-in-the-project)
+2. [How to Run and Use](#2-how-to-run-and-use)
+3. [The Dual-Terminal Workflow](#3-the-dual-terminal-workflow)
+4. [How to Configure in the Dockerfile](#4-how-to-configure-in-the-dockerfile)
+5. [Git Security & Push Safety](#5-git-security--push-safety)
+6. [Troubleshooting & Edge Cases](#6-troubleshooting--edge-cases)
 
-```text
-File saved to /mnt/data/ai-workspace-blueprint-v2.md
+---
+
+## 1. What is Contained in the Project
+
+The workspace runs two harmoniously connected Docker containers:
 
 ```text
 my-assistance/
+├── Dockerfile                   # Software Blueprint for the AI Sandbox
+├── docker-compose.yml           # Core wiring (ports, GPU passthrough, volume mounts)
+├── environment.yml              # Deep ML & Signal Processing conda baseline
+├── .gitignore                   # Anti-leak key protections & heavy file ignores
+├── .dockerignore                 # Excludes heavy folders from the builder
 │
-├── Dockerfile               # Software Blueprint (Fedora, Conda, UV, FFmpeg, baked environment.yml)
-├── docker-compose.yml       # Hardware/Network Wiring (GPU passthrough, Volume mounts)
-├── environment.yml          # The heavy ML/Signal Processing Conda baseline (PyTorch, CUDA, etc.)
+├── sidecar-ui/                  # Streamlit Control Panel App (Port 8502)
+│   ├── Dockerfile.sidecar       # High-speed uv-based container setup
+│   ├── app.py                   # Custom UI dashboard and interactive terminal
+│   ├── docker_bridge.py         # Broker for live-streaming docker execution
+│   └── config_editors.py        # Surgical code & YAML writers
 │
-├── agent-configs/           # Hidden memory (API keys, tokens, settings)
-│   ├── .claude              # Air-gapped from host machine
-│   ├── .gemini              # Air-gapped from host machine
-│   ├── .zshrc_docker        # Custom Zsh config with Conda auto-activate and Zinit plugins
-│   └── ... [other agent config folders]
-│
-├── working-space/           # Python code, scripts, and local files (Maps to /workspace)
-├── data/                    # Heavy audio files, .wav datasets
-└── outputs/                 # AI agent generated results
-
+├── working-space/               # Mapped to /workspace (Python code & scripts)
+├── data/                        # Mapped to /data (Heavy WAV audio datasets)
+└── outputs/                     # Mapped to /outputs (Generated AI results)
 ```
 
-## 2. The Dual-Terminal Workflow
+### Container 1: The AI Sandbox (`ai_tui_sandbox`)
+* **Purpose:** The safe-house where AI agents (Gemini, Claude, Hermes, etc.) execute.
+* **Privileges:** Strictly isolated; **no** Docker socket access (incapable of escaping to your host machine).
+* **Environments:** Pre-activated Conda `ai-baseline` environment, utilizing **`Conda`** for heavy C-libraries and **`uv`** for lightning-fast Python installations.
+* **GPU Passthrough:** Safely wires your host RTX graphics card for local model inference.
 
-This system relies on a strict separation between the physical Host (Fedora laptop) and the Sandbox (Docker).
+### Container 2: The Sidecar Controller (`ai_sidecar_controller`)
+* **Purpose:** A secure control panel served at `http://localhost:8502` to manage your sandbox.
+* **Privileges:** Mounts `/var/run/docker.sock` to securely execute commands inside the sandbox.
+* **Features:** Live package installer terminal (for `uv`, `conda`, and `dnf`), dynamic volume folder mapper, and a persistent markdown notebook.
 
-| Action | Which Terminal? | Command / Usage |
-| --- | --- | --- |
-| **Turn engine on/off** | **Host (Fedora)** | `docker compose up -d` / `docker compose down` |
-| **Enter the workspace** | **Host (Fedora)** | `docker compose exec -it sandbox /bin/zsh` |
-| **Run code / Install ML tools** | **Docker Sandbox** | `uv pip install <pkg>`, `conda install <pkg>`, `python script.py` |
-| **Manage system files** | **Host (Fedora)** | Regular OS management outside of the `my-assistance` folder |
+---
 
-## 3. Machine Learning Package Management (Conda + uv)
+## 2. How to Run and Use
 
-The architecture uses **Conda** to handle heavy C-libraries and **uv** for lightning-fast Python package installation.
+### Start the Engine (Power On)
+To spin up both containers in the background, run this command from the root folder of your project:
+```bash
+docker compose up -d
+```
+*Note: If you run into local DNS/network timeouts, you can bypass BuildKit using `DOCKER_BUILDKIT=0 docker compose up -d --build`.*
 
-* **The Baseline (`ai-baseline`):** The heavy ML environment (containing PyTorch, CUDA, OpenCV, and FFmpeg) is defined in `environment.yml` and is explicitly compiled into the Docker image during `docker compose build`. This prevents needing to re-download 5GB+ of packages if the container crashes.
-* **Auto-Activation:** The mapped `.zshrc_docker` file contains the `conda activate ai-baseline` command, ensuring the Zsh terminal drops immediately into the ready-state ML environment upon entry.
-* **Installing New Packages:**
-* For **pure Python packages** (e.g., pandas, requests): Run `uv pip install <package>` inside the Docker terminal. `uv` automatically detects and injects it directly into the active Conda environment.
-* For **C-bound packages** (e.g., new audio codecs): Run `conda install -c conda-forge <package>` inside the Docker terminal.
+### Access the Web Control Panel
+Open your browser and navigate to:
+👉 **`http://localhost:8502`**
 
+### Enter the Sandbox Terminal
+To get a CLI prompt directly inside your active AI sandbox, run:
+```bash
+docker compose exec -it sandbox /bin/zsh
+```
 
+### Stop the Engine (Power Off)
+To release all RAM, CPU, and GPU resources at the end of the day, run:
+```bash
+docker compose down
+```
 
-## 4. Expansion Guide: How to Add Features
+---
 
-Use this matrix to determine which file to modify when expanding the workspace:
+## 3. The Dual-Terminal Workflow
 
-| Goal | Target File | Next Command to Apply Changes |
-| --- | --- | --- |
-| **Install global system tools** (`htop`, `rust`) | `Dockerfile` | `docker compose build && docker compose up -d` |
-| **Update heavy ML baseline** (PyTorch, etc.) | `environment.yml` | `docker compose build && docker compose up -d` |
-| **Expose a new web app** (Streamlit, Jupyter) | `docker-compose.yml` (`ports:`) | `docker compose down && docker compose up -d` |
-| **Persist a new AI Agent's memory** | `docker-compose.yml` (`volumes:`) | `docker compose down && docker compose up -d` |
-| **Install daily Python libraries** (`librosa`) | **None** | Run `uv pip install <pkg>` inside the Docker terminal. |
+This setup establishes a clean separation between your physical Host (Fedora laptop) and the Sandbox (Docker):
 
-## 5. Troubleshooting & Edge Cases
+| Goal | Done on Host (laptop) | Done inside Sandbox (`docker compose exec`) |
+| :--- | :--- | :--- |
+| **Start/Stop containers** | Run `docker compose up -d` or `down` | ❌ Never |
+| **Run model scripts / execute code** | ❌ Never | Run `python script.py` |
+| **Interactive Zsh shell** | Regular OS terminal | Run `zsh` plugin actions |
+| **Install pure Python dependencies** | ❌ Never (Do via Sidecar UI) | Run `uv pip install <package>` |
+| **Install global system tools** | ❌ Never (Do via Sidecar UI) | Run `sudo dnf install <package>` |
 
-* **Permission Denied in Agent Folders:** Antigravity or Claude fails to save an OAuth token. Run `sudo chown -R ai_user:ai_user ~/.gemini ~/.claude ...` inside the Docker terminal. *(Host SELinux bypass: append `,z` to volume mounts in `docker-compose.yml`).*
-* **GPU Passthrough Fails:** Docker refuses to start due to NVIDIA/device driver errors. Install `nvidia-container-toolkit` on the Host Fedora machine, configure the Docker runtime, and restart the Docker service.
-* **"ResolvePackageNotFound" during Conda build:** Conda strict hashes don't match the OS. Open `environment.yml` and delete the strict hash suffixes (e.g., change `python=3.12.13=hd63d673_0` to simply `python=3.12.13`), then rebuild.
-* **Ghost CLI commands on Host:** Zsh remembers uninstalled apps. Run `hash -r` in the Host terminal to clear cached execution paths.
-"""
+---
+
+## 4. How to Configure in the Dockerfile
+
+The root `Dockerfile` defines the base operating system (Fedora 44), npm tools, conda baselines, and active agents. 
+
+### The Auto-Install Section
+To prevent manual configurations from being wiped out when rebuilding containers, the root `Dockerfile` contains a designated marker section:
+
+```dockerfile
+# --- AI SIDECAR AUTO-INSTALLS ---
+RUN dnf install -y htop && dnf clean all
+```
+
+* **How it works:** When you trigger an installation via the **Sidecar Web UI**, the controller surgically injects a new `RUN` layer directly under this marker.
+* **Manual edits:** You can safely add custom global operations here by editing the `Dockerfile` in your text editor. Every package listed here will be permanently baked into your image during the next `docker compose build`.
+
+---
+
+## 5. Git Security & Push Safety
+
+To ensure you can safely push your code to **GitHub** without leaking secure API keys or bloating your repository with heavy data files, a custom `.gitignore` has been pre-configured:
+
+* **Protected Folders:** `agent-configs/` (containing secret agent tokens), `data/` (large audio files), and `outputs/` (generated results) are completely ignored.
+* **Directory Tracking:** Empty structures of these folders are maintained via `.gitkeep` files, allowing you to share the project setup cleanly.
+
+### Important: Clear Git Cache Before First Push
+If you had previously committed files from ignored folders, run this on your Host terminal to clear the index:
+```bash
+git rm -r --cached .
+git add .
+git commit -m "chore: secure all private directories and workspaces"
+```
+
+---
+
+## 6. Troubleshooting & Edge Cases
+
+* **SELinux Permission Denied:** If an AI agent cannot save credentials inside the mapped folders, make sure the volume mounts in `docker-compose.yml` append the `, z` flag (e.g., `- ./agent-configs/.gemini:/home/ai_user/.gemini:rw, z`), which bypasses host SELinux security rules safely.
+* **GPU Connection Failure:** If Docker refuses to start due to CUDA/NVIDIA errors, ensure that `nvidia-container-toolkit` is correctly installed on your host system and the docker daemon is restarted.
+* **ResolvePackageNotFound:** If Conda throws package conflicts during a build, open `environment.yml` and delete the strict version suffixes (e.g., change `python=3.12.13=hd63d673_0` to `python=3.12.13`), then rebuild.
+
+---
+
 # Notes
 
 * **[2026-05-25 21:41:46]** Installed package 'htop' via dnf using the Sidecar UI.
