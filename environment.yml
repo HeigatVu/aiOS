@@ -189,6 +189,7 @@ dependencies:
   - pkg-config=0.29.2=h4bc722e_1009
   - pthread-stubs=0.4=hb9d3cd8_1002
   - pugixml=1.15=h3f63f65_0
+  - portaudio=19.6.0
   - pulseaudio-client=17.0=h9a6aba3_3
   - py-opencv=4.13.0=qt6_py312h3a6da57_605
   - python=3.12.13=hd63d673_0_cpython

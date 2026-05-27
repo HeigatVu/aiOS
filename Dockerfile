@@ -5,7 +5,7 @@ RUN dnf upgrade --refresh -y && \
   dnf install -y \
   nodejs npm \
   git curl wget tar unzip sudo neovim zsh util-linux \
-  ffmpeg sox libsndfile hdf5-devel portaudio-devel gcc gcc-c++ make \
+  gcc gcc-c++ make \
   lsd tealdeer fzf \
   && dnf clean all
 
@@ -38,10 +38,10 @@ RUN mkdir -p \
   /home/${USERNAME}/.claude \
   /home/${USERNAME}/.hermes \
   /home/${USERNAME}/.gemini \
-  /home/${USERNAME}/.antigravitycli \
   /home/${USERNAME}/.agents \
   /home/${USERNAME}/.fcc \
-  /home/${USERNAME}/.iii
+  /home/${USERNAME}/.iii \
+  /home/${USERNAME}/.feynman
 
 # 7. Install Environment Managers (uv & Conda)
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -70,7 +70,6 @@ RUN curl -fsSL https://claude.ai/install.sh | bash
 RUN curl -fsSL "https://github.com/Alishahryar1/free-claude-code/blob/main/scripts/install.sh?raw=1" | sh
 RUN curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
 RUN curl -fsSL https://feynman.is/install | bash
-curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh
 
 # --- AI SIDECAR AUTO-INSTALLS ---
 # (Sidecar UI injects new RUN layers directly under this marker. Do not remove.)

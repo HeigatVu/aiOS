@@ -12,10 +12,10 @@ DIRS=(
   "$HOME/.claude"
   "$HOME/.hermes"
   "$HOME/.gemini"
-  "$HOME/.antigravitycli"
   "$HOME/.agents"
   "$HOME/.fcc"
   "$HOME/.iii"
+  "$HOME/.feynman"
 )
 
 for dir in "${DIRS[@]}"; do

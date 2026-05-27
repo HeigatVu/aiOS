@@ -13,14 +13,14 @@ services:
       - LC_ALL=C.UTF-8
     ports:
       - "127.0.0.1:3113:3113"
-      - "8501:8501"
-      - "8888:8888"
-      - "0.0.0.0:8082:8082"
+      - "127.0.0.1:8501:8501"
+      - "127.0.0.1:8888:8888"
+      - "127.0.0.1:8082:8082"
       - "127.0.0.1:9119:9119"
     volumes:
       # 1. Code & Data
       - ./working-space:/workspace:rw,z
-      - ./data:/data:rw,z
+      - ./data:/data:ro,z
       - ./outputs:/outputs:rw,z
 
       # 2. Persistent Caches & Environments
@@ -33,19 +33,22 @@ services:
       - ./persistent/claude:/home/ai_user/.claude:rw,z
       - ./persistent/hermes:/home/ai_user/.hermes:rw,z
       - ./persistent/gemini:/home/ai_user/.gemini:rw,z
-      - ./persistent/antigravitycli:/home/ai_user/.antigravitycli:rw,z
       - ./persistent/agents:/home/ai_user/.agents:rw,z
       - ./persistent/fcc:/home/ai_user/.fcc:rw,z
       - ./persistent/iii:/home/ai_user/.iii:rw,z
-      - ~/Downloads:/workspace/Downloads:rw,z
+      - ./persistent/feynman:/home/ai_user/.feynman:rw,z
+      - ~/.config/nvim/:/home/ai_user/.config/nvim:rw,z
 
       # 4. Shell Configurations (Read-Only)
       - ~/.p10k.zsh:/home/ai_user/.p10k.zsh:ro,z
-      - ~/.zshrc:/home/ai_user/.zshrc_host:rw,z
+      - ~/.zshrc:/home/ai_user/.zshrc_host:ro,z
       - ./persistent/zshrc_docker:/home/ai_user/.zshrc:ro,z
 
     deploy:
       resources:
+        limits:
+          cpus: '8'
+          memory: 16G
         reservations:
           devices:
             - driver: nvidia
@@ -63,7 +66,7 @@ services:
       dockerfile: Dockerfile.sidecar
     container_name: ai_sidecar_controller
     ports:
-      - "8502:8502"
+      - "127.0.0.1:8502:8502"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - .:/workspace:rw,z
