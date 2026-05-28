@@ -22,6 +22,7 @@ services:
       - ./working-space:/workspace:rw,z
       - ./data:/data:ro,z
       - ./outputs:/outputs:rw,z
+      - ./config_file:/config_file:rw,z
 
       # 2. Persistent Caches & Environments
       - ./persistent/ml-env:/home/ai_user/miniconda3/envs/ai-baseline:rw,z
@@ -37,18 +38,17 @@ services:
       - ./persistent/fcc:/home/ai_user/.fcc:rw,z
       - ./persistent/iii:/home/ai_user/.iii:rw,z
       - ./persistent/feynman:/home/ai_user/.feynman:rw,z
-      - ~/.config/nvim/:/home/ai_user/.config/nvim:rw,z
 
-      # 4. Shell Configurations (Read-Only)
-      - ~/.p10k.zsh:/home/ai_user/.p10k.zsh:ro,z
-      - ~/.zshrc:/home/ai_user/.zshrc_host:ro,z
+      # 4. Shell Configurations
+      - ./config-file/system-config/p10k.zsh:/home/ai_user/.p10k.zsh:rw,z
+      - ./config-file/system-config/zshrc:/home/ai_user/.zshrc_host:rw,z
       - ./persistent/zshrc_docker:/home/ai_user/.zshrc:ro,z
 
     deploy:
       resources:
         limits:
           cpus: '8'
-          memory: 16G
+          memory: 18G
         reservations:
           devices:
             - driver: nvidia
