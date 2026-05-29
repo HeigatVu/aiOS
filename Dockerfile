@@ -7,8 +7,9 @@ RUN dnf upgrade --refresh -y && \
   git curl wget tar unzip sudo neovim zsh util-linux \
   gcc gcc-c++ make \
   lsd tealdeer fzf \
+  autojump-zsh \
   && dnf clean all
-
+  
 # 2. Install global NPM packages
 RUN npm install -g @agentmemory/agentmemory
 

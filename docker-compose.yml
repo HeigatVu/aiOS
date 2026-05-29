@@ -22,7 +22,7 @@ services:
       - ./working-space:/workspace:rw,z
       - ./data:/data:ro,z
       - ./outputs:/outputs:rw,z
-      - ./config_file:/config_file:rw,z
+      - ./config-file:/config-file:rw,z
 
       # 2. Persistent Caches & Environments
       - ./persistent/ml-env:/home/ai_user/miniconda3/envs/ai-baseline:rw,z
@@ -40,9 +40,12 @@ services:
       - ./persistent/feynman:/home/ai_user/.feynman:rw,z
 
       # 4. Shell Configurations
-      - ./config-file/system-config/p10k.zsh:/home/ai_user/.p10k.zsh:rw,z
-      - ./config-file/system-config/zshrc:/home/ai_user/.zshrc_host:rw,z
-      - ./persistent/zshrc_docker:/home/ai_user/.zshrc:ro,z
+      - ./config-file/system-config/.p10k.zsh:/home/ai_user/.p10k.zsh:rw,z
+      - ./config-file/system-config/.zshrc:/home/ai_user/.zshrc_host:rw,z
+      - ./persistent/zshrc_docker:/home/ai_user/.zshrc:rw,z
+
+      # 5. Editor Configurations
+      - ./config-file/system-config/nvim:/home/ai_user/.config/nvim:rw,z
 
     deploy:
       resources:
