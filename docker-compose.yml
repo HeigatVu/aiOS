@@ -19,9 +19,9 @@ services:
       - "127.0.0.1:9119:9119"
     volumes:
       # 1. Code & Data
-      - ./working-space:/workspace:rw,z
-      - ./my-data:/my-data:ro,z
-      - ./outputs:/outputs:rw,z
+      - ./sandbox-data/working-space:/workspace:rw,z
+      - ./sandbox-data/my-data:/my-data:ro,z
+      - ./sandbox-data/outputs:/outputs:rw,z
       - ./config-file:/config-file:rw,z
 
       # 2. Persistent Caches & Environments

@@ -46,19 +46,36 @@ sidecar-ui/
 | POST | `/api/volumes/chmod` | chmod a file inside the container |
 | POST | `/api/volumes/{idx}/mode` | Toggle rw/ro in docker-compose.yml |
 | GET | `/api/volumes/{idx}/files` | List files inside the container path |
+| POST | `/api/volumes/upload` | Upload binary file to volume mount |
+| GET | `/api/volumes/download` | Download binary file from volume mount |
 | POST | `/api/config/dockerfile` | Append RUN layer to Dockerfile |
 | POST | `/api/config/readme` | Append timestamped note to README |
 | POST | `/api/config/environment` | Append to environment.yml |
 | POST | `/api/config/volume` | Add new volume to docker-compose.yml |
+| POST | `/api/editor/read` | Read text file contents inside container |
+| POST | `/api/editor/write` | Save updated text file contents inside container |
+| GET | `/api/sandbox/processes` | List active processes using `ps aux` |
+| POST | `/api/sandbox/processes/kill` | Kill target process by PID (`kill -9`) |
+| GET | `/api/sandbox/env` | Get container active environment + dotenv keys |
+| POST | `/api/sandbox/env/save` | Add or update key in dynamic dotenv files |
+| POST | `/api/sandbox/env/delete` | Remove key from dynamic dotenv files |
+| GET | `/api/sandbox/ports` | Get Listening ports inside container |
+| POST | `/api/db/query` | Run SQLite SQL queries and inspect tables |
 | GET | `/` | Serve index.html |
 | static | `/static/*` | Serve JS/CSS |
 
-### Frontend tabs
+### Frontend Views & Features
 
-- **Dashboard** — Docker socket + sandbox status cards
-- **Terminal** — ecosystem picker (uv/conda/dnf/npm), package name or raw command, WebSocket streaming output, optional "bake into Dockerfile" + "save note to README" checkboxes
-- **Volumes** — volume table with mode badges, Browse button (file listing with octal + symbolic perms), chmod inline form, Toggle mode button (writes docker-compose.yml)
-- **Config** — sub-tabs for Dockerfile / README / environment.yml / volume mapping
+- **Dashboard** — Docker socket + sandbox container status, live `docker logs -f` stream panel, active container stats metrics.
+- **Terminal** — package installer tool (uv/conda/dnf/npm) with snippets terminal assistant panel (persisted custom command bank).
+- **Volumes** — volume tables, recursive breadcrumb browser with uploads & downloads, inline chmod forms, and quick launcher buttons:
+  - **edit** (purple/vibrant text editor using CodeMirror 5 with syntax highlighting)
+  - **inspect** (SQLite database inspector with table schemas and custom interactive query executor)
+  - **env** (Dynamic `.env` Manager)
+- **Config** — configuration editor sub-tabs: Dockerfile, README, environment.yml, volume mapper, and the persistent **.env Manager**:
+  - Automatically registers custom `.env` file paths visited from volumes.
+  - Active dropdown selector context switcher.
+  - CRUD operations: Edit, add new, and permanently **delete** environment variables.
 
 ---
 
@@ -72,33 +89,27 @@ sidecar-ui/
 
 ---
 
-## Ideas / things to continue
+## Completed Batch (High-Fidelity Features)
 
-- [x] **Restart sandbox button** on Dashboard → POST `/api/sandbox/restart` → `docker restart ai_tui_sandbox`
-- [x] **Live container logs** in Dashboard → WebSocket `/ws/logs` tails `docker logs -f`, toggle on/off
-- [x] **GPU / CPU / RAM usage cards** — CPU + RAM from Docker stats API; GPU via `nvidia-smi` exec (hidden if unavailable)
-- [x] **Delete volume entry** in Volumes tab — click Delete → Confirm? two-step, calls DELETE `/api/volumes/{idx}`
-- [x] **Terminal history** — last 20 commands persisted in localStorage, ↑↓ arrow keys to navigate
-- [x] **Rebuild image button** — streams `docker compose build` output via WebSocket `/ws/rebuild`
-- [x] **Vue Router** — tabs are now deep-linkable via URL hash (`/#/dashboard`, `/#/terminal`, etc.)
+- [x] **Restart sandbox button** on Dashboard
+- [x] **Live container logs** in Dashboard with WebSocket streaming
+- [x] **GPU / CPU / RAM usage metrics** dynamically loaded from stats API
+- [x] **Delete volume entry** in Volumes tab (two-step Detach action)
+- [x] **Terminal history & Snippets bank** persisted in localStorage
+- [x] **Rebuild image button** streaming docker-compose build stdout
+- [x] **Vue Router integration** supporting fully deep-linkable URLs
+- [x] **CodeMirror 5 Text Editor** with customized light & dark theme wrappers
+- [x] **SQLite Database Inspector** and interactive custom query executor
+- [x] **Volume Upload & Download utilities** for seamless binary binary transfer
+- [x] **Light Theme Mode Toggle** with persistent localStorage setting
+- [x] **Sub-project .env Manager** with dynamic dropdown, auto-register, and key deletion CRUD
 
-### Future Enhancements (Next Batch)
+---
 
-**Developer Experience (DX) & Productivity**
-- [ ] **Web-Based File Editor** — Integrate Monaco Editor or CodeMirror into a new "Editor" tab for quick script/config edits.
-- [ ] **Snippet Library / Saved Commands** — Save frequently used complex commands with descriptions for one-click execution.
-- [ ] **Environment Variables Manager** — UI for managing `.env` files or container environment variables (add, edit, hide/show secrets).
+## Future Enhancements & Ideas Checkpoint (Next Batch)
 
-**Container State & Debugging**
-- [ ] **Process Explorer (Task Manager)** — Run `ps aux` or `top` inside the sandbox and display in a data table, with a "Kill Process" button.
-- [ ] **Network & Port Manager** — Show listening ports (`netstat` / `ss`) and provide a way to dynamically expose new ports.
-- [ ] **Log Filtering & Search** — Enhance live logs with a search bar (regex) and log level filtering (Error, Warn, Info).
-
-**File & Data Management**
-- [ ] **File Upload/Download** — In the Volumes tab, add ability to upload/download files directly from host to container via the browser.
-- [ ] **SQLite / DB Viewer** — Built-in SQLite table viewer to inspect database files without downloading them.
-
-**UI / UX Polish**
-- [ ] **Toast Notifications** — Non-blocking toasts in the corner for long-running commands (image rebuilds, heavy installs).
-- [ ] **Theme Toggle** — Add a Light/Dark mode toggle, persisted in localStorage.
-- [ ] **System Resource Alarms** — Visual indicators (orange/red) when the container maxes out its allocated CPU/RAM/GPU resources.
+- [ ] **Real-time Pty Terminal (xterm.js):** Upgrade command executor to support full interactive shell sessions using pseudo-terminals (PTYs).
+- [ ] **Interactive Metrics History:** Render active memory, CPU, and GPU usage over time as beautiful Chart.js lines rather than plain static text cards.
+- [ ] **Visual Git Manager:** View current git branch status, local uncommitted diff comparison, and add rapid commit-and-push actions.
+- [ ] **Process Resource Monitoring:** Show individual process memory and CPU consumption dynamically in the Processes list to quickly identify heavy tasks.
+- [ ] **Automatic Port Tunneling:** Expose internal container ports on public or host networks dynamically using custom reverse proxies or tunnels.

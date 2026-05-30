@@ -1,6 +1,6 @@
 'use strict';
 
-const { createApp, ref, reactive, computed, onMounted, onUnmounted, nextTick, inject, provide } = Vue;
+const { createApp, ref, reactive, computed, watch, onMounted, onUnmounted, nextTick, inject, provide } = Vue;
 const { createRouter, createWebHashHistory } = VueRouter;
 
 // ---------------------------------------------------------------------------
@@ -799,6 +799,23 @@ const VolumePanel = {
             }
         }
 
+        function isEnvFile(file) {
+            if (file.is_dir) return false;
+            return basename(file.name) === '.env' || file.name.endsWith('.env');
+        }
+
+        function manageEnv(file) {
+            router.push({
+                path: '/config',
+                query: {
+                    tab: 'env-manager',
+                    path: file.name,
+                    volIdx: browseIdx.value,
+                    dir: currentPath.value
+                }
+            });
+        }
+
         onMounted(loadVolumes);
 
         return {
@@ -809,6 +826,7 @@ const VolumePanel = {
             isWritable, toggleFileMode, isHidden, toggleHide,
             basename, octalToSymbolic,
             isEditable, isDatabase, editFile, inspectDb, downloadFile, uploadFile,
+            isEnvFile, manageEnv,
         };
     },
     template: `
@@ -922,6 +940,7 @@ const VolumePanel = {
                                         <!-- Slot 1: Primary Action (edit / inspect / placeholder) -->
                                         <button class="btn-sm btn-primary" style="width: 70px; text-align: center" v-if="isEditable(file)" @click="editFile(file)">edit</button>
                                         <button class="btn-sm btn-primary" style="width: 70px; text-align: center" v-else-if="isDatabase(file)" @click="inspectDb(file)">inspect</button>
+                                        <button class="btn-sm btn-env-mgr" style="width: 70px; text-align: center" v-else-if="isEnvFile(file)" @click="manageEnv(file)">env</button>
                                         <button class="btn-sm" style="width: 70px; text-align: center; visibility: hidden; pointer-events: none;" v-else>inspect</button>
 
                                         <!-- Slot 2: Download Action (⬇ / placeholder) -->
@@ -1376,11 +1395,14 @@ const DbViewerPanel = {
 
 const ConfigPanel = {
     setup() {
+        const route = VueRouter.useRoute();
+        const router = VueRouter.useRouter();
         const activeTab = ref('dockerfile');
         const tabs = [
             { id: 'dockerfile', label: 'Dockerfile' },
             { id: 'readme',     label: 'README' },
-            { id: 'environment', label: 'Environment' },
+            { id: 'environment', label: 'Conda yml' },
+            { id: 'env-manager', label: '.env Manager' },
             { id: 'volume',     label: 'Volume' },
         ];
 
@@ -1389,10 +1411,118 @@ const ConfigPanel = {
         const env = reactive({ package: '' });
         const vol = reactive({ host_path: '', container_path: '' });
 
+        const customPath = computed(() => route.query.path || '');
+        const dotenvVars = ref({});
+        const containerEnvVars = ref({});
+        const newEnvKey = ref('');
+        const newEnvVal = ref('');
+
         const success = ref('');
         const error   = ref('');
 
+        const registeredEnvPaths = ref([]);
+        const selectedEnvPath = ref('');
+
+        function loadRegisteredEnvPaths() {
+            try {
+                const data = localStorage.getItem('registered_env_paths');
+                registeredEnvPaths.value = data ? JSON.parse(data) : [];
+            } catch (e) {
+                registeredEnvPaths.value = [];
+            }
+        }
+
+        function registerEnvPath(path) {
+            if (!path) return;
+            loadRegisteredEnvPaths();
+            if (!registeredEnvPaths.value.includes(path)) {
+                registeredEnvPaths.value.push(path);
+                localStorage.setItem('registered_env_paths', JSON.stringify(registeredEnvPaths.value));
+            }
+        }
+
+        function unregisterEnvPath(path) {
+            loadRegisteredEnvPaths();
+            registeredEnvPaths.value = registeredEnvPaths.value.filter(p => p !== path);
+            localStorage.setItem('registered_env_paths', JSON.stringify(registeredEnvPaths.value));
+            if (customPath.value === path) {
+                router.push({
+                    path: '/config',
+                    query: {
+                        ...route.query,
+                        path: undefined
+                    }
+                });
+            }
+        }
+
+        function switchEnvFile() {
+            router.push({
+                path: '/config',
+                query: {
+                    ...route.query,
+                    path: selectedEnvPath.value || undefined
+                }
+            });
+        }
+
+        watch(customPath, (newVal) => {
+            selectedEnvPath.value = newVal || '';
+            if (newVal) {
+                registerEnvPath(newVal);
+            }
+            loadEnvVars();
+        }, { immediate: true });
+
         function clearMessages() { success.value = ''; error.value = ''; }
+
+        async function loadEnvVars() {
+            try {
+                const pathParam = customPath.value ? `?path=${encodeURIComponent(customPath.value)}` : '';
+                const res = await api.get(`/api/sandbox/env${pathParam}`);
+                dotenvVars.value = res.dotenv || {};
+                containerEnvVars.value = res.container_env || {};
+            } catch (_) {}
+        }
+
+        async function deleteEnvVar(key) {
+            if (!confirm(`Are you sure you want to delete variable "${key}"?`)) return;
+            try {
+                const res = await api.post('/api/sandbox/env/delete', {
+                    key: key,
+                    path: customPath.value || null
+                });
+                if (res.ok) {
+                    addToast(`Deleted ${key} successfully.`, 'success');
+                    loadEnvVars();
+                } else {
+                    addToast(`Failed to delete: ${res.error}`, 'error');
+                }
+            } catch (e) {
+                addToast(`Error: ${e.message}`, 'error');
+            }
+        }
+
+        async function saveEnvVar() {
+            if (!newEnvKey.value) return;
+            try {
+                const res = await api.post('/api/sandbox/env/save', {
+                    key: newEnvKey.value,
+                    value: newEnvVal.value,
+                    path: customPath.value || null
+                });
+                if (res.ok) {
+                    addToast(`Saved ${newEnvKey.value} successfully.`, 'success');
+                    newEnvKey.value = '';
+                    newEnvVal.value = '';
+                    loadEnvVars();
+                } else {
+                    addToast(`Failed to save: ${res.error}`, 'error');
+                }
+            } catch (e) {
+                addToast(`Error: ${e.message}`, 'error');
+            }
+        }
 
         async function submitDockerfile() {
             clearMessages();
@@ -1436,11 +1566,32 @@ const ConfigPanel = {
             } catch (e) { error.value = e.message; }
         }
 
+        function goBackToVolumes() {
+            const volIdx = route.query.volIdx;
+            const dir = route.query.dir;
+            if (volIdx !== undefined && dir) {
+                router.push({ path: '/volumes', query: { volIdx, dir } });
+            } else {
+                router.push('/volumes');
+            }
+        }
+
+        onMounted(() => {
+            if (route.query.tab) {
+                activeTab.value = route.query.tab;
+            }
+            loadRegisteredEnvPaths();
+            loadEnvVars();
+        });
+
         return {
             activeTab, tabs,
             df, rm, env, vol,
+            customPath, dotenvVars, containerEnvVars, newEnvKey, newEnvVal,
+            registeredEnvPaths, selectedEnvPath, switchEnvFile, unregisterEnvPath, deleteEnvVar,
             success, error,
-            submitDockerfile, submitReadme, submitEnvironment, submitVolume,
+            submitDockerfile, submitReadme, submitEnvironment, submitVolume, saveEnvVar, loadEnvVars, goBackToVolumes,
+            basename,
         };
     },
     template: `
@@ -1453,7 +1604,7 @@ const ConfigPanel = {
                     :key="tab.id"
                     class="tab-btn"
                     :class="{ active: activeTab === tab.id }"
-                    @click="activeTab = tab.id"
+                    @click="activeTab = tab.id; loadEnvVars()"
                 >{{ tab.label }}</button>
             </div>
 
@@ -1494,6 +1645,94 @@ const ConfigPanel = {
                     <input type="text" v-model="env.package" placeholder="e.g. numpy" class="input-flex" />
                 </div>
                 <button class="btn-primary" @click="submitEnvironment" :disabled="!env.package">Add to environment.yml</button>
+            </div>
+
+            <div v-if="activeTab === 'env-manager'">
+                <!-- Premium registered .env selector bar -->
+                <div style="margin-bottom:16px; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); padding:12px; border-radius:6px; border:1px solid var(--border); gap:12px">
+                    <div style="display:flex; align-items:center; gap:10px; flex-grow:1">
+                        <span style="font-size:13px; font-weight:600; white-space:nowrap">📂 Active .env File:</span>
+                        <select v-model="selectedEnvPath" @change="switchEnvFile" class="input-flex" style="max-width:320px; font-size:13px; padding:4px 8px; height:32px">
+                            <option value="">Workspace Root (.env)</option>
+                            <option v-for="p in registeredEnvPaths" :key="p" :value="p">
+                                {{ basename(p) }} ({{ p }})
+                            </option>
+                        </select>
+                        <button class="btn-sm btn-danger" style="height:32px; padding:4px 10px; display:inline-flex; align-items:center; justify-content:center" v-if="selectedEnvPath" @click="unregisterEnvPath(selectedEnvPath)" title="Remove this file from managed environments list">
+                            Unregister
+                        </button>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px">
+                        <button class="btn-secondary btn-sm" style="height:32px; font-weight:600" @click="goBackToVolumes" v-if="customPath">
+                            ← Back to Files
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-row" style="margin-bottom:14px; gap:10px">
+                    <input type="text" v-model="newEnvKey" placeholder="KEY (e.g. OPENAI_API_KEY)" class="input-flex" style="max-width:260px" />
+                    <input type="text" v-model="newEnvVal" placeholder="VALUE" class="input-flex" />
+                    <button class="btn-primary" @click="saveEnvVar" :disabled="!newEnvKey">💾 Save to .env</button>
+                </div>
+                
+                <div class="process-grid" style="margin-top:14px">
+                    <div class="panel" style="margin-bottom:0">
+                        <h3>Workspace .env variables</h3>
+                        <div class="file-browser-scroll" style="max-height: 280px">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Key</th>
+                                        <th>Value</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(val, key) in dotenvVars" :key="key">
+                                        <td><code>{{ key }}</code></td>
+                                        <td class="muted" style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap" :title="val">
+                                            {{ val }}
+                                        </td>
+                                        <td>
+                                            <div style="display:flex; gap:6px">
+                                                <button class="btn-sm btn-primary" style="padding:1px 8px; font-size:11px" @click="newEnvKey = key; newEnvVal = val">edit</button>
+                                                <button class="btn-sm btn-danger" style="padding:1px 8px; font-size:11px; margin-left:0" @click="deleteEnvVar(key)">delete</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="!Object.keys(dotenvVars).length">
+                                        <td colspan="3" class="muted hint" style="text-align:center; padding:12px">No workspace variables found in .env.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="panel" style="margin-bottom:0">
+                        <h3>Active Container runtime env</h3>
+                        <div class="file-browser-scroll" style="max-height: 280px">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Key</th>
+                                        <th>Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(val, key) in containerEnvVars" :key="key">
+                                        <td><code>{{ key }}</code></td>
+                                        <td class="muted" style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap" :title="val">
+                                            {{ val }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="hint" style="margin-top:12px">
+                    ⚡ Saving a variable writes it directly to the <code>{{ customPath ? basename(customPath) : '.env' }}</code> file. To apply changes to the active container, please restart the sandbox.
+                </div>
             </div>
 
             <div v-if="activeTab === 'volume'">

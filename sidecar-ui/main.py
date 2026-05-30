@@ -64,6 +64,12 @@ class KillProcessBody(BaseModel):
 class EnvSaveBody(BaseModel):
     key: str
     value: str
+    path: Optional[str] = None
+
+
+class EnvDeleteBody(BaseModel):
+    key: str
+    path: Optional[str] = None
 
 
 class SQLiteQueryBody(BaseModel):
@@ -319,13 +325,18 @@ def kill_process_route(body: KillProcessBody) -> dict:
 
 
 @app.get("/api/sandbox/env")
-def get_env_route() -> dict:
-    return docker_bridge.get_env_vars()
+def get_env_route(path: Optional[str] = Query(default=None)) -> dict:
+    return docker_bridge.get_env_vars(path)
 
 
 @app.post("/api/sandbox/env/save")
 def save_env_route(body: EnvSaveBody) -> dict:
-    return docker_bridge.save_dotenv_var(body.key, body.value)
+    return docker_bridge.save_dotenv_var(body.key, body.value, body.path)
+
+
+@app.post("/api/sandbox/env/delete")
+def delete_env_route(body: EnvDeleteBody) -> dict:
+    return docker_bridge.delete_dotenv_var(body.key, body.path)
 
 
 @app.get("/api/sandbox/ports")

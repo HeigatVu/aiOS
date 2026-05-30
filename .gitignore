@@ -6,17 +6,24 @@ persistent/*
 
 # Exclude heavy audio datasets and large binary archives
 data/*
-my-data/*
-!data/.gitkeep
-!my-data/.gitkeep
 
-# Exclude AI agent-generated outputs and results
-outputs/*
-!outputs/.gitkeep
+# Allow tracking the empty directory structures of sandbox-data and its subfolders
+!sandbox-data/
+!sandbox-data/my-data/
+!sandbox-data/outputs/
+!sandbox-data/working-space/
 
-# Exclude user working-space scripts and codes (only track the directory)
-working-space/*
-!working-space/.gitkeep
+# Ignore all actual folder contents
+sandbox-data/*
+sandbox-data/my-data/*
+sandbox-data/outputs/*
+sandbox-data/working-space/*
+
+# Unignore the .gitkeep files so git tracks the empty shell directories
+!sandbox-data/.gitkeep
+!sandbox-data/my-data/.gitkeep
+!sandbox-data/outputs/.gitkeep
+!sandbox-data/working-space/.gitkeep
 
 
 # --- GENERAL EXCLUSIONS ---

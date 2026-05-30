@@ -518,7 +518,7 @@ def kill_process(pid: str) -> dict:
         return {"ok": False, "error": str(e)}
 
 
-def get_env_vars() -> dict:
+def get_env_vars(path: Optional[str] = None) -> dict:
     """Get active container environments and local .env keys."""
     client = get_docker_client()
     container_env = {}
@@ -537,18 +537,26 @@ def get_env_vars() -> dict:
 
     import volumes
     dots_env = {}
-    env_file_path = os.path.join(volumes.WORKSPACE_DIR, ".env")
-    if os.path.exists(env_file_path):
-        try:
-            with open(env_file_path, "r") as f:
-                for line in f:
-                    line = line.strip()
-                    if not line or line.startswith("#") or "=" not in line:
-                        continue
-                    k, v = line.split("=", 1)
-                    dots_env[k.strip()] = v.strip().strip('"').strip("'")
-        except Exception:
-            pass
+    env_file_path = path if path else os.path.join(volumes.WORKSPACE_DIR, ".env")
+    
+    try:
+        if path:
+            content = read_file_in_container(path)
+        else:
+            if os.path.exists(env_file_path):
+                with open(env_file_path, "r") as f:
+                    content = f.read()
+            else:
+                content = ""
+                
+        for line in content.splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            dots_env[k.strip()] = v.strip().strip('"').strip("'")
+    except Exception:
+        pass
 
     return {
         "container_env": container_env,
@@ -556,19 +564,26 @@ def get_env_vars() -> dict:
     }
 
 
-def save_dotenv_var(key: str, value: str) -> dict:
-    """Save an environment variable to the workspace's .env file."""
+def save_dotenv_var(key: str, value: str, path: Optional[str] = None) -> dict:
+    """Save an environment variable to a specific .env file in container or workspace."""
     import volumes
-    env_file_path = os.path.join(volumes.WORKSPACE_DIR, ".env")
+    env_file_path = path if path else os.path.join(volumes.WORKSPACE_DIR, ".env")
+    
     lines = []
     found = False
-    if os.path.exists(env_file_path):
-        try:
-            with open(env_file_path, "r") as f:
-                lines = f.readlines()
-        except Exception as e:
-            return {"ok": False, "error": f"Failed to read .env: {str(e)}"}
-            
+    try:
+        if path:
+            content = read_file_in_container(path)
+        else:
+            if os.path.exists(env_file_path):
+                with open(env_file_path, "r") as f:
+                    content = f.read()
+            else:
+                content = ""
+        lines = content.splitlines(keepends=True)
+    except Exception:
+        lines = []
+        
     new_lines = []
     for line in lines:
         stripped = line.strip()
@@ -577,7 +592,8 @@ def save_dotenv_var(key: str, value: str) -> dict:
             continue
         k, v = stripped.split("=", 1)
         if k.strip() == key:
-            new_lines.append(f"{key}={value}\n")
+            suffix = "\r\n" if line.endswith("\r\n") else "\n"
+            new_lines.append(f"{key}={value}{suffix}")
             found = True
         else:
             new_lines.append(line)
@@ -586,11 +602,61 @@ def save_dotenv_var(key: str, value: str) -> dict:
         new_lines.append(f"{key}={value}\n")
         
     try:
-        with open(env_file_path, "w") as f:
-            f.writelines(new_lines)
+        new_content = "".join(new_lines)
+        if path:
+            write_file_in_container(path, new_content)
+        else:
+            with open(env_file_path, "w") as f:
+                f.write(new_content)
         return {"ok": True}
     except Exception as e:
         return {"ok": False, "error": f"Failed to write .env: {str(e)}"}
+
+
+def delete_dotenv_var(key: str, path: Optional[str] = None) -> dict:
+    """Delete an environment variable from a specific .env file in container or workspace."""
+    import volumes
+    env_file_path = path if path else os.path.join(volumes.WORKSPACE_DIR, ".env")
+    
+    lines = []
+    try:
+        if path:
+            content = read_file_in_container(path)
+        else:
+            if os.path.exists(env_file_path):
+                with open(env_file_path, "r") as f:
+                    content = f.read()
+            else:
+                content = ""
+        lines = content.splitlines(keepends=True)
+    except Exception:
+        lines = []
+        
+    new_lines = []
+    found = False
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("#") or "=" not in stripped:
+            new_lines.append(line)
+            continue
+        k, v = stripped.split("=", 1)
+        if k.strip() == key:
+            found = True
+            continue  # skip writing the line to delete it
+        else:
+            new_lines.append(line)
+            
+    try:
+        new_content = "".join(new_lines)
+        if path:
+            write_file_in_container(path, new_content)
+        else:
+            with open(env_file_path, "w") as f:
+                f.write(new_content)
+        return {"ok": True}
+    except Exception as e:
+        return {"ok": False, "error": f"Failed to delete .env key: {str(e)}"}
+
 
 
 def get_listening_ports() -> list[dict]:
