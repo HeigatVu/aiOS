@@ -33,3 +33,7 @@ how-to-use.md
 agent-configs/*
 
 prompt-to-fix.md
+
+.claude
+.antigravity
+.antigravitycli
