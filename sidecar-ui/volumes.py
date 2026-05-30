@@ -113,3 +113,23 @@ def update_volume_mode(index: int, new_mode: str) -> None:
 
     with open(DOCKER_COMPOSE_PATH, "w") as f:
         f.write(new_content)
+
+
+def delete_volume(index: int) -> None:
+    """
+    Remove the volume at the given index from docker-compose.yml.
+    Uses raw line removal to preserve comments and formatting.
+    """
+    vol_list = list_volumes()
+    if index < 0 or index >= len(vol_list):
+        raise IndexError(f"Volume index {index} out of range")
+
+    raw = vol_list[index]["raw"]
+
+    with open(DOCKER_COMPOSE_PATH, "r") as f:
+        lines = f.readlines()
+
+    new_lines = [line for line in lines if raw not in line]
+
+    with open(DOCKER_COMPOSE_PATH, "w") as f:
+        f.writelines(new_lines)

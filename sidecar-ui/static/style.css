@@ -205,6 +205,10 @@ body {
     border-left-color: var(--err);
 }
 
+.card-info {
+    border-left-color: var(--accent);
+}
+
 .card-label {
     font-size: 11px;
     text-transform: uppercase;
@@ -221,6 +225,58 @@ body {
 
 .card-ok .card-value { color: var(--ok); }
 .card-err .card-value { color: var(--err); }
+
+.stat-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.stat-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.4s ease;
+}
+
+.stat-bar-fill.ok   { background: var(--ok); }
+.stat-bar-fill.warn { background: var(--warn); }
+.stat-bar-fill.err  { background: var(--err); }
+
+.btn-danger {
+    background: rgba(244, 71, 71, 0.12);
+    color: var(--err);
+    border: 1px solid rgba(244, 71, 71, 0.3);
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 12px;
+    font-family: inherit;
+    padding: 3px 8px;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: rgba(244, 71, 71, 0.28);
+}
+
+.btn-confirm {
+    background: rgba(244, 71, 71, 0.7);
+    color: #fff;
+    border: 1px solid rgba(244, 71, 71, 0.8);
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 12px;
+    font-family: inherit;
+    padding: 3px 8px;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+
+.btn-confirm:hover:not(:disabled) {
+    background: rgba(244, 71, 71, 0.9);
+}
 
 /* =========================================================
    Forms
@@ -734,4 +790,378 @@ code {
 
 ::-webkit-scrollbar-thumb:hover {
     background: var(--muted);
+}
+
+/* =========================================================
+   Light Theme variables
+   ========================================================= */
+
+body.theme-light {
+    --bg: #f5f6f8;
+    --sidebar-bg: #e4e7eb;
+    --panel-bg: #ffffff;
+    --surface: #f8fafc;
+    --border: #d1d5db;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --ok: #10b981;
+    --err: #ef4444;
+    --warn: #f59e0b;
+}
+
+body.theme-light .status-bar {
+    background: var(--accent);
+}
+
+body.theme-light .status-bar .logo {
+    color: #ffffff;
+}
+
+body.theme-light .nav-item.active {
+    background: rgba(37, 99, 235, 0.08);
+    border-left-color: var(--accent);
+    color: var(--accent);
+}
+
+body.theme-light .nav-item {
+    color: var(--text);
+}
+
+body.theme-light .nav-item:hover {
+    background: rgba(37, 99, 235, 0.04);
+}
+
+body.theme-light .terminal-output {
+    background: #1e1e1e;
+}
+
+body.theme-light .terminal-output pre {
+    color: #e0e0e0;
+}
+
+/* =========================================================
+   Toast Notifications
+   ========================================================= */
+
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.toast {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    color: var(--text);
+    padding: 12px 18px;
+    border-radius: var(--radius);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-width: 280px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    pointer-events: auto;
+}
+
+.toast.success { border-left-color: var(--ok); }
+.toast.error { border-left-color: var(--err); }
+.toast.warn { border-left-color: var(--warn); }
+
+.toast-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--muted);
+    padding-left: 10px;
+}
+
+.toast-close:hover {
+    color: var(--text);
+}
+
+@keyframes slideIn {
+    from { transform: translateX(120%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+/* =========================================================
+   CodeMirror Custom Layout
+   ========================================================= */
+
+.editor-container {
+    display: flex;
+    flex-direction: column;
+    height: 520px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--panel-bg);
+}
+
+.editor-header {
+    background: var(--sidebar-bg);
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+}
+
+.editor-header .file-path {
+    font-family: var(--font-mono);
+    color: var(--accent);
+}
+
+.CodeMirror {
+    flex: 1;
+    height: 100% !important;
+    font-family: var(--font-mono) !important;
+    font-size: 13px !important;
+}
+
+body.theme-light .CodeMirror {
+    background: #ffffff !important;
+    color: #1f2937 !important;
+}
+
+body.theme-light .CodeMirror-gutters {
+    background: #f3f4f6 !important;
+    border-right: 1px solid var(--border) !important;
+}
+
+/* =========================================================
+   Theme Toggle and UI Polish
+   ========================================================= */
+
+.theme-toggle-container {
+    margin-top: auto;
+    padding: 16px;
+    border-top: 1px solid var(--border);
+}
+
+.btn-theme-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.15s;
+}
+
+.btn-theme-toggle:hover {
+    background: var(--border);
+}
+
+/* =========================================================
+   Process and Port Visuals
+   ========================================================= */
+
+.processes-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.process-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 768px) {
+    .process-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.port-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: rgba(37, 99, 235, 0.1);
+    color: var(--accent);
+    border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+.pulse-alarm {
+    animation: alarm-pulse 2s infinite;
+}
+
+@keyframes alarm-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* =========================================================
+   SQLite Database Viewer Layout
+   ========================================================= */
+
+.db-viewer-layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 16px;
+    min-height: 480px;
+}
+
+@media (max-width: 768px) {
+    .db-viewer-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.db-sidebar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+}
+
+.db-table-list {
+    list-style: none;
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.db-table-item {
+    padding: 6px 10px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.1s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.db-table-item:hover {
+    background: var(--border);
+}
+
+.db-table-item.active {
+    background: var(--accent);
+    color: #ffffff;
+}
+
+.sql-editor-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sql-textarea {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 10px;
+    border-radius: var(--radius);
+    resize: vertical;
+}
+
+/* =========================================================
+   Terminal Snippets Side Panel
+   ========================================================= */
+
+.terminal-with-snippets {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 16px;
+}
+
+@media (max-width: 900px) {
+    .terminal-with-snippets {
+        grid-template-columns: 1fr;
+    }
+}
+
+.snippets-panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.snippet-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow-y: auto;
+    max-height: 380px;
+}
+
+.snippet-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px;
+    cursor: pointer;
+    transition: transform 0.1s, border-color 0.1s;
+}
+
+.snippet-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+}
+
+.snippet-title {
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.snippet-code {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    word-break: break-all;
+    background: rgba(0,0,0,0.1);
+    padding: 2px 4px;
+    border-radius: 2px;
+}
+
+/* File Upload Style */
+.btn-upload-label {
+    display: inline-flex;
+    align-items: center;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 3px 8px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn-upload-label:hover {
+    background: var(--border);
 }

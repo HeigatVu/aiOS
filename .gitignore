@@ -6,7 +6,9 @@ persistent/*
 
 # Exclude heavy audio datasets and large binary archives
 data/*
+my-data/*
 !data/.gitkeep
+!my-data/.gitkeep
 
 # Exclude AI agent-generated outputs and results
 outputs/*

@@ -74,10 +74,31 @@ sidecar-ui/
 
 ## Ideas / things to continue
 
-- [ ] **Restart sandbox button** on Dashboard → POST `/api/sandbox/restart` → `docker restart ai_tui_sandbox`
-- [ ] **Live container logs** in Dashboard → WebSocket tail of `docker logs -f`
-- [ ] **GPU / CPU / RAM usage cards** — read from Docker stats API (`client.containers.get(...).stats(stream=False)`)
-- [ ] **Delete volume entry** in Volumes tab — removes the line from docker-compose.yml
-- [ ] **Terminal history** — persist last N commands in localStorage
-- [ ] **Rebuild image button** — triggers `docker compose build` via the sidecar Docker socket
-- [ ] **Vue Router** — make tabs deep-linkable via URL hash (currently in-memory only)
+- [x] **Restart sandbox button** on Dashboard → POST `/api/sandbox/restart` → `docker restart ai_tui_sandbox`
+- [x] **Live container logs** in Dashboard → WebSocket `/ws/logs` tails `docker logs -f`, toggle on/off
+- [x] **GPU / CPU / RAM usage cards** — CPU + RAM from Docker stats API; GPU via `nvidia-smi` exec (hidden if unavailable)
+- [x] **Delete volume entry** in Volumes tab — click Delete → Confirm? two-step, calls DELETE `/api/volumes/{idx}`
+- [x] **Terminal history** — last 20 commands persisted in localStorage, ↑↓ arrow keys to navigate
+- [x] **Rebuild image button** — streams `docker compose build` output via WebSocket `/ws/rebuild`
+- [x] **Vue Router** — tabs are now deep-linkable via URL hash (`/#/dashboard`, `/#/terminal`, etc.)
+
+### Future Enhancements (Next Batch)
+
+**Developer Experience (DX) & Productivity**
+- [ ] **Web-Based File Editor** — Integrate Monaco Editor or CodeMirror into a new "Editor" tab for quick script/config edits.
+- [ ] **Snippet Library / Saved Commands** — Save frequently used complex commands with descriptions for one-click execution.
+- [ ] **Environment Variables Manager** — UI for managing `.env` files or container environment variables (add, edit, hide/show secrets).
+
+**Container State & Debugging**
+- [ ] **Process Explorer (Task Manager)** — Run `ps aux` or `top` inside the sandbox and display in a data table, with a "Kill Process" button.
+- [ ] **Network & Port Manager** — Show listening ports (`netstat` / `ss`) and provide a way to dynamically expose new ports.
+- [ ] **Log Filtering & Search** — Enhance live logs with a search bar (regex) and log level filtering (Error, Warn, Info).
+
+**File & Data Management**
+- [ ] **File Upload/Download** — In the Volumes tab, add ability to upload/download files directly from host to container via the browser.
+- [ ] **SQLite / DB Viewer** — Built-in SQLite table viewer to inspect database files without downloading them.
+
+**UI / UX Polish**
+- [ ] **Toast Notifications** — Non-blocking toasts in the corner for long-running commands (image rebuilds, heavy installs).
+- [ ] **Theme Toggle** — Add a Light/Dark mode toggle, persisted in localStorage.
+- [ ] **System Resource Alarms** — Visual indicators (orange/red) when the container maxes out its allocated CPU/RAM/GPU resources.

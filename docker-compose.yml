@@ -20,7 +20,7 @@ services:
     volumes:
       # 1. Code & Data
       - ./working-space:/workspace:rw,z
-      - ./data:/data:ro,z
+      - ./my-data:/my-data:ro,z
       - ./outputs:/outputs:rw,z
       - ./config-file:/config-file:rw,z
 

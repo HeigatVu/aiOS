@@ -5,10 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>aiOS Control Panel</title>
     <link rel="stylesheet" href="/static/style.css">
+    <!-- CodeMirror 5 CDN CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/codemirror@5.65.12/lib/codemirror.css">
+    <link rel="stylesheet" href="https://unpkg.com/codemirror@5.65.12/theme/material-darker.css">
 </head>
 <body>
     <div id="app"></div>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://unpkg.com/vue-router@4/dist/vue-router.global.prod.js"></script>
+    <!-- CodeMirror 5 CDN JS & Modes -->
+    <script src="https://unpkg.com/codemirror@5.65.12/lib/codemirror.js"></script>
+    <script src="https://unpkg.com/codemirror@5.65.12/mode/python/python.js"></script>
+    <script src="https://unpkg.com/codemirror@5.65.12/mode/javascript/javascript.js"></script>
+    <script src="https://unpkg.com/codemirror@5.65.12/mode/shell/shell.js"></script>
+    <script src="https://unpkg.com/codemirror@5.65.12/mode/markdown/markdown.js"></script>
+    <script src="https://unpkg.com/codemirror@5.65.12/mode/yaml/yaml.js"></script>
     <script src="/static/app.js"></script>
 </body>
 </html>

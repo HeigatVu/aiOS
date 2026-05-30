@@ -1,6 +1,7 @@
 'use strict';
 
-const { createApp, ref, reactive, computed, onMounted, nextTick } = Vue;
+const { createApp, ref, reactive, computed, onMounted, onUnmounted, nextTick, inject, provide } = Vue;
+const { createRouter, createWebHashHistory } = VueRouter;
 
 // ---------------------------------------------------------------------------
 // API helpers
@@ -19,27 +20,45 @@ async function apiFetch(path, opts = {}) {
 }
 
 const api = {
-    get: (path) => apiFetch(path),
-    post: (path, body) => apiFetch(path, { method: 'POST', body: JSON.stringify(body) }),
+    get:    (path)       => apiFetch(path),
+    post:   (path, body) => apiFetch(path, { method: 'POST',   body: JSON.stringify(body) }),
+    delete: (path)       => apiFetch(path, { method: 'DELETE' }),
 };
 
 // ---------------------------------------------------------------------------
-// WebSocket exec helper
+// WebSocket helpers
 // ---------------------------------------------------------------------------
 
-function streamExec(cmd, { onChunk, onDone, onError }) {
+function streamWs(url, { onOpen, onChunk, onDone, onError } = {}) {
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${proto}//${location.host}/ws/exec`);
-    ws.onopen = () => ws.send(cmd);
-    ws.onmessage = (e) => onChunk(e.data);
-    ws.onerror = () => onError?.('WebSocket error');
-    ws.onclose = () => onDone?.();
+    const ws = new WebSocket(`${proto}//${location.host}${url}`);
+    ws.onopen    = () => onOpen?.(ws);
+    ws.onmessage = (e) => onChunk?.(e.data);
+    ws.onerror   = () => onError?.('WebSocket error');
+    ws.onclose   = () => onDone?.();
     return () => ws.close();
+}
+
+function streamExec(cmd, { onChunk, onDone, onError }) {
+    return streamWs('/ws/exec', {
+        onOpen: (ws) => ws.send(cmd),
+        onChunk, onDone, onError,
+    });
 }
 
 // ---------------------------------------------------------------------------
 // Utility
 // ---------------------------------------------------------------------------
+
+// Global Toasts State
+const toasts = ref([]);
+function addToast(message, type = 'info') {
+    const id = Date.now();
+    toasts.value.push({ id, message, type });
+    setTimeout(() => {
+        toasts.value = toasts.value.filter(t => t.id !== id);
+    }, 4000);
+}
 
 function octalToSymbolic(octal) {
     const map = ['---', '--x', '-w-', '-wx', 'r--', 'r-x', 'rw-', 'rwx'];
@@ -56,12 +75,30 @@ function basename(path) {
     return path.split('/').filter(Boolean).pop() || path;
 }
 
+// Terminal history (localStorage)
+const HISTORY_KEY = 'aios_terminal_history';
+const MAX_HISTORY = 20;
+
+function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
+    catch { return []; }
+}
+
+function pushHistory(cmd, current) {
+    const next = [cmd, ...current.filter(c => c !== cmd)].slice(0, MAX_HISTORY);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+    return next;
+}
+
 // ---------------------------------------------------------------------------
 // StatusBar component
 // ---------------------------------------------------------------------------
 
 const StatusBar = {
-    props: ['status'],
+    setup() {
+        const status = inject('status');
+        return { status };
+    },
     template: `
         <div class="status-bar">
             <span class="logo">🤖 aiOS</span>
@@ -86,7 +123,104 @@ const StatusBar = {
 // ---------------------------------------------------------------------------
 
 const DashboardPanel = {
-    props: ['status'],
+    setup() {
+        const status = inject('status');
+        const stats = ref(null);
+        const restarting = ref(false);
+        const restartMsg = ref('');
+        const logsOutput = ref('');
+        const logsRunning = ref(false);
+        const showLogs = ref(false);
+        const rebuildOutput = ref('');
+        const rebuildRunning = ref(false);
+        const showRebuild = ref(false);
+
+        let stopLogs = null;
+        let stopRebuild = null;
+        let statsTimer = null;
+
+        async function loadStats() {
+            try { stats.value = await api.get('/api/sandbox/stats'); } catch (_) {}
+        }
+
+        async function restart() {
+            restarting.value = true;
+            restartMsg.value = '';
+            try {
+                const result = await api.post('/api/sandbox/restart', {});
+                restartMsg.value = result.ok ? '✔ Sandbox restarted.' : `Failed: ${result.error}`;
+            } catch (e) {
+                restartMsg.value = `Error: ${e.message}`;
+            } finally {
+                restarting.value = false;
+            }
+        }
+
+        function toggleLogs() {
+            if (logsRunning.value) {
+                stopLogs?.();
+                stopLogs = null;
+                logsRunning.value = false;
+                return;
+            }
+            logsOutput.value = '';
+            showLogs.value = true;
+            logsRunning.value = true;
+            stopLogs = streamWs('/ws/logs', {
+                onChunk: (chunk) => {
+                    logsOutput.value += chunk;
+                    nextTick(() => {
+                        const el = document.getElementById('logs-pre');
+                        if (el) el.parentElement.scrollTop = el.parentElement.scrollHeight;
+                    });
+                },
+                onDone: () => { logsRunning.value = false; },
+                onError: (e) => { logsOutput.value += `\nError: ${e}\n`; logsRunning.value = false; },
+            });
+        }
+
+        function rebuild() {
+            if (rebuildRunning.value) return;
+            rebuildOutput.value = '';
+            showRebuild.value = true;
+            rebuildRunning.value = true;
+            stopRebuild = streamWs('/ws/rebuild', {
+                onChunk: (chunk) => {
+                    rebuildOutput.value += chunk;
+                    nextTick(() => {
+                        const el = document.getElementById('rebuild-pre');
+                        if (el) el.parentElement.scrollTop = el.parentElement.scrollHeight;
+                    });
+                },
+                onDone: () => { rebuildRunning.value = false; },
+                onError: (e) => { rebuildOutput.value += `\nError: ${e}\n`; rebuildRunning.value = false; },
+            });
+        }
+
+        function statBarClass(pct) {
+            if (pct > 85) return 'err';
+            if (pct > 60) return 'warn';
+            return 'ok';
+        }
+
+        onMounted(() => {
+            loadStats();
+            statsTimer = setInterval(loadStats, 5000);
+        });
+
+        onUnmounted(() => {
+            clearInterval(statsTimer);
+            stopLogs?.();
+            stopRebuild?.();
+        });
+
+        return {
+            status, stats, restarting, restartMsg,
+            logsOutput, logsRunning, showLogs,
+            rebuildOutput, rebuildRunning, showRebuild,
+            restart, toggleLogs, rebuild, statBarClass,
+        };
+    },
     template: `
         <div>
             <div class="panel">
@@ -100,16 +234,78 @@ const DashboardPanel = {
                         <div class="card-label">Sandbox</div>
                         <div class="card-value">{{ status.sandbox_status }}</div>
                     </div>
+                    <div class="card card-info" v-if="stats && !stats.is_mock">
+                        <div class="card-label">CPU</div>
+                        <div class="card-value">{{ stats.cpu_percent }}%</div>
+                        <div class="stat-bar">
+                            <div class="stat-bar-fill"
+                                :class="statBarClass(stats.cpu_percent)"
+                                :style="{ width: Math.min(stats.cpu_percent, 100) + '%' }"
+                            ></div>
+                        </div>
+                    </div>
+                    <div class="card card-info" v-if="stats && !stats.is_mock">
+                        <div class="card-label">RAM — {{ stats.mem_usage_mb }} / {{ stats.mem_limit_mb }} MB</div>
+                        <div class="card-value">{{ stats.mem_percent }}%</div>
+                        <div class="stat-bar">
+                            <div class="stat-bar-fill"
+                                :class="statBarClass(stats.mem_percent)"
+                                :style="{ width: Math.min(stats.mem_percent, 100) + '%' }"
+                            ></div>
+                        </div>
+                    </div>
+                    <div class="card card-info" v-if="stats && stats.gpu">
+                        <div class="card-label">GPU — {{ stats.gpu.name }}</div>
+                        <div class="card-value">{{ stats.gpu.utilization }}% &nbsp;<span class="muted" style="font-size:11px">{{ stats.gpu.mem_used_mb }}/{{ stats.gpu.mem_total_mb }} MB</span></div>
+                        <div class="stat-bar">
+                            <div class="stat-bar-fill"
+                                :class="statBarClass(stats.gpu.utilization)"
+                                :style="{ width: Math.min(stats.gpu.utilization, 100) + '%' }"
+                            ></div>
+                        </div>
+                    </div>
                 </div>
-                <div v-else class="muted">Loading status...</div>
-                <div class="hint">
-                    To restart the sandbox, run <code>make restart</code> in the project root.<br>
-                    To fix configuration issues, edit <code>config-file/prompt-to-fix.md</code>.
+                <div v-else-if="!status" class="muted">Loading status...</div>
+
+                <div class="form-row" style="margin-top:14px; gap:8px; flex-wrap:wrap">
+                    <button class="btn-secondary" @click="restart" :disabled="restarting">
+                        {{ restarting ? 'Restarting…' : '↺ Restart Sandbox' }}
+                    </button>
+                    <button class="btn-secondary" @click="rebuild" :disabled="rebuildRunning">
+                        {{ rebuildRunning ? 'Building…' : '⚒ Rebuild Image' }}
+                    </button>
+                    <button class="btn-secondary" @click="toggleLogs">
+                        {{ logsRunning ? '■ Stop Logs' : '▶ Live Logs' }}
+                    </button>
                 </div>
+                <div v-if="restartMsg"
+                    :class="restartMsg.startsWith('✔') ? 'success-msg' : 'error-msg'"
+                    style="margin-top:8px"
+                >{{ restartMsg }}</div>
+            </div>
+
+            <div class="panel" v-if="showLogs">
+                <h2>Live Container Logs</h2>
+                <div class="terminal-output">
+                    <pre id="logs-pre" :class="{ 'terminal-cursor': logsRunning }">{{ logsOutput || 'Waiting for log stream…' }}</pre>
+                </div>
+                <button class="btn-sm" @click="logsOutput = ''" style="margin-top:6px">Clear</button>
+            </div>
+
+            <div class="panel" v-if="showRebuild">
+                <h2>Rebuild Output</h2>
+                <div class="terminal-output">
+                    <pre id="rebuild-pre" :class="{ 'terminal-cursor': rebuildRunning }">{{ rebuildOutput || 'Waiting for build output…' }}</pre>
+                </div>
+                <button class="btn-sm" @click="rebuildOutput = ''" style="margin-top:6px">Clear</button>
             </div>
         </div>
     `,
 };
+
+// ---------------------------------------------------------------------------
+// TerminalPanel component
+// ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
 // TerminalPanel component
@@ -125,6 +321,21 @@ const TerminalPanel = {
         const bakeIntoDockerfile = ref(false);
         const saveNote = ref(false);
         const error = ref('');
+        const history = ref(loadHistory());
+        const histIdx = ref(-1);
+        const histDraft = ref('');
+
+        const snippets = ref([
+            { title: "uv install", code: "uv pip install -r requirements.txt" },
+            { title: "pip list", code: "pip list" },
+            { title: "conda env list", code: "conda env list" },
+            { title: "system updates", code: "dnf update -y" },
+            { title: "running processes", code: "ps aux" },
+            { title: "listening ports", code: "ss -tlnp" },
+        ]);
+
+        const newSnipTitle = ref('');
+        const newSnipCode = ref('');
 
         let stopWs = null;
 
@@ -147,6 +358,8 @@ const TerminalPanel = {
             error.value = '';
             output.value = '';
             running.value = true;
+            history.value = pushHistory(cmd, history.value);
+            histIdx.value = -1;
 
             stopWs = streamExec(cmd, {
                 onChunk: (chunk) => {
@@ -162,18 +375,16 @@ const TerminalPanel = {
                     if (bakeIntoDockerfile.value && pkg) {
                         try {
                             await api.post('/api/config/dockerfile', {
-                                package: pkg,
-                                ecosystem: ecosystem.value,
-                                use_sudo: false,
+                                package: pkg, ecosystem: ecosystem.value, use_sudo: false,
                             });
-                        } catch (e) { /* best-effort */ }
+                        } catch (_) {}
                     }
                     if (saveNote.value && pkg) {
                         try {
                             await api.post('/api/config/readme', {
                                 note: `Installed ${pkg} via ${ecosystem.value}`,
                             });
-                        } catch (e) { /* best-effort */ }
+                        } catch (_) {}
                     }
                 },
                 onError: (msg) => {
@@ -183,42 +394,136 @@ const TerminalPanel = {
             });
         }
 
-        function clearOutput() {
-            output.value = '';
+        function clearOutput() { output.value = ''; }
+
+        function onRawKeydown(e) {
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (histIdx.value === -1) histDraft.value = rawCmd.value;
+                if (histIdx.value < history.value.length - 1) {
+                    histIdx.value++;
+                    rawCmd.value = history.value[histIdx.value];
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (histIdx.value > 0) {
+                    histIdx.value--;
+                    rawCmd.value = history.value[histIdx.value];
+                } else if (histIdx.value === 0) {
+                    histIdx.value = -1;
+                    rawCmd.value = histDraft.value;
+                }
+            }
         }
 
-        return { ecosystem, pkgName, rawCmd, output, running, bakeIntoDockerfile, saveNote, error, run, clearOutput };
+        function loadCustomSnippets() {
+            try {
+                const stored = JSON.parse(localStorage.getItem('aios_custom_snippets') || '[]');
+                snippets.value = [...snippets.value.filter(s => !s.custom), ...stored.map(s => ({ ...s, custom: true }))];
+            } catch (_) {}
+        }
+
+        function addCustomSnippet() {
+            if (!newSnipTitle.value || !newSnipCode.value) return;
+            const newSnip = {
+                title: newSnipTitle.value,
+                code: newSnipCode.value,
+                custom: true
+            };
+            const stored = JSON.parse(localStorage.getItem('aios_custom_snippets') || '[]');
+            stored.push(newSnip);
+            localStorage.setItem('aios_custom_snippets', JSON.stringify(stored));
+            newSnipTitle.value = '';
+            newSnipCode.value = '';
+            loadCustomSnippets();
+            addToast('Custom snippet saved.', 'success');
+        }
+
+        function deleteSnippet(snip) {
+            const stored = JSON.parse(localStorage.getItem('aios_custom_snippets') || '[]');
+            const next = stored.filter(s => s.title !== snip.title || s.code !== snip.code);
+            localStorage.setItem('aios_custom_snippets', JSON.stringify(next));
+            loadCustomSnippets();
+            addToast('Snippet removed.', 'info');
+        }
+
+        function useSnippet(code) {
+            rawCmd.value = code;
+            addToast('Snippet loaded in prompt.', 'success');
+        }
+
+        loadCustomSnippets();
+
+        return {
+            ecosystem, pkgName, rawCmd, output, running,
+            bakeIntoDockerfile, saveNote, error,
+            history, histIdx,
+            snippets, newSnipTitle, newSnipCode,
+            run, clearOutput, onRawKeydown,
+            addCustomSnippet, deleteSnippet, useSnippet,
+        };
     },
     template: `
-        <div class="panel">
-            <h2>Terminal</h2>
-            <div class="form-row">
-                <select v-model="ecosystem" class="input-flex" style="max-width:110px">
-                    <option value="uv">uv pip</option>
-                    <option value="conda">conda</option>
-                    <option value="dnf">dnf</option>
-                    <option value="npm">npm</option>
-                </select>
-                <input type="text" v-model="pkgName" placeholder="package name" class="input-flex" @keyup.enter="run" />
-                <button class="btn-primary" @click="run" :disabled="running">
-                    {{ running ? 'Running…' : 'Install' }}
-                </button>
+        <div class="terminal-with-snippets">
+            <div class="panel">
+                <h2>Terminal</h2>
+                <div class="form-row">
+                    <select v-model="ecosystem" class="input-flex" style="max-width:110px">
+                        <option value="uv">uv pip</option>
+                        <option value="conda">conda</option>
+                        <option value="dnf">dnf</option>
+                        <option value="npm">npm</option>
+                    </select>
+                    <input type="text" v-model="pkgName" placeholder="package name" class="input-flex" @keyup.enter="run" />
+                    <button class="btn-primary" @click="run" :disabled="running">
+                        {{ running ? 'Running…' : 'Install' }}
+                    </button>
+                </div>
+                <div class="form-row">
+                    <input
+                        type="text"
+                        v-model="rawCmd"
+                        placeholder="Or type a raw command… (↑↓ history)"
+                        class="input-flex"
+                        @keyup.enter="run"
+                        @keydown="onRawKeydown"
+                    />
+                    <button class="btn-secondary" @click="run" :disabled="running">Run</button>
+                </div>
+                <div v-if="history.length" class="hint" style="margin-bottom:8px">
+                    ↑↓ to navigate {{ history.length }} saved command{{ history.length === 1 ? '' : 's' }}
+                </div>
+                <label class="checkbox-row">
+                    <input type="checkbox" v-model="bakeIntoDockerfile" /> Bake into Dockerfile
+                </label>
+                <label class="checkbox-row">
+                    <input type="checkbox" v-model="saveNote" /> Save note to README
+                </label>
+                <div v-if="error" class="error-msg">{{ error }}</div>
+                <div class="terminal-output">
+                    <pre id="terminal-pre-output" :class="{ 'terminal-cursor': running }">{{ output || (running ? '' : 'Output will appear here…') }}</pre>
+                </div>
+                <button class="btn-sm" @click="clearOutput" :disabled="running">Clear</button>
             </div>
-            <div class="form-row">
-                <input type="text" v-model="rawCmd" placeholder="Or type a raw command…" class="input-flex" @keyup.enter="run" />
-                <button class="btn-secondary" @click="run" :disabled="running">Run</button>
+
+            <div class="snippets-panel">
+                <h3>Snippet Library</h3>
+                <div class="snippet-list">
+                    <div v-for="snip in snippets" :key="snip.title" class="snippet-card" @click="useSnippet(snip.code)">
+                        <div style="display:flex; justify-content:space-between; align-items:center">
+                            <span class="snippet-title">{{ snip.title }}</span>
+                            <button v-if="snip.custom" class="btn-sm" style="padding:1px 4px; font-size:10px" @click.stop="deleteSnippet(snip)">✕</button>
+                        </div>
+                        <div class="snippet-code">{{ snip.code }}</div>
+                    </div>
+                </div>
+                <div style="border-top: 1px solid var(--border); padding-top:10px; margin-top:5px">
+                    <h4 style="font-size:11px; margin-bottom:6px" class="muted">Add Custom Snippet</h4>
+                    <input type="text" v-model="newSnipTitle" placeholder="Snippet name..." style="width:100%; margin-bottom:6px" />
+                    <input type="text" v-model="newSnipCode" placeholder="Command..." style="width:100%; margin-bottom:6px" />
+                    <button class="btn-secondary btn-sm" style="width:100%" @click="addCustomSnippet" :disabled="!newSnipTitle || !newSnipCode">Save Snippet</button>
+                </div>
             </div>
-            <label class="checkbox-row">
-                <input type="checkbox" v-model="bakeIntoDockerfile" /> Bake into Dockerfile
-            </label>
-            <label class="checkbox-row">
-                <input type="checkbox" v-model="saveNote" /> Save note to README
-            </label>
-            <div v-if="error" class="error-msg">{{ error }}</div>
-            <div class="terminal-output">
-                <pre id="terminal-pre-output" :class="{ 'terminal-cursor': running }">{{ output || (running ? '' : 'Output will appear here…') }}</pre>
-            </div>
-            <button class="btn-sm" @click="clearOutput" :disabled="running">Clear</button>
         </div>
     `,
 };
@@ -229,10 +534,12 @@ const TerminalPanel = {
 
 const VolumePanel = {
     setup() {
-        const view = ref('volumes');       // 'volumes' | 'browser'
+        const route = VueRouter.useRoute();
+        const router = VueRouter.useRouter();
+        const view = ref('volumes');
         const volumes = ref([]);
         const browseIdx = ref(null);
-        const browseVol = ref(null);       // the vol object currently being browsed
+        const browseVol = ref(null);
         const files = ref([]);
         const currentPath = ref('');
         const pathHistory = ref([]);
@@ -241,12 +548,36 @@ const VolumePanel = {
         const chmodMode = ref('');
         const error = ref('');
         const modeMsg = ref('');
+        const deleteConfirm = ref(null);
 
         async function loadVolumes() {
             try {
                 volumes.value = await api.get('/api/volumes');
-                // keep browseVol in sync if we're in browser view
-                if (browseVol.value !== null) {
+                const volIdx = route.query.volIdx;
+                const dir = route.query.dir;
+                if (volIdx !== undefined && dir) {
+                    const idx = parseInt(volIdx, 10);
+                    const vol = volumes.value.find(v => v.index === idx);
+                    if (vol) {
+                        browseIdx.value = vol.index;
+                        browseVol.value = vol;
+                        currentPath.value = dir;
+                        const root = vol.container_path;
+                        if (dir.startsWith(root) && dir !== root) {
+                            const relative = dir.substring(root.length).split('/').filter(Boolean);
+                            let temp = root;
+                            pathHistory.value = [root];
+                            for (let i = 0; i < relative.length - 1; i++) {
+                                temp += '/' + relative[i];
+                                pathHistory.value.push(temp);
+                            }
+                        } else {
+                            pathHistory.value = [];
+                        }
+                        view.value = 'browser';
+                        await loadFiles(vol.index, dir);
+                    }
+                } else if (browseVol.value !== null) {
                     browseVol.value = volumes.value.find(v => v.index === browseIdx.value) || null;
                 }
             } catch (e) {
@@ -310,7 +641,6 @@ const VolumePanel = {
             await loadFiles(browseIdx.value, path);
         }
 
-        // breadcrumb: [Volumes] / seg / seg / ...
         const breadcrumbs = computed(() => {
             const segs = [{ label: 'Volumes', path: null }];
             if (!currentPath.value) return segs;
@@ -341,6 +671,20 @@ const VolumePanel = {
             }
         }
 
+        async function deleteVolume(vol) {
+            if (deleteConfirm.value !== vol.index) {
+                deleteConfirm.value = vol.index;
+                return;
+            }
+            deleteConfirm.value = null;
+            try {
+                await api.delete(`/api/volumes/${vol.index}`);
+                await loadVolumes();
+            } catch (e) {
+                error.value = `Delete failed: ${e.message}`;
+            }
+        }
+
         function isWritable(file) {
             return Boolean(parseInt(file.permissions, 8) & 0o200);
         }
@@ -350,9 +694,7 @@ const VolumePanel = {
         }
 
         async function toggleHide(file) {
-            const newMode = isHidden(file)
-                ? (file.is_dir ? '755' : '644')
-                : '000';
+            const newMode = isHidden(file) ? (file.is_dir ? '755' : '644') : '000';
             try {
                 await api.post('/api/volumes/chmod', { path: file.name, mode: newMode });
                 await loadFiles(browseIdx.value, currentPath.value);
@@ -393,14 +735,80 @@ const VolumePanel = {
             }
         }
 
+        function isEditable(file) {
+            if (file.is_dir) return false;
+            const ext = file.name.split('.').pop().toLowerCase();
+            return ['txt', 'py', 'js', 'json', 'sh', 'md', 'yml', 'yaml', 'css', 'html'].includes(ext);
+        }
+
+        function isDatabase(file) {
+            if (file.is_dir) return false;
+            const ext = file.name.split('.').pop().toLowerCase();
+            return ['db', 'sqlite', 'sqlite3'].includes(ext);
+        }
+
+        function editFile(file) {
+            router.push({ 
+                path: '/editor', 
+                query: { 
+                    path: file.name,
+                    volIdx: browseIdx.value,
+                    dir: currentPath.value
+                } 
+            });
+        }
+
+        function inspectDb(file) {
+            router.push({ 
+                path: '/db-viewer', 
+                query: { 
+                    path: file.name,
+                    volIdx: browseIdx.value,
+                    dir: currentPath.value
+                } 
+            });
+        }
+
+        function downloadFile(file) {
+            window.open(`/api/volumes/download?path=${encodeURIComponent(file.name)}`, '_blank');
+            addToast(`Download of ${basename(file.name)} initiated.`, 'success');
+        }
+
+        async function uploadFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('path', `${currentPath.value}/${file.name}`);
+            
+            try {
+                const res = await fetch('/api/volumes/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    addToast(`File ${file.name} uploaded successfully.`, 'success');
+                    await loadFiles(browseIdx.value, currentPath.value);
+                } else {
+                    addToast(`Upload failed: ${data.detail}`, 'error');
+                }
+            } catch (e) {
+                addToast(`Upload error: ${e.message}`, 'error');
+            }
+        }
+
         onMounted(loadVolumes);
 
         return {
             view, volumes, browseIdx, browseVol, files, currentPath, pathHistory,
-            breadcrumbs, loadingFiles, chmodTarget, chmodMode, error, modeMsg,
+            breadcrumbs, loadingFiles, chmodTarget, chmodMode, error, modeMsg, deleteConfirm,
             enterVolume, backToVolumes, goBack, enterDir, navigateTo,
-            toggleMode, startChmod, applyChmodReal, isWritable, toggleFileMode, isHidden, toggleHide,
+            toggleMode, deleteVolume, startChmod, applyChmodReal,
+            isWritable, toggleFileMode, isHidden, toggleHide,
             basename, octalToSymbolic,
+            isEditable, isDatabase, editFile, inspectDb, downloadFile, uploadFile,
         };
     },
     template: `
@@ -435,9 +843,18 @@ const VolumePanel = {
                             <td><span :class="vol.mode === 'rw' ? 'badge-rw' : 'badge-ro'">{{ vol.mode }}</span></td>
                             <td class="muted">{{ vol.selinux || '—' }}</td>
                             <td @click.stop>
-                                <button class="btn-sm" @click="toggleMode(vol)">
-                                    → {{ vol.mode === 'rw' ? 'ro' : 'rw' }}
-                                </button>
+                                <div class="actions-cell">
+                                    <button class="btn-sm" @click="toggleMode(vol)">
+                                        → {{ vol.mode === 'rw' ? 'ro' : 'rw' }}
+                                    </button>
+                                    <button
+                                        :class="deleteConfirm === vol.index ? 'btn-confirm' : 'btn-danger'"
+                                        @click="deleteVolume(vol)"
+                                    >
+                                        {{ deleteConfirm === vol.index ? 'Confirm?' : 'Detach' }}
+                                    </button>
+                                    <button v-if="deleteConfirm === vol.index" class="btn-sm" @click.stop="deleteConfirm = null">✕</button>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
@@ -460,6 +877,12 @@ const VolumePanel = {
                             >{{ seg.label }}</span>
                         </span>
                     </div>
+                    
+                    <label class="btn-upload-label" style="margin-right:8px" v-if="browseVol">
+                        📤 Upload File
+                        <input type="file" @change="uploadFile" style="display:none" />
+                    </label>
+
                     <div v-if="browseVol" class="actions-cell" style="flex-shrink:0">
                         <span :class="browseVol.mode === 'rw' ? 'badge-rw' : 'badge-ro'">{{ browseVol.mode }}</span>
                         <button class="btn-sm" @click="toggleMode(null)">
@@ -496,8 +919,20 @@ const VolumePanel = {
                                 <td class="muted">{{ file.size }}</td>
                                 <td @click.stop>
                                     <div class="actions-cell">
-                                        <button class="btn-sm" @click="startChmod(file)">chmod</button>
-                                        <button class="btn-sm btn-hide" @click="toggleHide(file)">
+                                        <!-- Slot 1: Primary Action (edit / inspect / placeholder) -->
+                                        <button class="btn-sm btn-primary" style="width: 70px; text-align: center" v-if="isEditable(file)" @click="editFile(file)">edit</button>
+                                        <button class="btn-sm btn-primary" style="width: 70px; text-align: center" v-else-if="isDatabase(file)" @click="inspectDb(file)">inspect</button>
+                                        <button class="btn-sm" style="width: 70px; text-align: center; visibility: hidden; pointer-events: none;" v-else>inspect</button>
+
+                                        <!-- Slot 2: Download Action (⬇ / placeholder) -->
+                                        <button class="btn-sm" style="width: 32px; text-align: center" v-if="!file.is_dir" @click="downloadFile(file)">⬇</button>
+                                        <button class="btn-sm" style="width: 32px; text-align: center; visibility: hidden; pointer-events: none;" v-else>⬇</button>
+
+                                        <!-- Slot 3: Chmod Action -->
+                                        <button class="btn-sm" style="width: 60px; text-align: center" @click="startChmod(file)">chmod</button>
+
+                                        <!-- Slot 4: Hide Action (fixed width to prevent toggle shift) -->
+                                        <button class="btn-sm btn-hide" style="width: 70px; text-align: center" @click="toggleHide(file)">
                                             {{ isHidden(file) ? 'unhide' : 'hide' }}
                                         </button>
                                     </div>
@@ -534,9 +969,405 @@ const VolumePanel = {
                 <div class="hint" style="margin-top:10px">
                     Volume mode changes write to <code>docker-compose.yml</code> and apply live (requires <code>SYS_ADMIN</code> cap on sandbox).
                 </div>
+    `,
+};
+
+// ---------------------------------------------------------------------------
+// ProcessesPanel component
+// ---------------------------------------------------------------------------
+
+const ProcessesPanel = {
+    setup() {
+        const activeTab = ref('processes');
+        const processes = ref([]);
+        const ports = ref([]);
+        const search = ref('');
+        let timer = null;
+
+        async function loadData() {
+            try {
+                if (activeTab.value === 'processes') {
+                    processes.value = await api.get('/api/sandbox/processes');
+                } else {
+                    ports.value = await api.get('/api/sandbox/ports');
+                }
+            } catch (e) {
+                addToast(`Failed to load: ${e.message}`, 'error');
+            }
+        }
+
+        async function killProc(pid) {
+            try {
+                const res = await api.post('/api/sandbox/processes/kill', { pid });
+                if (res.ok) {
+                    addToast(`Process ${pid} killed.`, 'success');
+                    loadData();
+                } else {
+                    addToast(`Failed to kill process: ${res.error}`, 'error');
+                }
+            } catch (e) {
+                addToast(`Error: ${e.message}`, 'error');
+            }
+        }
+
+        const filteredProcesses = computed(() => {
+            const query = search.value.toLowerCase().trim();
+            if (!query) return processes.value;
+            return processes.value.filter(p => 
+                p.command.toLowerCase().includes(query) || 
+                p.pid.includes(query) || 
+                p.user.toLowerCase().includes(query)
+            );
+        });
+
+        onMounted(() => {
+            loadData();
+            timer = setInterval(loadData, 5000);
+        });
+
+        onUnmounted(() => {
+            clearInterval(timer);
+        });
+
+        return { activeTab, search, filteredProcesses, ports, killProc, loadData };
+    },
+    template: `
+        <div class="panel">
+            <h2>Processes & Ports</h2>
+            <div class="processes-tabs">
+                <button class="tab-btn" :class="{ active: activeTab === 'processes' }" @click="activeTab = 'processes'; loadData()">
+                    ⚙ Running Processes ({{ filteredProcesses.length }})
+                </button>
+                <button class="tab-btn" :class="{ active: activeTab === 'ports' }" @click="activeTab = 'ports'; loadData()">
+                    🔌 Listening Ports ({{ ports.length }})
+                </button>
+            </div>
+
+            <!-- Processes Tab -->
+            <div v-if="activeTab === 'processes'">
+                <div class="form-row" style="margin-bottom:12px">
+                    <input type="text" v-model="search" placeholder="Search processes by command/PID..." class="input-flex" />
+                    <button class="btn-secondary text-sm" @click="loadData">Refresh</button>
+                </div>
+                <div class="file-browser-scroll" style="max-height: 480px">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>PID</th>
+                                <th>USER</th>
+                                <th>CPU%</th>
+                                <th>MEM%</th>
+                                <th>COMMAND</th>
+                                <th>ACTIONS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="p in filteredProcesses" :key="p.pid">
+                                <td><code>{{ p.pid }}</code></td>
+                                <td class="muted">{{ p.user }}</td>
+                                <td>{{ p.cpu }}%</td>
+                                <td>{{ p.mem }}%</td>
+                                <td style="font-family: var(--font-mono); font-size:11px; max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap" :title="p.command">
+                                    {{ p.command }}
+                                </td>
+                                <td>
+                                    <button class="btn-danger" @click="killProc(p.pid)">Kill</button>
+                                </td>
+                            </tr>
+                            <tr v-if="!filteredProcesses.length">
+                                <td colspan="6" class="muted hint" style="text-align:center; padding: 20px">No running processes found.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Ports Tab -->
+            <div v-else>
+                <div class="form-row" style="margin-bottom:12px">
+                    <button class="btn-secondary btn-sm" @click="loadData" style="margin-left: auto">Refresh</button>
+                </div>
+                <div class="file-browser-scroll">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Proto</th>
+                                <th>Local Address</th>
+                                <th>Program</th>
+                                <th>PID</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="p in ports" :key="p.local_addr">
+                                <td><span class="badge-rw">{{ p.proto }}</span></td>
+                                <td><span class="port-badge">{{ p.local_addr }}</span></td>
+                                <td class="path">{{ p.program }}</td>
+                                <td><code>{{ p.pid }}</code></td>
+                            </tr>
+                            <tr v-if="!ports.length">
+                                <td colspan="4" class="muted hint" style="text-align:center; padding: 20px">No active listening ports found.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
-    `,
+    `
+};
+
+// ---------------------------------------------------------------------------
+// EditorPanel component
+// ---------------------------------------------------------------------------
+
+const EditorPanel = {
+    setup() {
+        const route = VueRouter.useRoute();
+        const router = VueRouter.useRouter();
+        const path = computed(() => route.query.path || '');
+        const saving = ref(false);
+        let cmInstance = null;
+
+        async function loadFile() {
+            if (!path.value) return;
+            try {
+                const res = await api.post('/api/editor/read', { path: path.value });
+                if (res.ok) {
+                    cmInstance.setValue(res.content);
+                    detectAndSetMode();
+                } else {
+                    addToast(`Failed to load file: ${res.detail || 'unknown error'}`, 'error');
+                }
+            } catch (e) {
+                addToast(`Error: ${e.message}`, 'error');
+            }
+        }
+
+        function detectAndSetMode() {
+            const ext = path.value.split('.').pop().toLowerCase();
+            let mode = 'text/plain';
+            if (ext === 'py') mode = 'python';
+            else if (ext === 'js' || ext === 'json') mode = 'javascript';
+            else if (ext === 'sh' || ext === 'bash') mode = 'shell';
+            else if (ext === 'md') mode = 'markdown';
+            else if (ext === 'yml' || ext === 'yaml') mode = 'yaml';
+            cmInstance.setOption('mode', mode);
+        }
+
+        async function save() {
+            if (!path.value) return;
+            saving.value = true;
+            try {
+                const val = cmInstance.getValue();
+                const res = await api.post('/api/editor/write', { path: path.value, content: val });
+                if (res.ok) {
+                    addToast('File saved successfully.', 'success');
+                } else {
+                    addToast(`Failed to save: ${res.detail || 'unknown error'}`, 'error');
+                }
+            } catch (e) {
+                addToast(`Error: ${e.message}`, 'error');
+            } finally {
+                saving.value = false;
+            }
+        }
+
+        onMounted(() => {
+            const textarea = document.getElementById('cm-textarea');
+            if (textarea) {
+                cmInstance = CodeMirror.fromTextArea(textarea, {
+                    lineNumbers: true,
+                    theme: 'material-darker',
+                    mode: 'text/plain',
+                    viewportMargin: Infinity,
+                });
+                loadFile();
+            }
+        });
+
+        function goBack() {
+            const volIdx = route.query.volIdx;
+            const dir = route.query.dir;
+            if (volIdx !== undefined && dir) {
+                router.push({ path: '/volumes', query: { volIdx, dir } });
+            } else {
+                router.push('/volumes');
+            }
+        }
+
+        return { path, saving, save, goBack };
+    },
+    template: `
+        <div class="panel">
+            <h2>File Editor</h2>
+            <div v-if="!path" class="muted hint" style="padding: 20px; text-align: center">
+                No file selected. Please select a file to edit from the Volumes tab.
+                <br/><br/>
+                <button class="btn-primary" @click="goBack">Go to Volumes</button>
+            </div>
+            <div v-else>
+                <div class="editor-container">
+                    <div class="editor-header">
+                        <span class="file-path">📝 {{ path }}</span>
+                        <div class="actions-cell">
+                            <button class="btn-secondary btn-sm" @click="goBack">Back</button>
+                            <button class="btn-primary btn-sm" @click="save" :disabled="saving">
+                                {{ saving ? 'Saving...' : '💾 Save' }}
+                            </button>
+                        </div>
+                    </div>
+                    <textarea id="cm-textarea"></textarea>
+                </div>
+            </div>
+        </div>
+    `
+};
+
+// ---------------------------------------------------------------------------
+// DbViewerPanel component
+// ---------------------------------------------------------------------------
+
+const DbViewerPanel = {
+    setup() {
+        const route = VueRouter.useRoute();
+        const router = VueRouter.useRouter();
+        const path = computed(() => route.query.path || '');
+        const tables = ref([]);
+        const activeTable = ref('');
+        const rawSql = ref('');
+        const results = ref(null);
+        const executing = ref(false);
+        const error = ref('');
+
+        async function loadTables() {
+            if (!path.value) return;
+            try {
+                const res = await api.post('/api/db/query', {
+                    db_path: path.value,
+                    query: "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';"
+                });
+                if (res.ok) {
+                    tables.value = res.rows.map(r => r.name);
+                    if (tables.value.length) {
+                        selectTable(tables.value[0]);
+                    }
+                } else {
+                    addToast(`DB Load Failed: ${res.error || 'unknown error'}`, 'error');
+                }
+            } catch (e) {
+                addToast(`DB Load Error: ${e.message}`, 'error');
+            }
+        }
+
+        async function selectTable(tbl) {
+            activeTable.value = tbl;
+            rawSql.value = `SELECT * FROM "${tbl}" LIMIT 50;`;
+            runQuery();
+        }
+
+        async function runQuery() {
+            if (!path.value || !rawSql.value.trim()) return;
+            executing.value = true;
+            error.value = '';
+            results.value = null;
+            try {
+                const res = await api.post('/api/db/query', {
+                    db_path: path.value,
+                    query: rawSql.value
+                });
+                if (res.ok) {
+                    results.value = res;
+                } else {
+                    error.value = res.error;
+                }
+            } catch (e) {
+                error.value = e.message;
+            } finally {
+                executing.value = false;
+            }
+        }
+
+        onMounted(() => {
+            if (path.value) {
+                loadTables();
+            }
+        });
+
+        function goBack() {
+            const volIdx = route.query.volIdx;
+            const dir = route.query.dir;
+            if (volIdx !== undefined && dir) {
+                router.push({ path: '/volumes', query: { volIdx, dir } });
+            } else {
+                router.push('/volumes');
+            }
+        }
+
+        return { path, tables, activeTable, rawSql, results, executing, error, selectTable, runQuery, goBack };
+    },
+    template: `
+        <div class="panel">
+            <h2>SQLite DB Viewer</h2>
+            <div v-if="!path" class="muted hint" style="padding: 20px; text-align: center">
+                No database file selected. Select a SQLite database (.db / .sqlite) in the Volumes tab.
+                <br/><br/>
+                <button class="btn-primary" @click="goBack">Go to Volumes</button>
+            </div>
+            <div v-else>
+                <div style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center">
+                    <span class="path">🗄️ {{ path }}</span>
+                    <button class="btn-secondary btn-sm" @click="goBack">Back</button>
+                </div>
+                <div class="db-viewer-layout">
+                    <aside class="db-sidebar">
+                        <h3>Tables</h3>
+                        <ul class="db-table-list">
+                            <li v-for="t in tables" :key="t" 
+                                class="db-table-item" 
+                                :class="{ active: activeTable === t }"
+                                @click="selectTable(t)"
+                            >
+                                📊 {{ t }}
+                            </li>
+                            <li v-if="!tables.length" class="muted hint">No tables found.</li>
+                        </ul>
+                    </aside>
+                    <main class="sql-editor-panel">
+                        <textarea v-model="rawSql" rows="3" class="sql-textarea" placeholder="Enter custom SQL query here..."></textarea>
+                        <div class="form-row">
+                            <button class="btn-primary" @click="runQuery" :disabled="executing">
+                                {{ executing ? 'Executing...' : '⚡ Run Query' }}
+                            </button>
+                        </div>
+                        <div v-if="error" class="error-msg">{{ error }}</div>
+                        <div v-if="results" style="margin-top:10px">
+                            <div class="hint" style="margin-bottom:6px">
+                                Query returned <strong>{{ results.count || 0 }}</strong> rows.
+                            </div>
+                            <div class="file-browser-scroll" style="max-height: 320px; overflow-x: auto" v-if="results.columns && results.columns.length">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th v-for="col in results.columns" :key="col">{{ col }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(row, idx) in results.rows" :key="idx">
+                                            <td v-for="col in results.columns" :key="col" style="font-family:var(--font-mono); font-size:11px">
+                                                {{ row[col] !== null ? row[col] : 'NULL' }}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div v-else-if="results.ok && !results.columns" class="success-msg">
+                                Query executed successfully (affected {{ results.count }} rows).
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            </div>
+        </div>
+    `
 };
 
 // ---------------------------------------------------------------------------
@@ -548,22 +1379,18 @@ const ConfigPanel = {
         const activeTab = ref('dockerfile');
         const tabs = [
             { id: 'dockerfile', label: 'Dockerfile' },
-            { id: 'readme', label: 'README' },
+            { id: 'readme',     label: 'README' },
             { id: 'environment', label: 'Environment' },
-            { id: 'volume', label: 'Volume' },
+            { id: 'volume',     label: 'Volume' },
         ];
 
-        // dockerfile form
-        const df = reactive({ package: '', ecosystem: 'uv', use_sudo: false });
-        // readme form
-        const rm = reactive({ note: '' });
-        // environment form
+        const df  = reactive({ package: '', ecosystem: 'uv', use_sudo: false });
+        const rm  = reactive({ note: '' });
         const env = reactive({ package: '' });
-        // volume form
         const vol = reactive({ host_path: '', container_path: '' });
 
         const success = ref('');
-        const error = ref('');
+        const error   = ref('');
 
         function clearMessages() { success.value = ''; error.value = ''; }
 
@@ -571,9 +1398,7 @@ const ConfigPanel = {
             clearMessages();
             try {
                 await api.post('/api/config/dockerfile', {
-                    package: df.package,
-                    ecosystem: df.ecosystem,
-                    use_sudo: df.use_sudo,
+                    package: df.package, ecosystem: df.ecosystem, use_sudo: df.use_sudo,
                 });
                 success.value = `Added ${df.package} to Dockerfile.`;
                 df.package = '';
@@ -635,7 +1460,6 @@ const ConfigPanel = {
             <div v-if="success" class="success-msg">{{ success }}</div>
             <div v-if="error" class="error-msg">{{ error }}</div>
 
-            <!-- Dockerfile tab -->
             <div v-if="activeTab === 'dockerfile'">
                 <div class="form-group">
                     <label>Ecosystem</label>
@@ -656,7 +1480,6 @@ const ConfigPanel = {
                 <button class="btn-primary" @click="submitDockerfile" :disabled="!df.package">Add to Dockerfile</button>
             </div>
 
-            <!-- README tab -->
             <div v-if="activeTab === 'readme'">
                 <div class="form-group">
                     <label>Note</label>
@@ -665,7 +1488,6 @@ const ConfigPanel = {
                 <button class="btn-primary" @click="submitReadme" :disabled="!rm.note">Append to README</button>
             </div>
 
-            <!-- Environment tab -->
             <div v-if="activeTab === 'environment'">
                 <div class="form-group">
                     <label>Package</label>
@@ -674,7 +1496,6 @@ const ConfigPanel = {
                 <button class="btn-primary" @click="submitEnvironment" :disabled="!env.package">Add to environment.yml</button>
             </div>
 
-            <!-- Volume tab -->
             <div v-if="activeTab === 'volume'">
                 <div class="form-group">
                     <label>Host Path</label>
@@ -691,25 +1512,61 @@ const ConfigPanel = {
 };
 
 // ---------------------------------------------------------------------------
+// Router
+// ---------------------------------------------------------------------------
+
+const router = createRouter({
+    history: createWebHashHistory(),
+    routes: [
+        { path: '/',          redirect: '/terminal' },
+        { path: '/dashboard', component: DashboardPanel },
+        { path: '/terminal',  component: TerminalPanel },
+        { path: '/volumes',   component: VolumePanel },
+        { path: '/processes', component: ProcessesPanel },
+        { path: '/editor',    component: EditorPanel },
+        { path: '/db-viewer', component: DbViewerPanel },
+        { path: '/config',    component: ConfigPanel },
+    ],
+});
+
+// ---------------------------------------------------------------------------
 // Root App
 // ---------------------------------------------------------------------------
 
 createApp({
-    components: { StatusBar, DashboardPanel, TerminalPanel, VolumePanel, ConfigPanel },
+    components: { StatusBar },
     setup() {
-        const activeTab = ref('terminal');
         const status = ref(null);
+        provide('status', status);
+
         const navItems = [
-            { id: 'dashboard', label: '⬡ Dashboard' },
-            { id: 'terminal', label: '⌨ Terminal' },
-            { id: 'volumes', label: '📦 Volumes' },
-            { id: 'config', label: '⚙ Config' },
+            { path: '/dashboard', label: '⬡ Dashboard' },
+            { path: '/terminal',  label: '⌨ Terminal' },
+            { path: '/volumes',   label: '📦 Volumes' },
+            { path: '/processes', label: '📊 Processes' },
+            { path: '/config',    label: '⚙ Config' },
         ];
+
+        const theme = ref('dark');
+
+        function toggleTheme() {
+            theme.value = theme.value === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('aios_theme', theme.value);
+            applyTheme();
+        }
+
+        function applyTheme() {
+            if (theme.value === 'light') {
+                document.body.classList.add('theme-light');
+            } else {
+                document.body.classList.remove('theme-light');
+            }
+        }
 
         async function fetchStatus() {
             try {
                 status.value = await api.get('/api/status');
-            } catch (e) {
+            } catch (_) {
                 status.value = null;
             }
         }
@@ -717,32 +1574,50 @@ createApp({
         onMounted(() => {
             fetchStatus();
             setInterval(fetchStatus, 15000);
+            theme.value = localStorage.getItem('aios_theme') || 'dark';
+            applyTheme();
         });
 
-        return { activeTab, status, navItems };
+        return { navItems, theme, toggleTheme, toasts };
     },
     template: `
         <div id="app-root">
-            <StatusBar :status="status" />
+            <StatusBar />
             <div class="layout">
                 <aside class="sidebar">
                     <nav>
-                        <button
+                        <router-link
                             v-for="item in navItems"
-                            :key="item.id"
-                            class="nav-item"
-                            :class="{ active: activeTab === item.id }"
-                            @click="activeTab = item.id"
-                        >{{ item.label }}</button>
+                            :key="item.path"
+                            :to="item.path"
+                            custom
+                            v-slot="{ navigate, isActive }"
+                        >
+                            <button
+                                @click="navigate"
+                                class="nav-item"
+                                :class="{ active: isActive }"
+                            >{{ item.label }}</button>
+                        </router-link>
                     </nav>
+                    <div class="theme-toggle-container">
+                        <button class="btn-theme-toggle" @click="toggleTheme">
+                            {{ theme === 'dark' ? '☀️ Light' : '🌙 Dark' }}
+                        </button>
+                    </div>
                 </aside>
                 <main class="content">
-                    <DashboardPanel v-if="activeTab === 'dashboard'" :status="status" />
-                    <TerminalPanel v-if="activeTab === 'terminal'" />
-                    <VolumePanel v-if="activeTab === 'volumes'" />
-                    <ConfigPanel v-if="activeTab === 'config'" />
+                    <router-view />
                 </main>
+            </div>
+            
+            <!-- Global Toasts -->
+            <div class="toast-container">
+                <div v-for="t in toasts" :key="t.id" :class="['toast', t.type]">
+                    <span>{{ t.message }}</span>
+                    <button class="toast-close" @click="toasts = toasts.filter(x => x.id !== t.id)">✕</button>
+                </div>
             </div>
         </div>
     `,
-}).mount('#app');
+}).use(router).mount('#app');
