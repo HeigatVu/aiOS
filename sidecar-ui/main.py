@@ -3,7 +3,7 @@ import queue
 import threading
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -110,20 +110,26 @@ def chmod_path(body: ChmodBody) -> dict:
 @app.post("/api/volumes/{idx}/mode")
 def set_volume_mode(idx: int, body: VolumeModeBody) -> dict:
     try:
+        vol_list = volumes.list_volumes()
+        if idx < 0 or idx >= len(vol_list):
+            raise IndexError(f"Volume index {idx} out of range")
+        container_path = vol_list[idx]["container_path"]
         volumes.update_volume_mode(idx, body.mode)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except IndexError as e:
         raise HTTPException(status_code=404, detail=str(e))
-    return {"ok": True}
+
+    live_ok, live_msg = docker_bridge.live_remount_volume(container_path, body.mode)
+    return {"ok": True, "live_applied": live_ok, "live_msg": live_msg}
 
 
 @app.get("/api/volumes/{idx}/files")
-def get_volume_files(idx: int) -> list[dict]:
+def get_volume_files(idx: int, path: str | None = Query(default=None)) -> list[dict]:
     vol_list = volumes.list_volumes()
     if idx < 0 or idx >= len(vol_list):
         raise HTTPException(status_code=404, detail=f"Volume index {idx} not found")
-    container_path = vol_list[idx]["container_path"]
+    container_path = path if path else vol_list[idx]["container_path"]
     return docker_bridge.list_files_in_container(container_path)
 
 

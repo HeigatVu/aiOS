@@ -181,6 +181,30 @@ def execute_in_sandbox(cmd: str) -> Generator[str, None, None]:
         yield f"ERROR executing command: {str(e)}\n"
 
 
+def live_remount_volume(container_path: str, mode: str) -> tuple[bool, str]:
+    """
+    Attempt to remount a path inside ai_tui_sandbox with the given mode (rw/ro).
+    Uses a privileged exec so the container itself does not need SYS_ADMIN.
+    Returns (success, output_message).
+    """
+    client = get_docker_client()
+    if not client:
+        return False, "Docker not connected (mock mode)"
+    try:
+        container = client.containers.get("ai_tui_sandbox")
+        result = container.exec_run(
+            ["mount", "-o", f"remount,{mode}", container_path],
+            privileged=True,
+            user="root",
+        )
+        output = result.output.decode("utf-8", errors="replace").strip() if result.output else ""
+        return result.exit_code == 0, output
+    except docker.errors.NotFound:
+        return False, "Container 'ai_tui_sandbox' not found"
+    except Exception as e:
+        return False, str(e)
+
+
 def list_files_in_container(path: str) -> list[dict]:
     """
     Lists files in the given path inside the ai_tui_sandbox container.

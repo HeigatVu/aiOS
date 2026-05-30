@@ -1,6 +1,6 @@
 'use strict';
 
-const { createApp, ref, reactive, onMounted, nextTick } = Vue;
+const { createApp, ref, reactive, computed, onMounted, nextTick } = Vue;
 
 // ---------------------------------------------------------------------------
 // API helpers
@@ -229,54 +229,148 @@ const TerminalPanel = {
 
 const VolumePanel = {
     setup() {
+        const view = ref('volumes');       // 'volumes' | 'browser'
         const volumes = ref([]);
         const browseIdx = ref(null);
+        const browseVol = ref(null);       // the vol object currently being browsed
         const files = ref([]);
-        const filesPath = ref('');
+        const currentPath = ref('');
+        const pathHistory = ref([]);
         const loadingFiles = ref(false);
         const chmodTarget = ref(null);
         const chmodMode = ref('');
         const error = ref('');
+        const modeMsg = ref('');
 
         async function loadVolumes() {
             try {
                 volumes.value = await api.get('/api/volumes');
+                // keep browseVol in sync if we're in browser view
+                if (browseVol.value !== null) {
+                    browseVol.value = volumes.value.find(v => v.index === browseIdx.value) || null;
+                }
             } catch (e) {
                 error.value = `Failed to load volumes: ${e.message}`;
             }
         }
 
-        async function toggleMode(vol) {
-            const newMode = vol.mode === 'rw' ? 'ro' : 'rw';
+        async function loadFiles(idx, path) {
+            loadingFiles.value = true;
+            files.value = [];
+            chmodTarget.value = null;
             try {
-                await api.post(`/api/volumes/${vol.index}/mode`, { mode: newMode });
+                files.value = await api.get(`/api/volumes/${idx}/files?path=${encodeURIComponent(path)}`);
+            } catch (e) {
+                error.value = `Failed to list files: ${e.message}`;
+            } finally {
+                loadingFiles.value = false;
+            }
+        }
+
+        async function enterVolume(vol) {
+            browseIdx.value = vol.index;
+            browseVol.value = vol;
+            currentPath.value = vol.container_path;
+            pathHistory.value = [];
+            view.value = 'browser';
+            await loadFiles(vol.index, vol.container_path);
+        }
+
+        function backToVolumes() {
+            view.value = 'volumes';
+            browseIdx.value = null;
+            browseVol.value = null;
+            files.value = [];
+            currentPath.value = '';
+            pathHistory.value = [];
+            modeMsg.value = '';
+        }
+
+        async function goBack() {
+            if (pathHistory.value.length) {
+                const prev = pathHistory.value.pop();
+                currentPath.value = prev;
+                await loadFiles(browseIdx.value, prev);
+            } else {
+                backToVolumes();
+            }
+        }
+
+        async function enterDir(file) {
+            if (!file.is_dir || file.name === currentPath.value) return;
+            pathHistory.value.push(currentPath.value);
+            currentPath.value = file.name;
+            await loadFiles(browseIdx.value, file.name);
+        }
+
+        async function navigateTo(path) {
+            if (path === currentPath.value) return;
+            pathHistory.value.push(currentPath.value);
+            currentPath.value = path;
+            await loadFiles(browseIdx.value, path);
+        }
+
+        // breadcrumb: [Volumes] / seg / seg / ...
+        const breadcrumbs = computed(() => {
+            const segs = [{ label: 'Volumes', path: null }];
+            if (!currentPath.value) return segs;
+            const parts = currentPath.value.split('/').filter(Boolean);
+            let built = '';
+            for (const part of parts) {
+                built += '/' + part;
+                segs.push({ label: part, path: built });
+            }
+            return segs;
+        });
+
+        async function toggleMode(vol) {
+            const target = vol || browseVol.value;
+            if (!target) return;
+            const newMode = target.mode === 'rw' ? 'ro' : 'rw';
+            modeMsg.value = '';
+            try {
+                const result = await api.post(`/api/volumes/${target.index}/mode`, { mode: newMode });
                 await loadVolumes();
-                // Refresh file list if browsing this volume
-                if (browseIdx.value === vol.index) {
-                    await browse(vol);
+                if (result.live_applied) {
+                    modeMsg.value = `live:${target.container_path} → ${newMode}`;
+                } else {
+                    modeMsg.value = `compose:docker-compose.yml updated. Live apply failed (${result.live_msg || 'unknown'}). Restart container to apply.`;
                 }
             } catch (e) {
                 error.value = `Failed to update mode: ${e.message}`;
             }
         }
 
-        async function browse(vol) {
-            if (browseIdx.value === vol.index) {
-                browseIdx.value = null;
-                files.value = [];
-                return;
-            }
-            browseIdx.value = vol.index;
-            filesPath.value = vol.container_path;
-            loadingFiles.value = true;
-            files.value = [];
-            chmodTarget.value = null;
+        function isWritable(file) {
+            return Boolean(parseInt(file.permissions, 8) & 0o200);
+        }
+
+        function isHidden(file) {
+            return parseInt(file.permissions, 8) === 0;
+        }
+
+        async function toggleHide(file) {
+            const newMode = isHidden(file)
+                ? (file.is_dir ? '755' : '644')
+                : '000';
             try {
-                files.value = await api.get(`/api/volumes/${vol.index}/files`);
+                await api.post('/api/volumes/chmod', { path: file.name, mode: newMode });
+                await loadFiles(browseIdx.value, currentPath.value);
             } catch (e) {
-                error.value = `Failed to list files: ${e.message}`;
-            } finally {
-                loadingFiles.value = false;
+                error.value = `Hide failed: ${e.message}`;
+            }
+        }
+
+        async function toggleFileMode(file) {
+            const writable = isWritable(file);
+            const newMode = writable
+                ? (file.is_dir ? '555' : '444')
+                : (file.is_dir ? '755' : '644');
+            try {
+                await api.post('/api/volumes/chmod', { path: file.name, mode: newMode });
+                await loadFiles(browseIdx.value, currentPath.value);
+            } catch (e) {
+                error.value = `Mode change failed: ${e.message}`;
             }
         }
 
@@ -287,25 +381,13 @@ const VolumePanel = {
 
         async function applyChmodReal() {
             if (!chmodTarget.value) return;
-            const savedIdx = browseIdx.value;
             try {
                 await api.post('/api/volumes/chmod', {
                     path: chmodTarget.value.name,
                     mode: chmodMode.value,
                 });
                 chmodTarget.value = null;
-                // Refresh file listing
-                if (savedIdx !== null) {
-                    const vol = volumes.value.find(v => v.index === savedIdx);
-                    if (vol) {
-                        loadingFiles.value = true;
-                        try {
-                            files.value = await api.get(`/api/volumes/${savedIdx}/files`);
-                        } finally {
-                            loadingFiles.value = false;
-                        }
-                    }
-                }
+                await loadFiles(browseIdx.value, currentPath.value);
             } catch (e) {
                 error.value = `chmod failed: ${e.message}`;
             }
@@ -314,95 +396,144 @@ const VolumePanel = {
         onMounted(loadVolumes);
 
         return {
-            volumes, browseIdx, files, filesPath, loadingFiles,
-            chmodTarget, chmodMode, error,
-            toggleMode, browse, startChmod, applyChmodReal,
+            view, volumes, browseIdx, browseVol, files, currentPath, pathHistory,
+            breadcrumbs, loadingFiles, chmodTarget, chmodMode, error, modeMsg,
+            enterVolume, backToVolumes, goBack, enterDir, navigateTo,
+            toggleMode, startChmod, applyChmodReal, isWritable, toggleFileMode, isHidden, toggleHide,
             basename, octalToSymbolic,
         };
     },
     template: `
         <div class="panel">
-            <h2>Volumes</h2>
             <div v-if="error" class="error-msg">{{ error }}</div>
-            <table class="data-table" v-if="volumes.length">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Host Path</th>
-                        <th>Container Path</th>
-                        <th>Mode</th>
-                        <th>SELinux</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="vol in volumes" :key="vol.index">
-                        <td class="muted">{{ vol.index }}</td>
-                        <td class="path">{{ vol.host_path }}</td>
-                        <td class="path">{{ vol.container_path }}</td>
-                        <td>
-                            <span :class="vol.mode === 'rw' ? 'badge-rw' : 'badge-ro'">{{ vol.mode }}</span>
-                        </td>
-                        <td class="muted">{{ vol.selinux || '—' }}</td>
-                        <td>
-                            <div class="actions-cell">
-                                <button class="btn-sm" @click="browse(vol)">
-                                    {{ browseIdx === vol.index ? 'Close' : 'Browse' }}
-                                </button>
-                                <button class="btn-sm" @click="toggleMode(vol)">
-                                    → {{ vol.mode === 'rw' ? 'ro' : 'rw' }}
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            <div v-else class="muted hint">No volumes found in docker-compose.yml.</div>
+            <div v-if="modeMsg" :class="modeMsg.startsWith('live:') ? 'success-msg' : 'warn-msg'">
+                {{ modeMsg.startsWith('live:') ? '✔ Applied live — ' + modeMsg.slice(5) : modeMsg.slice(8) }}
+            </div>
 
-            <!-- File browser -->
-            <div v-if="browseIdx !== null" class="file-browser">
-                <h3>Files in <span class="path">{{ filesPath }}</span></h3>
-                <div v-if="loadingFiles" class="muted">Loading…</div>
-                <table class="data-table" v-else-if="files.length">
+            <!-- ── Volumes list ── -->
+            <div v-if="view === 'volumes'">
+                <h2>Volumes</h2>
+                <table class="data-table" v-if="volumes.length">
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Permissions</th>
-                            <th>Symbolic</th>
-                            <th>Owner</th>
-                            <th>Size</th>
-                            <th></th>
+                            <th>#</th>
+                            <th>Host Path</th>
+                            <th>Container Path</th>
+                            <th>Mode</th>
+                            <th>SELinux</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="file in files" :key="file.name">
-                            <td>
-                                <span class="file-icon">{{ file.is_dir ? '📁' : '📄' }}</span>
-                                {{ basename(file.name) }}
-                            </td>
-                            <td><code>{{ file.permissions }}</code></td>
-                            <td><code class="muted">{{ octalToSymbolic(file.permissions) }}</code></td>
-                            <td class="muted">{{ file.owner }}</td>
-                            <td class="muted">{{ file.size }}</td>
-                            <td>
-                                <button class="btn-sm" @click="startChmod(file)">chmod</button>
+                        <tr v-for="vol in volumes" :key="vol.index"
+                            class="vol-row"
+                            @click="enterVolume(vol)"
+                        >
+                            <td class="muted">{{ vol.index }}</td>
+                            <td class="path">{{ vol.host_path }}</td>
+                            <td class="path">{{ vol.container_path }}</td>
+                            <td><span :class="vol.mode === 'rw' ? 'badge-rw' : 'badge-ro'">{{ vol.mode }}</span></td>
+                            <td class="muted">{{ vol.selinux || '—' }}</td>
+                            <td @click.stop>
+                                <button class="btn-sm" @click="toggleMode(vol)">
+                                    → {{ vol.mode === 'rw' ? 'ro' : 'rw' }}
+                                </button>
                             </td>
                         </tr>
                     </tbody>
                 </table>
-                <div v-else class="muted hint">No files found or directory is empty.</div>
-
-                <!-- chmod inline form -->
-                <div v-if="chmodTarget" class="chmod-form">
-                    <span class="chmod-path">{{ basename(chmodTarget.name) }}</span>
-                    <input type="text" v-model="chmodMode" placeholder="755" style="width:80px; font-family: var(--font-mono)" />
-                    <button class="btn-primary btn-sm" @click="applyChmodReal">Apply</button>
-                    <button class="btn-secondary btn-sm" @click="chmodTarget = null">Cancel</button>
-                </div>
+                <div v-else class="muted hint">No volumes found in docker-compose.yml.</div>
+                <div class="hint" style="margin-top:10px">Click a row to browse its contents.</div>
             </div>
 
-            <div class="hint">
-                Mode changes write to docker-compose.yml. Restart container to apply the new mode.
+            <!-- ── File browser ── -->
+            <div v-else>
+                <div class="file-browser-nav">
+                    <button class="btn-sm" @click="goBack">← Back</button>
+                    <div class="breadcrumb">
+                        <span v-for="(seg, i) in breadcrumbs" :key="i" class="breadcrumb-item">
+                            <span v-if="i > 0" class="breadcrumb-sep">/</span>
+                            <span
+                                class="breadcrumb-seg"
+                                :class="{ active: i === breadcrumbs.length - 1 }"
+                                @click="seg.path === null ? backToVolumes() : (i < breadcrumbs.length - 1 && navigateTo(seg.path))"
+                            >{{ seg.label }}</span>
+                        </span>
+                    </div>
+                    <div v-if="browseVol" class="actions-cell" style="flex-shrink:0">
+                        <span :class="browseVol.mode === 'rw' ? 'badge-rw' : 'badge-ro'">{{ browseVol.mode }}</span>
+                        <button class="btn-sm" @click="toggleMode(null)">
+                            → {{ browseVol.mode === 'rw' ? 'ro' : 'rw' }}
+                        </button>
+                    </div>
+                </div>
+
+                <div v-if="loadingFiles" class="muted" style="padding: 8px 0">Loading…</div>
+                <div class="file-browser-scroll" v-else-if="files.length">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Permissions</th>
+                                <th>Symbolic</th>
+                                <th>Owner</th>
+                                <th>Size</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="file in files.filter(f => f.name !== currentPath)" :key="file.name"
+                                :class="{ 'dir-row': file.is_dir }"
+                                @click="enterDir(file)"
+                            >
+                                <td>
+                                    <span class="file-icon">{{ file.is_dir ? '📁' : '📄' }}</span>
+                                    {{ basename(file.name) }}
+                                </td>
+                                <td><code>{{ file.permissions }}</code></td>
+                                <td><code class="muted">{{ octalToSymbolic(file.permissions) }}</code></td>
+                                <td class="muted">{{ file.owner }}</td>
+                                <td class="muted">{{ file.size }}</td>
+                                <td @click.stop>
+                                    <div class="actions-cell">
+                                        <button class="btn-sm" @click="startChmod(file)">chmod</button>
+                                        <button class="btn-sm btn-hide" @click="toggleHide(file)">
+                                            {{ isHidden(file) ? 'unhide' : 'hide' }}
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div v-else class="muted hint">No files found or directory is empty.</div>
+
+                <div v-if="chmodTarget" class="chmod-form">
+                    <div class="chmod-form-header">
+                        <span class="chmod-path">{{ basename(chmodTarget.name) }}</span>
+                        <button class="btn-secondary btn-sm" @click="chmodTarget = null">✕</button>
+                    </div>
+                    <div class="chmod-presets">
+                        <span class="chmod-preset-label">AI access:</span>
+                        <button class="btn-sm preset-rw" @click="chmodMode = chmodTarget.is_dir ? '755' : '644'">rw — 755/644</button>
+                        <button class="btn-sm preset-ro" @click="chmodMode = chmodTarget.is_dir ? '555' : '444'">ro — 555/444</button>
+                        <button class="btn-sm preset-hide" @click="chmodMode = '000'">hide — 000</button>
+                        <button class="btn-sm preset-priv" @click="chmodMode = chmodTarget.is_dir ? '700' : '600'">private — 700/600</button>
+                    </div>
+                    <div class="chmod-note">
+                        <code>r</code>=read &nbsp;<code>w</code>=write &nbsp;<code>x</code>=exec &nbsp;|&nbsp;
+                        <code>7</code>=rwx &nbsp;<code>6</code>=rw- &nbsp;<code>5</code>=r-x &nbsp;<code>4</code>=r-- &nbsp;<code>0</code>=---
+                        &nbsp;|&nbsp; digits: <em>owner / group / others</em>
+                    </div>
+                    <div class="chmod-apply-row">
+                        <input type="text" v-model="chmodMode" placeholder="755" style="width:70px; font-family: var(--font-mono)" />
+                        <button class="btn-primary btn-sm" @click="applyChmodReal">Apply</button>
+                    </div>
+                </div>
+
+                <div class="hint" style="margin-top:10px">
+                    Volume mode changes write to <code>docker-compose.yml</code> and apply live (requires <code>SYS_ADMIN</code> cap on sandbox).
+                </div>
             </div>
         </div>
     `,

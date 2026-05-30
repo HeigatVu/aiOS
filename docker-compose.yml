@@ -47,6 +47,9 @@ services:
       # 5. Editor Configurations
       - ./config-file/system-config/nvim:/home/ai_user/.config/nvim:rw,z
 
+    cap_add:
+      - SYS_ADMIN
+
     deploy:
       resources:
         limits:

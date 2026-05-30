@@ -458,16 +458,95 @@ button:disabled {
    File Browser
    ========================================================= */
 
+.btn-hide {
+    background: rgba(244, 71, 71, 0.15) !important;
+    color: var(--err) !important;
+    border-color: rgba(244, 71, 71, 0.3) !important;
+}
+
+.btn-hide:hover:not(:disabled) {
+    background: rgba(244, 71, 71, 0.3) !important;
+}
+
+.vol-row {
+    cursor: pointer;
+}
+
+.vol-row-active td {
+    background: rgba(0, 122, 204, 0.12) !important;
+    border-left: 2px solid var(--accent);
+}
+
 .file-browser {
     margin-top: 16px;
     border-top: 1px solid var(--border);
     padding-top: 14px;
 }
 
-.file-browser h3 {
-    font-size: 12px;
-    color: var(--muted);
+.file-browser-nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     margin-bottom: 10px;
+    min-width: 0;
+}
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    flex: 1;
+    min-width: 0;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    gap: 0;
+}
+
+.breadcrumb-item {
+    display: flex;
+    align-items: center;
+}
+
+.breadcrumb-sep {
+    color: var(--muted);
+    margin: 0 2px;
+    user-select: none;
+}
+
+.breadcrumb-seg {
+    color: var(--accent);
+    cursor: pointer;
+    border-radius: 3px;
+    padding: 1px 4px;
+    transition: background 0.1s;
+}
+
+.breadcrumb-seg:hover {
+    background: rgba(0, 122, 204, 0.15);
+}
+
+.breadcrumb-seg.active {
+    color: var(--text);
+    cursor: default;
+}
+
+.breadcrumb-seg.active:hover {
+    background: none;
+}
+
+.file-browser-scroll {
+    max-height: 360px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.dir-row {
+    cursor: pointer;
+}
+
+.dir-row:hover td {
+    background: rgba(0, 122, 204, 0.1);
 }
 
 .file-icon {
@@ -486,23 +565,55 @@ button:disabled {
     padding: 12px;
     margin-top: 12px;
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 10px;
-    flex-wrap: wrap;
+}
+
+.chmod-form-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .chmod-form .chmod-path {
     font-family: var(--font-mono);
     font-size: 12px;
     color: var(--accent);
-    flex: 1;
-    min-width: 0;
     word-break: break-all;
 }
 
-.chmod-form input[type="text"] {
-    width: 80px;
-    font-family: var(--font-mono);
+.chmod-presets {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.chmod-preset-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+}
+
+.preset-rw  { color: var(--ok)   !important; border-color: rgba(78,201,176,0.4) !important; }
+.preset-ro  { color: #dca050     !important; border-color: rgba(220,160,80,0.4) !important; }
+.preset-hide { color: var(--err) !important; border-color: rgba(244,71,71,0.4)  !important; }
+.preset-priv { color: var(--warn)!important; border-color: rgba(220,220,170,0.4)!important; }
+
+.chmod-note {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.6;
+    border-top: 1px solid var(--border);
+    padding-top: 8px;
+}
+
+.chmod-apply-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 /* =========================================================
@@ -570,6 +681,16 @@ button:disabled {
     background: rgba(78, 201, 176, 0.1);
     border-radius: var(--radius);
     border-left: 3px solid var(--ok);
+}
+
+.warn-msg {
+    color: var(--warn);
+    font-size: 13px;
+    margin-top: 8px;
+    padding: 6px 10px;
+    background: rgba(220, 220, 170, 0.1);
+    border-radius: var(--radius);
+    border-left: 3px solid var(--warn);
 }
 
 .path {
