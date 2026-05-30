@@ -35,5 +35,4 @@ agent-configs/*
 prompt-to-fix.md
 
 .claude
-.antigravity
 .antigravitycli

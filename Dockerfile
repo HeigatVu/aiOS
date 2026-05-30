@@ -14,8 +14,8 @@ RUN dnf upgrade --refresh -y && \
 RUN npm install -g @agentmemory/agentmemory
 
 # 3. Setup the isolated user
-ARG USER_ID=1000
-ARG GROUP_ID=1000
+ARG USER_ID=1001
+ARG GROUP_ID=1001
 ARG USERNAME=ai_user
 
 RUN groupadd -g ${GROUP_ID} ${USERNAME} && \
