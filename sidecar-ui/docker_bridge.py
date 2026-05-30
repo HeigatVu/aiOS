@@ -1,8 +1,11 @@
 import os
 import time
+from typing import Generator, Optional
 import docker
+import docker.errors
 
-def get_docker_client():
+
+def get_docker_client() -> Optional[docker.DockerClient]:
     """
     Attempts to connect to the Docker socket.
     Returns None if unreachable or if MOCK_DOCKER env is set.
@@ -14,7 +17,8 @@ def get_docker_client():
     except Exception:
         return None
 
-def get_sandbox_status():
+
+def get_sandbox_status() -> dict:
     """
     Checks the status of the Docker socket connection and the ai_tui_sandbox container.
     """
@@ -24,48 +28,49 @@ def get_sandbox_status():
             "docker_connected": False,
             "sandbox_status": "running (simulated)",
             "sandbox_running": True,
-            "is_mock": True
+            "is_mock": True,
         }
-    
+
     try:
         container = client.containers.get("ai_tui_sandbox")
         return {
             "docker_connected": True,
             "sandbox_status": container.status,
             "sandbox_running": container.status == "running",
-            "is_mock": False
+            "is_mock": False,
         }
     except docker.errors.NotFound:
         return {
             "docker_connected": True,
             "sandbox_status": "not_found",
             "sandbox_running": False,
-            "is_mock": False
+            "is_mock": False,
         }
     except Exception:
         return {
             "docker_connected": False,
             "sandbox_status": "unknown",
             "sandbox_running": False,
-            "is_mock": False
+            "is_mock": False,
         }
 
-def execute_in_sandbox(cmd: str):
+
+def execute_in_sandbox(cmd: str) -> Generator[str, None, None]:
     """
     Executes a command inside the ai_tui_sandbox container.
     Streams back the stdout/stderr output chunks.
     If the Docker socket is unreachable, streams a rich, simulated installation log.
     """
     client = get_docker_client()
-    
+
     if not client:
         # --- RICH MOCK SIMULATION FOR MAXIMUM PORTABILITY ---
         yield "[SIMULATED SOCKET] Connecting to sandbox container 'ai_tui_sandbox'...\n"
         yield f"[SIMULATED SOCKET] Running: {cmd}\n\n"
         time.sleep(0.8)
-        
+
         cmd_stripped = cmd.strip()
-        
+
         if "uv pip install" in cmd_stripped or "pip install" in cmd_stripped:
             pkg = cmd_stripped.split()[-1]
             yield f"Resolved source packages for {pkg}...\n"
@@ -79,7 +84,7 @@ def execute_in_sandbox(cmd: str):
             yield "Installing collected packages...\n"
             time.sleep(0.6)
             yield f"Successfully installed {pkg}-2.4.1\n"
-            
+
         elif "conda install" in cmd_stripped:
             pkg = cmd_stripped.split()[-1]
             yield "Collecting package metadata (current_repodata.json): done\n"
@@ -97,12 +102,12 @@ def execute_in_sandbox(cmd: str):
             yield "                                           Total:         1.2 MB\n\n"
             yield "Proceed ([y]/n)? y\n\n"
             time.sleep(0.6)
-            yield f"Downloading and Extracting Packages:\n"
+            yield "Downloading and Extracting Packages:\n"
             yield f"Downloading {pkg}-1.2.3 ... 100%\n"
             yield "Preparing transaction: done\n"
             yield "Verifying transaction: done\n"
             yield "Executing transaction: done\n"
-            
+
         elif "dnf install" in cmd_stripped:
             pkg = cmd_stripped.split()[-1]
             yield "Updating Subscription Management repositories.\n"
@@ -127,53 +132,122 @@ def execute_in_sandbox(cmd: str):
             yield f"  Installing       : {pkg}-2.1.4-1.fc44.x86_64                               1/1\n"
             yield f"  Verifying        : {pkg}-2.1.4-1.fc44.x86_64                               1/1\n"
             yield f"\nInstalled:\n  {pkg}-2.1.4-1.fc44.x86_64\n\nComplete!\n"
-            
+
         elif "npm install" in cmd_stripped:
             pkg = cmd_stripped.split()[-1]
-            yield f"npm WARN deprecated harmless-library@1.0.2: no longer supported\n"
+            yield "npm WARN deprecated harmless-library@1.0.2: no longer supported\n"
             time.sleep(0.3)
             yield f"npm HTTP GET https://registry.npmjs.org/{pkg}\n"
             yield f"npm HTTP 200 https://registry.npmjs.org/{pkg}\n"
             time.sleep(0.5)
-            yield f"added 18 packages, and audited 19 packages in 1.87s\n"
-            yield f"found 0 vulnerabilities\n\n"
+            yield "added 18 packages, and audited 19 packages in 1.87s\n"
+            yield "found 0 vulnerabilities\n\n"
             yield f"Successfully installed {pkg} globally!\n"
-            
+
         elif "echo" in cmd_stripped:
-            # Echo command
-            val = cmd_stripped.replace("echo", "").strip().replace('"', '').replace("'", "")
+            val = cmd_stripped.replace("echo", "").strip().replace('"', "").replace("'", "")
             yield f"{val}\n"
         else:
             yield f"Executing raw command: {cmd_stripped}\n"
             time.sleep(0.6)
             yield "Execution completed successfully.\n"
-            
+
         yield "\n[SIMULATED SOCKET] Process finished with exit code 0\n"
         return
 
     # --- REAL DOCKER EXECUTION BRIDGE ---
     try:
         container = client.containers.get("ai_tui_sandbox")
-        
-        # We start by displaying status info
+
         yield f"[DOCKER SOCKET] Connected to sandbox '{container.name}' ({container.short_id})\n"
         yield f"[DOCKER SOCKET] Running: {cmd}\n\n"
-        
-        # Execute the command and stream back the response
+
         exec_res = container.exec_run(cmd, stream=True)
-        
+
         # docker-py exec_run stream=True returns either an ExecResult namedtuple
         # with (exit_code, generator) or a generator depending on the SDK version.
         if isinstance(exec_res, tuple):
             _, generator = exec_res
         else:
             generator = exec_res
-            
+
         for chunk in generator:
-            yield chunk.decode('utf-8', errors='replace')
-            
+            yield chunk.decode("utf-8", errors="replace")
+
     except docker.errors.NotFound:
         yield "ERROR: Container 'ai_tui_sandbox' was not found on this host!\n"
         yield "Please run 'docker compose up -d' to start the sandbox container.\n"
     except Exception as e:
         yield f"ERROR executing command: {str(e)}\n"
+
+
+def list_files_in_container(path: str) -> list[dict]:
+    """
+    Lists files in the given path inside the ai_tui_sandbox container.
+    Returns a list of dicts with keys: permissions, owner, group, size, type, name, is_dir.
+    Falls back to a mock list if in mock mode or if the container is unavailable.
+    """
+    client = get_docker_client()
+
+    if not client:
+        return [
+            {
+                "permissions": "755",
+                "owner": "root",
+                "group": "root",
+                "size": "4096",
+                "type": "directory",
+                "name": path,
+                "is_dir": True,
+            },
+            {
+                "permissions": "644",
+                "owner": "user",
+                "group": "user",
+                "size": "1024",
+                "type": "regular file",
+                "name": f"{path}/example.txt",
+                "is_dir": False,
+            },
+            {
+                "permissions": "755",
+                "owner": "user",
+                "group": "user",
+                "size": "4096",
+                "type": "directory",
+                "name": f"{path}/subdir",
+                "is_dir": True,
+            },
+        ]
+
+    try:
+        container = client.containers.get("ai_tui_sandbox")
+        result = container.exec_run(
+            ["sh", "-c", f"find {path} -maxdepth 1 -exec stat -c '%a|%U|%G|%s|%F|%n' {{}} + 2>/dev/null"]
+        )
+        output = result.output.decode("utf-8", errors="replace") if result.output else ""
+        files: list[dict] = []
+        for line in output.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            parts = line.split("|", 5)
+            if len(parts) < 6:
+                continue
+            permissions, owner, group, size, ftype, name = parts
+            files.append(
+                {
+                    "permissions": permissions,
+                    "owner": owner,
+                    "group": group,
+                    "size": size,
+                    "type": ftype,
+                    "name": name,
+                    "is_dir": ftype == "directory",
+                }
+            )
+        return files
+    except docker.errors.NotFound:
+        return []
+    except Exception:
+        return []

@@ -78,7 +78,7 @@ Builds the image (if needed) with your current UID/GID, then starts both contain
 > If you see DNS/network timeouts during build:
 >
 > ```bash
-> DOCKER_BUILDKIT=0 docker compose build --no-cache && make up
+> docker compose build --no-cache && make up
 > ```
 
 ### Access the Web Control Panel
