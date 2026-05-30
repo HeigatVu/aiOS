@@ -43,6 +43,6 @@ agent-configs/*
 
 prompt-to-fix.md
 
-.claude
-.antigravitycli
-.codegraph
+.claude/
+.antigravitycli/
+.codegraph/
