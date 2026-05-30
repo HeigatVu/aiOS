@@ -1,115 +1,99 @@
-# sidecar-ui — Build Notes
+# sidecar-ui — Reference Notes
 
-## What was here before
+## Stack
 
-Streamlit app (`app.py`) — single-file dashboard with:
+- **Backend:** FastAPI + uvicorn, port `8502`
+- **Frontend:** Vue 3 (unpkg CDN, no build step) + Vue Router 4, served from `static/`
+- **Container image:** `python:3.11-slim` + uv
 
-- Package installer terminal (uv / conda / dnf / npm)
-- Dockerfile auto-install section editor
-- README.md note appender
-- environment.yml editor
-- Volume mapper (add new mounts to docker-compose.yml)
-
-## What we converted it to
-
-FastAPI backend + Vue 3 frontend (CDN, no build step).
-
-### Stack
-
-- **Backend:** FastAPI + uvicorn, running on port 8502
-- **Frontend:** Vue 3 via unpkg CDN (no npm/vite), served from `static/`
-- **Container image:** `python:3.11-slim` + uv for installs
-
-### File map
+## File Map
 
 ```
 sidecar-ui/
-├── Dockerfile.sidecar      FastAPI + uvicorn (replaced Streamlit)
-├── main.py                 FastAPI app — all API routes + WebSocket
-├── docker_bridge.py        Docker SDK wrapper (exec streaming, file listing)
+├── Dockerfile.sidecar      FastAPI + uvicorn image
+├── main.py                 All API routes, WebSocket endpoints, lifespan
+├── docker_bridge.py        Docker SDK wrapper — exec, streaming, file I/O, stats, PTY helpers
+├── git_manager.py          git -C <path> operations inside the sandbox container
 ├── volumes.py              docker-compose.yml volume parser + mode updater
-├── config_editors.py       Dockerfile / README / environment.yml writers (unchanged)
-├── app.py                  OLD Streamlit file — kept but not used, safe to delete
+├── config_editors.py       Dockerfile / README / environment.yml writers
+├── app.py                  OLD Streamlit file — unused, safe to delete
 └── static/
-    ├── index.html          Vue 3 shell
-    ├── app.js              Full SPA: all components + API + WebSocket logic
-    └── style.css           Dark dev-tool theme (VS Code-ish)
+    ├── index.html          Vue 3 shell + CDN imports (CodeMirror 5, Chart.js 4, xterm.js 4)
+    ├── app.js              Full SPA — all components, router, API helpers, WebSocket logic
+    └── style.css           Dark dev-tool theme (VS Code palette), light theme toggle
 ```
 
-### API routes
+---
+
+## API Routes
 
 | Method | Path | Does |
 |--------|------|------|
 | GET | `/api/status` | Sandbox container status |
-| WS | `/ws/exec` | Stream command output from sandbox |
-| GET | `/api/volumes` | List all sandbox volume mounts |
-| POST | `/api/volumes/chmod` | chmod a file inside the container |
+| POST | `/api/sandbox/restart` | Restart sandbox container |
+| GET | `/api/sandbox/stats` | Live CPU / RAM / GPU metrics |
+| GET | `/api/sandbox/stats/history` | Last 60 stat samples (5-min ring buffer) |
+| GET | `/api/sandbox/processes` | `ps aux` process list |
+| POST | `/api/sandbox/processes/kill` | `kill -9 <pid>` |
+| GET | `/api/sandbox/env` | Container env + dotenv keys |
+| POST | `/api/sandbox/env/save` | Upsert key in dotenv file |
+| POST | `/api/sandbox/env/delete` | Delete key from dotenv file |
+| GET | `/api/sandbox/ports` | Listening ports (`ss -tlnp`) |
+| GET | `/api/volumes` | List volume mounts from docker-compose.yml |
+| POST | `/api/volumes/chmod` | chmod a path inside the container |
+| DELETE | `/api/volumes/{idx}` | Remove volume entry from docker-compose.yml |
 | POST | `/api/volumes/{idx}/mode` | Toggle rw/ro in docker-compose.yml |
-| GET | `/api/volumes/{idx}/files` | List files inside the container path |
-| POST | `/api/volumes/upload` | Upload binary file to volume mount |
-| GET | `/api/volumes/download` | Download binary file from volume mount |
+| GET | `/api/volumes/{idx}/files` | List files at a container path |
+| POST | `/api/volumes/upload` | Upload binary file into a volume path |
+| GET | `/api/volumes/download` | Download binary file from a volume path |
+| POST | `/api/editor/read` | Read text file from container |
+| POST | `/api/editor/write` | Write text file to container |
+| POST | `/api/db/query` | Run SQLite query inside container |
+| GET | `/api/git/status` | Branch + staged/unstaged/untracked |
+| POST | `/api/git/diff` | Patch diff (working tree or staged) |
+| POST | `/api/git/stage` | `git add -A` |
+| POST | `/api/git/commit` | Commit with message |
+| POST | `/api/git/push` | Push to remote |
 | POST | `/api/config/dockerfile` | Append RUN layer to Dockerfile |
-| POST | `/api/config/readme` | Append timestamped note to README |
-| POST | `/api/config/environment` | Append to environment.yml |
-| POST | `/api/config/volume` | Add new volume to docker-compose.yml |
-| POST | `/api/editor/read` | Read text file contents inside container |
-| POST | `/api/editor/write` | Save updated text file contents inside container |
-| GET | `/api/sandbox/processes` | List active processes using `ps aux` |
-| POST | `/api/sandbox/processes/kill` | Kill target process by PID (`kill -9`) |
-| GET | `/api/sandbox/env` | Get container active environment + dotenv keys |
-| POST | `/api/sandbox/env/save` | Add or update key in dynamic dotenv files |
-| POST | `/api/sandbox/env/delete` | Remove key from dynamic dotenv files |
-| GET | `/api/sandbox/ports` | Get Listening ports inside container |
-| POST | `/api/db/query` | Run SQLite SQL queries and inspect tables |
+| POST | `/api/config/readme` | Append note to README.md |
+| POST | `/api/config/environment` | Append package to environment.yml |
+| POST | `/api/config/volume` | Add volume to docker-compose.yml |
+| WS | `/ws/exec` | Stream one-shot command output |
+| WS | `/ws/logs` | `docker logs -f` stream |
+| WS | `/ws/rebuild` | `docker compose build` stream |
+| WS | `/ws/pty` | Full bidirectional PTY shell (resize-aware) |
 | GET | `/` | Serve index.html |
 | static | `/static/*` | Serve JS/CSS |
 
-### Frontend Views & Features
+---
 
-- **Dashboard** — Docker socket + sandbox container status, live `docker logs -f` stream panel, active container stats metrics.
-- **Terminal** — package installer tool (uv/conda/dnf/npm) with snippets terminal assistant panel (persisted custom command bank).
-- **Volumes** — volume tables, recursive breadcrumb browser with uploads & downloads, inline chmod forms, and quick launcher buttons:
-  - **edit** (purple/vibrant text editor using CodeMirror 5 with syntax highlighting)
-  - **inspect** (SQLite database inspector with table schemas and custom interactive query executor)
-  - **env** (Dynamic `.env` Manager)
-- **Config** — configuration editor sub-tabs: Dockerfile, README, environment.yml, volume mapper, and the persistent **.env Manager**:
-  - Automatically registers custom `.env` file paths visited from volumes.
-  - Active dropdown selector context switcher.
-  - CRUD operations: Edit, add new, and permanently **delete** environment variables.
+## Frontend Views
+
+| Route | View | Key features |
+|-------|------|-------------|
+| `#/dashboard` | Dashboard | Container status cards, CPU/RAM/GPU live bars, Chart.js history charts (5 min), live logs, rebuild stream, restart button |
+| `#/terminal` | Terminal | Package installer (uv/conda/dnf/npm), raw command executor, command history (↑↓), custom snippet bank (localStorage) |
+| `#/pty` | PTY Shell | Full xterm.js interactive shell session, terminal resize, connects to `/ws/pty` |
+| `#/volumes` | Volumes | Volume table, breadcrumb file browser, upload/download, chmod form, mode toggle (rw/ro), Detach (two-step) |
+| `#/processes` | Processes & Ports | ps aux with CPU/MEM color bars, kill action, listening ports tab |
+| `#/git` | Git Manager | Branch status, staged/unstaged file lists, diff viewer, stage-all + commit + push |
+| `#/editor` | File Editor | CodeMirror 5, auto language detection, save to container |
+| `#/db-viewer` | SQLite Inspector | Table schema browser, interactive SQL executor |
+| `#/config` | Config | Dockerfile / README / Conda yml / Volume mapper tabs + .env Manager (multi-file, CRUD) |
 
 ---
 
-## Known state & caveats
+## Known Caveats
 
-- `app.py` (Streamlit) is still in the directory — safe to delete once the new stack is confirmed working
-- The chmod route is ordered BEFORE `/{idx}/mode` and `/{idx}/files` in `main.py` on purpose — FastAPI would otherwise try to cast "chmod" as `int` and return 422
-- Volume mode toggle writes to docker-compose.yml immediately but **requires a container restart** to take effect (the UI shows a hint)
-- `list_files_in_container` uses `find + stat -c '%a|%U|%G|%s|%F|%n'` — maxdepth 1 only (not recursive)
-- WebSocket streaming bridges the synchronous docker-py generator into async FastAPI via `threading.Thread` + `queue.Queue`
-
----
-
-## Completed Batch (High-Fidelity Features)
-
-- [x] **Restart sandbox button** on Dashboard
-- [x] **Live container logs** in Dashboard with WebSocket streaming
-- [x] **GPU / CPU / RAM usage metrics** dynamically loaded from stats API
-- [x] **Delete volume entry** in Volumes tab (two-step Detach action)
-- [x] **Terminal history & Snippets bank** persisted in localStorage
-- [x] **Rebuild image button** streaming docker-compose build stdout
-- [x] **Vue Router integration** supporting fully deep-linkable URLs
-- [x] **CodeMirror 5 Text Editor** with customized light & dark theme wrappers
-- [x] **SQLite Database Inspector** and interactive custom query executor
-- [x] **Volume Upload & Download utilities** for seamless binary binary transfer
-- [x] **Light Theme Mode Toggle** with persistent localStorage setting
-- [x] **Sub-project .env Manager** with dynamic dropdown, auto-register, and key deletion CRUD
+- `app.py` (Streamlit) is still present — safe to delete
+- The `/api/volumes/chmod` route is ordered **before** `/{idx}/mode` and `/{idx}/files` intentionally — FastAPI would otherwise try to cast the literal `"chmod"` as `int` and return 422
+- Volume mode toggle writes docker-compose.yml immediately but **requires a container restart** to take effect (UI shows a hint; live `mount -o remount` is attempted first via `SYS_ADMIN`)
+- `list_files_in_container` uses `find -maxdepth 1 + stat` — not recursive by design
+- WebSocket streaming bridges synchronous docker-py generators via `threading.Thread` + `queue.Queue`
+- PTY (`/ws/pty`) requires the `docker` CLI on the same host as the sidecar process
 
 ---
 
-## Future Enhancements & Ideas Checkpoint (Next Batch)
+## Pending
 
-- [ ] **Real-time Pty Terminal (xterm.js):** Upgrade command executor to support full interactive shell sessions using pseudo-terminals (PTYs).
-- [ ] **Interactive Metrics History:** Render active memory, CPU, and GPU usage over time as beautiful Chart.js lines rather than plain static text cards.
-- [ ] **Visual Git Manager:** View current git branch status, local uncommitted diff comparison, and add rapid commit-and-push actions.
-- [ ] **Process Resource Monitoring:** Show individual process memory and CPU consumption dynamically in the Processes list to quickly identify heavy tasks.
-- [ ] **Automatic Port Tunneling:** Expose internal container ports on public or host networks dynamically using custom reverse proxies or tunnels.
+- **Port Tunneling** — pure-Python asyncio TCP proxy (no socat needed): `asyncio.start_server` on a host port → container IP:port, managed start/stop via API. Deferred; ready to implement on request.

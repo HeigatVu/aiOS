@@ -1,8 +1,11 @@
 import os
 import time
+from collections import deque
 from typing import Generator, Optional
 import docker
 import docker.errors
+
+_stats_history: deque = deque(maxlen=60)
 
 
 def get_docker_client() -> Optional[docker.DockerClient]:
@@ -755,6 +758,16 @@ def _parse_ss_output_no_pid(output: str) -> list[dict]:
             "program": "-"
         })
     return ports
+
+
+def record_stats() -> None:
+    sample = get_sandbox_stats()
+    sample['ts'] = time.time()
+    _stats_history.append(sample)
+
+
+def get_stats_history() -> list[dict]:
+    return list(_stats_history)
 
 
 def query_sqlite_in_container(db_path: str, query: str) -> dict:

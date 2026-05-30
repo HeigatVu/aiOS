@@ -119,13 +119,95 @@ const StatusBar = {
 };
 
 // ---------------------------------------------------------------------------
+// MetricsCharts component — Chart.js history charts for Dashboard
+// ---------------------------------------------------------------------------
+
+const MetricsCharts = {
+    props: ['history'],
+    setup(props) {
+        let cpuChart = null, ramChart = null, gpuChart = null;
+
+        const hasGpu = computed(() => props.history && props.history.some(s => s.gpu));
+
+        function makeChart(id, label, color) {
+            const canvas = document.getElementById(id);
+            if (!canvas || !window.Chart) return null;
+            return new window.Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{ label, data: [], borderColor: color, backgroundColor: color + '22',
+                        fill: true, tension: 0.3, pointRadius: 2, borderWidth: 1.5 }]
+                },
+                options: {
+                    animation: false, responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        y: { min: 0, max: 100, grid: { color: '#3a3a3a' }, ticks: { color: '#858585', font: { size: 10 } } },
+                        x: { grid: { color: '#3a3a3a' }, ticks: { color: '#858585', font: { size: 9 }, maxTicksLimit: 8, maxRotation: 0 } },
+                    },
+                    plugins: { legend: { display: false } },
+                },
+            });
+        }
+
+        function updateCharts() {
+            if (!props.history || !props.history.length) return;
+            const now = Date.now() / 1000;
+            const labels = props.history.map(s => {
+                const ago = Math.round(now - s.ts);
+                return ago < 60 ? `${ago}s` : `${Math.round(ago / 60)}m`;
+            });
+            if (cpuChart) { cpuChart.data.labels = labels; cpuChart.data.datasets[0].data = props.history.map(s => s.cpu_percent); cpuChart.update('none'); }
+            if (ramChart) { ramChart.data.labels = labels; ramChart.data.datasets[0].data = props.history.map(s => s.mem_percent); ramChart.update('none'); }
+            if (gpuChart) { gpuChart.data.labels = labels; gpuChart.data.datasets[0].data = props.history.map(s => s.gpu ? s.gpu.utilization : 0); gpuChart.update('none'); }
+        }
+
+        onMounted(() => {
+            cpuChart = makeChart('metrics-cpu', 'CPU %', '#5ca4f5');
+            ramChart = makeChart('metrics-ram', 'RAM %', '#e8b84b');
+            if (hasGpu.value) gpuChart = makeChart('metrics-gpu', 'GPU %', '#6ddb8b');
+            updateCharts();
+        });
+
+        onUnmounted(() => {
+            cpuChart?.destroy(); ramChart?.destroy(); gpuChart?.destroy();
+        });
+
+        watch(() => props.history, updateCharts, { deep: true });
+
+        return { hasGpu };
+    },
+    template: `
+        <div style="margin-top:14px">
+            <h3>Resource History</h3>
+            <div style="display:grid; gap:12px; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr))">
+                <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:10px">
+                    <div style="font-size:11px; color:var(--muted); margin-bottom:4px">CPU %</div>
+                    <div style="height:70px; position:relative"><canvas id="metrics-cpu"></canvas></div>
+                </div>
+                <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:10px">
+                    <div style="font-size:11px; color:var(--muted); margin-bottom:4px">Memory %</div>
+                    <div style="height:70px; position:relative"><canvas id="metrics-ram"></canvas></div>
+                </div>
+                <div v-if="hasGpu" style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:10px">
+                    <div style="font-size:11px; color:var(--muted); margin-bottom:4px">GPU %</div>
+                    <div style="height:70px; position:relative"><canvas id="metrics-gpu"></canvas></div>
+                </div>
+            </div>
+        </div>
+    `,
+};
+
+// ---------------------------------------------------------------------------
 // DashboardPanel component
 // ---------------------------------------------------------------------------
 
 const DashboardPanel = {
+    components: { MetricsCharts },
     setup() {
         const status = inject('status');
         const stats = ref(null);
+        const statsHistory = ref([]);
         const restarting = ref(false);
         const restartMsg = ref('');
         const logsOutput = ref('');
@@ -140,7 +222,10 @@ const DashboardPanel = {
         let statsTimer = null;
 
         async function loadStats() {
-            try { stats.value = await api.get('/api/sandbox/stats'); } catch (_) {}
+            try {
+                stats.value = await api.get('/api/sandbox/stats');
+                statsHistory.value = await api.get('/api/sandbox/stats/history');
+            } catch (_) {}
         }
 
         async function restart() {
@@ -215,7 +300,7 @@ const DashboardPanel = {
         });
 
         return {
-            status, stats, restarting, restartMsg,
+            status, stats, statsHistory, restarting, restartMsg,
             logsOutput, logsRunning, showLogs,
             rebuildOutput, rebuildRunning, showRebuild,
             restart, toggleLogs, rebuild, statBarClass,
@@ -298,6 +383,10 @@ const DashboardPanel = {
                     <pre id="rebuild-pre" :class="{ 'terminal-cursor': rebuildRunning }">{{ rebuildOutput || 'Waiting for build output…' }}</pre>
                 </div>
                 <button class="btn-sm" @click="rebuildOutput = ''" style="margin-top:6px">Clear</button>
+            </div>
+
+            <div class="panel" v-if="statsHistory.length">
+                <MetricsCharts :history="statsHistory" />
             </div>
         </div>
     `,
@@ -524,6 +613,92 @@ const TerminalPanel = {
                     <button class="btn-secondary btn-sm" style="width:100%" @click="addCustomSnippet" :disabled="!newSnipTitle || !newSnipCode">Save Snippet</button>
                 </div>
             </div>
+        </div>
+    `,
+};
+
+// ---------------------------------------------------------------------------
+// PtyTerminalPanel component — full interactive shell via xterm.js + PTY WebSocket
+// ---------------------------------------------------------------------------
+
+const PtyTerminalPanel = {
+    setup() {
+        const connected = ref(false);
+        const connecting = ref(false);
+        const termContainer = ref(null);
+
+        let term = null;
+        let fitAddon = null;
+        let ws = null;
+
+        function connect() {
+            if (ws || connected.value) return;
+            const XTerm = window.Terminal;
+            const XFitAddon = window.FitAddon && window.FitAddon.FitAddon;
+            if (!XTerm) { addToast('xterm.js not loaded — check CDN', 'error'); return; }
+
+            connecting.value = true;
+            term = new XTerm({
+                cursorBlink: true,
+                fontSize: 13,
+                fontFamily: 'JetBrains Mono, Cascadia Code, monospace',
+                theme: { background: '#1e1e1e', foreground: '#d4d4d4', cursor: '#007acc' },
+            });
+
+            if (XFitAddon) { fitAddon = new XFitAddon(); term.loadAddon(fitAddon); }
+            if (termContainer.value) term.open(termContainer.value);
+            if (fitAddon) fitAddon.fit();
+
+            const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${proto}//${location.host}/ws/pty`);
+            ws.binaryType = 'arraybuffer';
+
+            ws.onopen = () => {
+                connecting.value = false;
+                connected.value = true;
+                if (fitAddon) {
+                    const d = fitAddon.proposeDimensions();
+                    if (d) ws.send(JSON.stringify({ type: 'resize', rows: d.rows, cols: d.cols }));
+                }
+            };
+            ws.onmessage = (e) => {
+                if (e.data instanceof ArrayBuffer) term.write(new Uint8Array(e.data));
+                else term.write(e.data);
+            };
+            ws.onclose = () => {
+                connected.value = false;
+                connecting.value = false;
+                term && term.writeln('\r\n\r\n[Session closed]');
+            };
+            ws.onerror = () => { addToast('PTY connection error', 'error'); connecting.value = false; };
+
+            term.onData((data) => { if (ws && ws.readyState === 1) ws.send(data); });
+            term.onResize(({ rows, cols }) => {
+                if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'resize', rows, cols }));
+            });
+        }
+
+        function disconnect() {
+            ws && ws.close(); ws = null;
+            term && term.dispose(); term = null;
+            connected.value = false;
+        }
+
+        onUnmounted(disconnect);
+
+        return { connected, connecting, termContainer, connect, disconnect };
+    },
+    template: `
+        <div class="panel">
+            <h2>PTY Shell</h2>
+            <div class="form-row" style="margin-bottom:10px; gap:8px">
+                <button class="btn-primary" @click="connect" :disabled="connected || connecting">
+                    {{ connecting ? 'Connecting…' : '▶ Open Shell' }}
+                </button>
+                <button class="btn-secondary" @click="disconnect" :disabled="!connected">Disconnect</button>
+                <span v-if="connected" style="color:var(--ok); font-size:12px; align-self:center">● Shell active — ai_tui_sandbox</span>
+            </div>
+            <div ref="termContainer" style="height:480px; background:#1e1e1e; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden"></div>
         </div>
     `,
 };
@@ -1084,8 +1259,22 @@ const ProcessesPanel = {
                             <tr v-for="p in filteredProcesses" :key="p.pid">
                                 <td><code>{{ p.pid }}</code></td>
                                 <td class="muted">{{ p.user }}</td>
-                                <td>{{ p.cpu }}%</td>
-                                <td>{{ p.mem }}%</td>
+                                <td>
+                                    <div style="display:flex; align-items:center; gap:5px">
+                                        <span style="min-width:36px; font-size:11px">{{ p.cpu }}%</span>
+                                        <div class="stat-bar" style="width:44px; flex-shrink:0">
+                                            <div class="stat-bar-fill" :class="parseFloat(p.cpu)>50?'err':parseFloat(p.cpu)>15?'warn':'ok'" :style="{width:Math.min(parseFloat(p.cpu)||0,100)+'%'}"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="display:flex; align-items:center; gap:5px">
+                                        <span style="min-width:36px; font-size:11px">{{ p.mem }}%</span>
+                                        <div class="stat-bar" style="width:44px; flex-shrink:0">
+                                            <div class="stat-bar-fill" :class="parseFloat(p.mem)>50?'err':parseFloat(p.mem)>15?'warn':'ok'" :style="{width:Math.min(parseFloat(p.mem)||0,100)+'%'}"></div>
+                                        </div>
+                                    </div>
+                                </td>
                                 <td style="font-family: var(--font-mono); font-size:11px; max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap" :title="p.command">
                                     {{ p.command }}
                                 </td>
@@ -1751,20 +1940,142 @@ const ConfigPanel = {
 };
 
 // ---------------------------------------------------------------------------
+// GitPanel component — branch status, diff viewer, stage/commit/push
+// ---------------------------------------------------------------------------
+
+const GitPanel = {
+    setup() {
+        const repoPath = ref('/workspace');
+        const status = ref(null);
+        const diff = ref('');
+        const showDiff = ref(false);
+        const commitMsg = ref('');
+        const loading = ref(false);
+        const opOutput = ref('');
+        const opError = ref('');
+
+        async function loadStatus() {
+            loading.value = true;
+            status.value = null;
+            opError.value = '';
+            try {
+                const res = await api.get(`/api/git/status?path=${encodeURIComponent(repoPath.value)}`);
+                if (res.ok) status.value = res;
+                else opError.value = res.error || 'git status failed';
+            } catch (e) {
+                opError.value = e.message;
+            } finally {
+                loading.value = false;
+            }
+        }
+
+        async function toggleDiff() {
+            showDiff.value = !showDiff.value;
+            if (!showDiff.value) return;
+            try {
+                const res = await api.post('/api/git/diff', { path: repoPath.value, staged: false });
+                diff.value = res.diff || '(no diff)';
+            } catch (e) { diff.value = `Error: ${e.message}`; }
+        }
+
+        async function stageAndCommit() {
+            if (!commitMsg.value.trim()) { addToast('Enter a commit message', 'error'); return; }
+            opOutput.value = ''; opError.value = '';
+            try {
+                const stageRes = await api.post('/api/git/stage', { path: repoPath.value });
+                opOutput.value += stageRes.output || '';
+                if (!stageRes.ok) { opError.value = 'git add failed'; return; }
+                const commitRes = await api.post('/api/git/commit', { path: repoPath.value, message: commitMsg.value });
+                opOutput.value += commitRes.output || '';
+                if (commitRes.ok) { addToast('Committed.', 'success'); commitMsg.value = ''; loadStatus(); }
+                else opError.value = 'git commit failed';
+            } catch (e) { opError.value = e.message; }
+        }
+
+        async function push() {
+            opOutput.value = ''; opError.value = '';
+            try {
+                const res = await api.post('/api/git/push', { path: repoPath.value });
+                opOutput.value = res.output || '';
+                if (res.ok) { addToast('Pushed.', 'success'); loadStatus(); }
+                else opError.value = 'git push failed';
+            } catch (e) { opError.value = e.message; }
+        }
+
+        onMounted(loadStatus);
+
+        return { repoPath, status, diff, showDiff, commitMsg, loading, opOutput, opError, loadStatus, toggleDiff, stageAndCommit, push };
+    },
+    template: `
+        <div class="panel">
+            <h2>Git Manager</h2>
+            <div class="form-row" style="margin-bottom:12px">
+                <input type="text" v-model="repoPath" placeholder="/workspace" class="input-flex" />
+                <button class="btn-secondary" @click="loadStatus" :disabled="loading">{{ loading ? 'Loading…' : '↻ Refresh' }}</button>
+            </div>
+
+            <div v-if="status">
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:12px">
+                    <span style="font-size:13px">⎇ <strong>{{ status.branch || 'unknown' }}</strong></span>
+                    <span class="badge-rw" style="font-size:10px">{{ status.staged.length }} staged</span>
+                    <span class="badge-ro" style="font-size:10px">{{ status.unstaged.length }} unstaged</span>
+                    <span class="muted" style="font-size:11px">{{ status.untracked.length }} untracked</span>
+                </div>
+
+                <div v-if="status.staged.length || status.unstaged.length" style="margin-bottom:12px">
+                    <div v-if="status.staged.length" style="margin-bottom:6px">
+                        <div class="hint" style="margin-bottom:3px">Staged:</div>
+                        <div v-for="f in status.staged" :key="f.file" style="font-family:var(--font-mono); font-size:11px; color:var(--ok)">+ {{ f.file }}</div>
+                    </div>
+                    <div v-if="status.unstaged.length">
+                        <div class="hint" style="margin-bottom:3px">Unstaged:</div>
+                        <div v-for="f in status.unstaged" :key="f.file" style="font-family:var(--font-mono); font-size:11px; color:var(--err)">~ {{ f.file }}</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:12px">
+                    <button class="btn-sm btn-secondary" @click="toggleDiff">{{ showDiff ? '▲ Hide diff' : '▼ Show diff' }}</button>
+                    <div v-if="showDiff" class="terminal-output" style="max-height:200px; margin-top:8px">
+                        <pre style="font-size:10px; white-space:pre-wrap; word-break:break-all">{{ diff }}</pre>
+                    </div>
+                </div>
+
+                <div style="padding:12px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius)">
+                    <div class="form-row" style="margin-bottom:8px">
+                        <input type="text" v-model="commitMsg" placeholder="Commit message…" class="input-flex" @keyup.enter="stageAndCommit" />
+                    </div>
+                    <div class="form-row" style="gap:8px">
+                        <button class="btn-primary" @click="stageAndCommit" :disabled="!commitMsg.trim()">⚡ Stage All & Commit</button>
+                        <button class="btn-secondary" @click="push">↑ Push</button>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="opOutput" class="terminal-output" style="margin-top:10px; max-height:160px">
+                <pre style="font-size:11px">{{ opOutput }}</pre>
+            </div>
+            <div v-if="opError" class="error-msg" style="margin-top:8px">{{ opError }}</div>
+        </div>
+    `,
+};
+
+// ---------------------------------------------------------------------------
 // Router
 // ---------------------------------------------------------------------------
 
 const router = createRouter({
     history: createWebHashHistory(),
     routes: [
-        { path: '/',          redirect: '/terminal' },
-        { path: '/dashboard', component: DashboardPanel },
-        { path: '/terminal',  component: TerminalPanel },
-        { path: '/volumes',   component: VolumePanel },
-        { path: '/processes', component: ProcessesPanel },
-        { path: '/editor',    component: EditorPanel },
-        { path: '/db-viewer', component: DbViewerPanel },
-        { path: '/config',    component: ConfigPanel },
+        { path: '/',           redirect: '/terminal' },
+        { path: '/dashboard',  component: DashboardPanel },
+        { path: '/terminal',   component: TerminalPanel },
+        { path: '/pty',        component: PtyTerminalPanel },
+        { path: '/volumes',    component: VolumePanel },
+        { path: '/processes',  component: ProcessesPanel },
+        { path: '/editor',     component: EditorPanel },
+        { path: '/db-viewer',  component: DbViewerPanel },
+        { path: '/config',     component: ConfigPanel },
+        { path: '/git',        component: GitPanel },
     ],
 });
 
@@ -1781,8 +2092,10 @@ createApp({
         const navItems = [
             { path: '/dashboard', label: '⬡ Dashboard' },
             { path: '/terminal',  label: '⌨ Terminal' },
+            { path: '/pty',       label: '> PTY Shell' },
             { path: '/volumes',   label: '📦 Volumes' },
             { path: '/processes', label: '📊 Processes' },
+            { path: '/git',       label: '⎇ Git' },
             { path: '/config',    label: '⚙ Config' },
         ];
 

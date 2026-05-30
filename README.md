@@ -36,11 +36,17 @@ my-assistance/
 │   ├── system-config/           # .zshrc, .p10k.zsh, nvim config
 │   └── prompt-to-fix.md        # Paste-in prompt for Claude after a container rebuild
 │
-├── sidecar-ui/                  # Streamlit control panel (port 8502)
-│   ├── Dockerfile.sidecar
-│   ├── app.py
-│   ├── docker_bridge.py
-│   └── config_editors.py
+├── sidecar-ui/                  # Web control panel (port 8502) — FastAPI + Vue 3
+│   ├── Dockerfile.sidecar       # Sidecar image
+│   ├── main.py                  # FastAPI app — all API routes + WebSocket endpoints
+│   ├── docker_bridge.py         # Docker SDK wrapper (exec, streaming, stats, PTY)
+│   ├── git_manager.py           # Git operations inside the sandbox container
+│   ├── volumes.py               # docker-compose.yml volume parser
+│   ├── config_editors.py        # Dockerfile / README / environment.yml writers
+│   └── static/                  # Vue 3 SPA (CDN, no build step)
+│       ├── index.html
+│       ├── app.js
+│       └── style.css
 │
 ├── working-space/               # Mapped to /workspace (code & scripts)
 ├── data/                        # Mapped to /data (heavy datasets — gitignored)
@@ -57,9 +63,16 @@ my-assistance/
 
 ### Container 2: The Sidecar Controller (`ai_sidecar_controller`)
 
-* **Purpose:** Web control panel at `http://localhost:8502`.
+* **Purpose:** Web control panel at `http://localhost:8502` — FastAPI backend + Vue 3 SPA.
 * **Privileges:** Mounts `/var/run/docker.sock` to execute commands inside the sandbox.
-* **Features:** Live package installer terminal, dynamic volume folder mapper, persistent markdown notebook.
+* **Views:**
+  * **Dashboard** — live CPU / RAM / GPU cards + 5-minute Chart.js history charts, container logs stream, rebuild button
+  * **Terminal** — package installer (uv / conda / dnf / npm), raw command executor with history, custom snippet bank
+  * **PTY Shell** — full interactive xterm.js shell session directly into the sandbox
+  * **Volumes** — file browser with upload / download, chmod, rw/ro toggle, volume detach
+  * **Processes & Ports** — live `ps aux` with CPU/MEM bars + kill, listening ports
+  * **Git** — branch status, diff viewer, stage-all / commit / push inside the sandbox
+  * **Config** — Dockerfile / README / environment.yml editors, volume mapper, `.env` Manager (multi-file CRUD)
 
 ---
 

@@ -1,7 +1,15 @@
 import asyncio
+import fcntl
+import json
+import os
+import pty
 import queue
+import select
+import struct
 import subprocess
+import termios
 import threading
+from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect, Response, UploadFile, File, Form
@@ -10,10 +18,31 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import docker_bridge
+import git_manager
 import volumes
 import config_editors
 
-app = FastAPI(title="aiOS Control Panel")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async def collect_stats():
+        while True:
+            try:
+                docker_bridge.record_stats()
+            except Exception:
+                pass
+            await asyncio.sleep(5)
+
+    task = asyncio.create_task(collect_stats())
+    yield
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
+
+app = FastAPI(title="aiOS Control Panel", lifespan=lifespan)
 
 
 # ---------------------------------------------------------------------------
@@ -75,6 +104,24 @@ class EnvDeleteBody(BaseModel):
 class SQLiteQueryBody(BaseModel):
     db_path: str
     query: str
+
+
+class GitDiffBody(BaseModel):
+    path: str
+    staged: bool = False
+
+
+class GitStageBody(BaseModel):
+    path: str
+
+
+class GitCommitBody(BaseModel):
+    path: str
+    message: str
+
+
+class GitPushBody(BaseModel):
+    path: str
 
 
 # ---------------------------------------------------------------------------
@@ -371,6 +418,138 @@ def download_file_from_volume(path: str = Query(...)) -> Response:
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/sandbox/stats/history")
+def get_stats_history() -> list[dict]:
+    return docker_bridge.get_stats_history()
+
+
+# ---------------------------------------------------------------------------
+# Git routes
+# ---------------------------------------------------------------------------
+
+@app.get("/api/git/status")
+def git_status(path: str = Query(...)) -> dict:
+    return git_manager.get_git_status(path)
+
+
+@app.post("/api/git/diff")
+def git_diff(body: GitDiffBody) -> dict:
+    return {"ok": True, "diff": git_manager.get_git_diff(body.path, body.staged)}
+
+
+@app.post("/api/git/stage")
+def git_stage(body: GitStageBody) -> dict:
+    return git_manager.git_stage_all(body.path)
+
+
+@app.post("/api/git/commit")
+def git_commit_route(body: GitCommitBody) -> dict:
+    return git_manager.git_commit(body.path, body.message)
+
+
+@app.post("/api/git/push")
+def git_push_route(body: GitPushBody) -> dict:
+    return git_manager.git_push(body.path)
+
+
+# ---------------------------------------------------------------------------
+# PTY WebSocket — full interactive shell inside the sandbox container
+# ---------------------------------------------------------------------------
+
+@app.websocket("/ws/pty")
+async def ws_pty(websocket: WebSocket) -> None:
+    await websocket.accept()
+
+    client = docker_bridge.get_docker_client()
+    if not client:
+        await websocket.send_text("\r\n[ERROR] Docker not connected (mock mode)\r\n")
+        await websocket.close()
+        return
+
+    try:
+        client.containers.get("ai_tui_sandbox")
+    except Exception:
+        await websocket.send_text("\r\n[ERROR] Container 'ai_tui_sandbox' not found\r\n")
+        await websocket.close()
+        return
+
+    master_fd, slave_fd = pty.openpty()
+
+    try:
+        proc = subprocess.Popen(
+            ["docker", "exec", "-it", "ai_tui_sandbox", "/bin/bash"],
+            stdin=slave_fd,
+            stdout=slave_fd,
+            stderr=slave_fd,
+            close_fds=True,
+        )
+        os.close(slave_fd)
+
+        loop = asyncio.get_running_loop()
+
+        async def forward_output() -> None:
+            while True:
+                try:
+                    def _read() -> bytes:
+                        r, _, _ = select.select([master_fd], [], [], 0.5)
+                        return os.read(master_fd, 4096) if r else b""
+
+                    data = await loop.run_in_executor(None, _read)
+                    if data:
+                        await websocket.send_bytes(data)
+                    elif proc.poll() is not None:
+                        break
+                except OSError:
+                    break
+
+        async def forward_input() -> None:
+            while True:
+                try:
+                    msg = await websocket.receive()
+                    if msg.get("type") == "websocket.disconnect":
+                        break
+                    if "bytes" in msg:
+                        os.write(master_fd, msg["bytes"])
+                    elif "text" in msg:
+                        text = msg["text"]
+                        try:
+                            parsed = json.loads(text)
+                            if parsed.get("type") == "resize":
+                                rows = int(parsed.get("rows", 24))
+                                cols = int(parsed.get("cols", 80))
+                                s = struct.pack("HHHH", rows, cols, 0, 0)
+                                fcntl.ioctl(master_fd, termios.TIOCSWINSZ, s)
+                        except (json.JSONDecodeError, ValueError):
+                            os.write(master_fd, text.encode("utf-8", errors="replace"))
+                except WebSocketDisconnect:
+                    break
+                except Exception:
+                    break
+
+        send_task = asyncio.create_task(forward_output())
+        recv_task = asyncio.create_task(forward_input())
+
+        done, pending = await asyncio.wait(
+            [send_task, recv_task],
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+        for t in pending:
+            t.cancel()
+        await asyncio.gather(*pending, return_exceptions=True)
+
+    except WebSocketDisconnect:
+        pass
+    finally:
+        try:
+            proc.terminate()
+        except Exception:
+            pass
+        try:
+            os.close(master_fd)
+        except OSError:
+            pass
 
 
 @app.get("/")
