@@ -9,7 +9,10 @@ RUN dnf upgrade --refresh -y && \
   lsd tealdeer fzf \
   autojump-zsh jq lsof\
   && dnf clean all
-  
+
+# the ENV PATH line
+ENV AGENTMEMORY_III_VERSION=0.11.2
+
 # 2. Install global NPM packages
 RUN npm install -g @agentmemory/agentmemory
 
@@ -23,7 +26,7 @@ RUN groupadd -g ${GROUP_ID} ${USERNAME} && \
   echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USERNAME}
 
 # 4. Copy entrypoint (as root, before switching user)
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY ./config-file/system-config/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # 5. Switch to user to ensure AI agents install securely in user-space
@@ -42,7 +45,6 @@ RUN mkdir -p \
   /home/${USERNAME}/.agents \
   /home/${USERNAME}/.fcc \
   /home/${USERNAME}/.iii \
-  /home/${USERNAME}/.feynman
 
 # 7. Install Environment Managers (uv & Conda)
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -70,10 +72,8 @@ RUN curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/
 RUN curl -fsSL https://claude.ai/install.sh | bash
 RUN curl -fsSL "https://github.com/Alishahryar1/free-claude-code/blob/main/scripts/install.sh?raw=1" | sh
 RUN curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
-RUN curl -fsSL https://feynman.is/install | bash
 RUN curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/read-once/install.sh | bash
 RUN curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh
-RUN curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
 
 
 

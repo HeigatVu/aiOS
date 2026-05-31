@@ -4,6 +4,32 @@ This repository houses a secure, GPU-accelerated multi-container workspace for A
 
 By leveraging the **Sidecar Pattern**, it isolates the heavy AI sandbox from your host machine while providing a web control panel to manage installations and shared directories.
 
+## Step to do
+
+```
+make down && make build && make up
+```
+
+- Then attach to the container and verify:
+
+```
+make shell
+```
+
+- Once inside, check:
+
+```
+  iii --version          # expect 0.11.2 (set by AGENTMEMORY_III_VERSION)
+  agentmemory status     # expect Health: ✓ healthy
+  claude auth status     # expect "loggedIn": true
+```
+
+- If all three pass, everything works. If anything fails, paste into a new Claude Code session:
+
+```
+Read /config-file/step-to-reconfig.md and execute every step in order.
+```
+
 ---
 
 ## 📖 Table of Contents
@@ -55,24 +81,24 @@ my-assistance/
 
 ### Container 1: The AI Sandbox (`ai_tui_sandbox`)
 
-* **Purpose:** Where AI agents (Gemini, Claude, Hermes, agentmemory, etc.) run.
-* **Privileges:** Strictly isolated — no Docker socket access.
-* **User:** Runs as your host UID/GID (auto-detected by Makefile) so bind-mount files are always owned by you.
-* **Environments:** Pre-activated Conda `ai-baseline` env, plus `uv` for fast Python installs.
-* **GPU Passthrough:** Wires your host NVIDIA GPU for local model inference.
+- **Purpose:** Where AI agents (Gemini, Claude, Hermes, agentmemory, etc.) run.
+- **Privileges:** Strictly isolated — no Docker socket access.
+- **User:** Runs as your host UID/GID (auto-detected by Makefile) so bind-mount files are always owned by you.
+- **Environments:** Pre-activated Conda `ai-baseline` env, plus `uv` for fast Python installs.
+- **GPU Passthrough:** Wires your host NVIDIA GPU for local model inference.
 
 ### Container 2: The Sidecar Controller (`ai_sidecar_controller`)
 
-* **Purpose:** Web control panel at `http://localhost:8502` — FastAPI backend + Vue 3 SPA.
-* **Privileges:** Mounts `/var/run/docker.sock` to execute commands inside the sandbox.
-* **Views:**
-  * **Dashboard** — live CPU / RAM / GPU cards + 5-minute Chart.js history charts, container logs stream, rebuild button
-  * **Terminal** — package installer (uv / conda / dnf / npm), raw command executor with history, custom snippet bank
-  * **PTY Shell** — full interactive xterm.js shell session directly into the sandbox
-  * **Volumes** — file browser with upload / download, chmod, rw/ro toggle, volume detach
-  * **Processes & Ports** — live `ps aux` with CPU/MEM bars + kill, listening ports
-  * **Git** — branch status, diff viewer, stage-all / commit / push inside the sandbox
-  * **Config** — Dockerfile / README / environment.yml editors, volume mapper, `.env` Manager (multi-file CRUD)
+- **Purpose:** Web control panel at `http://localhost:8502` — FastAPI backend + Vue 3 SPA.
+- **Privileges:** Mounts `/var/run/docker.sock` to execute commands inside the sandbox.
+- **Views:**
+  - **Dashboard** — live CPU / RAM / GPU cards + 5-minute Chart.js history charts, container logs stream, rebuild button
+  - **Terminal** — package installer (uv / conda / dnf / npm), raw command executor with history, custom snippet bank
+  - **PTY Shell** — full interactive xterm.js shell session directly into the sandbox
+  - **Volumes** — file browser with upload / download, chmod, rw/ro toggle, volume detach
+  - **Processes & Ports** — live `ps aux` with CPU/MEM bars + kill, listening ports
+  - **Git** — branch status, diff viewer, stage-all / commit / push inside the sandbox
+  - **Config** — Dockerfile / README / environment.yml editors, volume mapper, `.env` Manager (multi-file CRUD)
 
 ---
 
@@ -159,8 +185,8 @@ The Makefile automatically passes your current user's `UID` and `GID` as build a
 
 The `.gitignore` protects sensitive and heavy content:
 
-* **Gitignored:** `data/`, `outputs/`, `persistent/` (agent credentials, Conda env, caches), `.env`
-* **Tracked:** Empty directory stubs via `.gitkeep`, all config files in `config-file/`
+- **Gitignored:** `data/`, `outputs/`, `persistent/` (agent credentials, Conda env, caches), `.env`
+- **Tracked:** Empty directory stubs via `.gitkeep`, all config files in `config-file/`
 
 ### Clear Git Cache Before First Push
 
@@ -176,8 +202,8 @@ git commit -m "chore: secure all private directories and workspaces"
 
 ## 6. Troubleshooting & Edge Cases
 
-* **SELinux Permission Denied:** Volume mounts use the `:z` flag in `docker-compose.yml` to relabel SELinux contexts. If an agent can't write credentials, verify the mount entry ends with `:rw,z`.
-* **File ownership issues on host:** Always run Docker via `make up` — it exports the correct UID/GID. If you ran `docker compose up` directly without exporting `UID`/`GID`, files may be owned by the wrong user; fix with `sudo chown -R $(id -u):$(id -g) persistent/ config-file/`.
-* **GPU Connection Failure:** Ensure `nvidia-container-toolkit` is installed on the host and the Docker daemon is restarted after toolkit setup.
-* **ResolvePackageNotFound (Conda):** Open `environment.yml`, remove strict version build strings (e.g., change `python=3.12.13=hd63d673_0` to `python=3.12.13`), then `make build`.
-* **agentmemory or hermes not healthy after rebuild:** Open a sandbox shell (`make shell`) and paste the prompt from `config-file/prompt-to-fix.md` into Claude Code.
+- **SELinux Permission Denied:** Volume mounts use the `:z` flag in `docker-compose.yml` to relabel SELinux contexts. If an agent can't write credentials, verify the mount entry ends with `:rw,z`.
+- **File ownership issues on host:** Always run Docker via `make up` — it exports the correct UID/GID. If you ran `docker compose up` directly without exporting `UID`/`GID`, files may be owned by the wrong user; fix with `sudo chown -R $(id -u):$(id -g) persistent/ config-file/`.
+- **GPU Connection Failure:** Ensure `nvidia-container-toolkit` is installed on the host and the Docker daemon is restarted after toolkit setup.
+- **ResolvePackageNotFound (Conda):** Open `environment.yml`, remove strict version build strings (e.g., change `python=3.12.13=hd63d673_0` to `python=3.12.13`), then `make build`.
+- **agentmemory or hermes not healthy after rebuild:** Open a sandbox shell (`make shell`) and paste the prompt from `config-file/prompt-to-fix.md` into Claude Code.

@@ -12,6 +12,7 @@ config-file/agentmemory/*
 config-file/credentials/*
 config-file/hermes/*
 config-file/system-config/*
+config-file/claude/*
 
 # Allow tracking the empty directory structures of config-file and its subfolders
 !config-file/

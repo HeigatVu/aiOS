@@ -37,7 +37,6 @@ services:
       - ./persistent/agents:/home/ai_user/.agents:rw,z
       - ./persistent/fcc:/home/ai_user/.fcc:rw,z
       - ./persistent/iii:/home/ai_user/.iii:rw,z
-      - ./persistent/feynman:/home/ai_user/.feynman:rw,z
 
       # 4. Shell Configurations
       - ./config-file/system-config/.p10k.zsh:/home/ai_user/.p10k.zsh:rw,z
