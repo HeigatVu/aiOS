@@ -12,11 +12,11 @@ services:
       - LANG=C.UTF-8
       - LC_ALL=C.UTF-8
     ports:
-      - "127.0.0.1:3113:3113"
-      - "127.0.0.1:8501:8501"
-      - "127.0.0.1:8888:8888"
-      - "127.0.0.1:8082:8082"
-      - "127.0.0.1:9119:9119"
+      - "127.0.0.1:3113:3113" # Agentmemory
+      - "127.0.0.1:8501:8501" 
+      - "127.0.0.1:8888:8888" # Jupyter Notebook
+      - "127.0.0.1:8082:8082" # free claude code
+      - "127.0.0.1:9119:9119" # Hermes dashboard
     volumes:
       # 1. Code & Data
       - ./sandbox-data/working-space:/workspace:rw,z

@@ -6,6 +6,26 @@ persistent/*
 
 # Exclude heavy audio datasets and large binary archives
 data/*
+# Ignore all actual folder contents
+config-file/*
+config-file/agentmemory/*
+config-file/credentials/*
+config-file/hermes/*
+config-file/system-config/*
+
+# Allow tracking the empty directory structures of config-file and its subfolders
+!config-file/
+!config-file/agentmemory/
+!config-file/credentials/
+!config-file/hermes/
+!config-file/system-config/
+
+# Unignore the .gitkeep files so git tracks the empty shell directories
+!config-file/.gitkeep
+!config-file/agentmemory/.gitkeep
+!config-file/credentials/.gitkeep
+!config-file/hermes/.gitkeep
+!config-file/system-config/.gitkeep
 
 # Allow tracking the empty directory structures of sandbox-data and its subfolders
 !sandbox-data/

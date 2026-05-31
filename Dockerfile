@@ -7,7 +7,7 @@ RUN dnf upgrade --refresh -y && \
   git curl wget tar unzip sudo neovim zsh util-linux \
   gcc gcc-c++ make \
   lsd tealdeer fzf \
-  autojump-zsh \
+  autojump-zsh jq lsof\
   && dnf clean all
   
 # 2. Install global NPM packages
@@ -71,6 +71,11 @@ RUN curl -fsSL https://claude.ai/install.sh | bash
 RUN curl -fsSL "https://github.com/Alishahryar1/free-claude-code/blob/main/scripts/install.sh?raw=1" | sh
 RUN curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
 RUN curl -fsSL https://feynman.is/install | bash
+RUN curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/read-once/install.sh | bash
+RUN curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh
+RUN curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
+
+
 
 # --- AI SIDECAR AUTO-INSTALLS ---
 # (Sidecar UI injects new RUN layers directly under this marker. Do not remove.)
