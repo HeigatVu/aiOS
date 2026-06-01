@@ -12,11 +12,13 @@ services:
       - LANG=C.UTF-8
       - LC_ALL=C.UTF-8
     ports:
-      - "127.0.0.1:3113:3113" # Agentmemory
-      - "127.0.0.1:8501:8501" 
-      - "127.0.0.1:8888:8888" # Jupyter Notebook
-      - "127.0.0.1:8082:8082" # free claude code
-      - "127.0.0.1:9119:9119" # Hermes dashboard
+      # Ports WITHOUT 127.0.0.1: prefix so they are reachable from any LAN device.
+      # Do NOT add "127.0.0.1:" in front — that restricts access to localhost only.
+      - "3113:3113" # agentmemory viewer (via viewer-proxy)
+      - "8501:8501"
+      - "8888:8888" # Jupyter Notebook
+      - "8082:8082" # free claude code
+      - "9119:9119" # Hermes dashboard (via dashboard-proxy)
     volumes:
       # 1. Code & Data
       - ./sandbox-data/working-space:/workspace:rw,z
@@ -46,6 +48,11 @@ services:
       # 5. Editor Configurations
       - ./config-file/system-config/nvim:/home/ai_user/.config/nvim:rw,z
 
+      # 6. Docker configs
+      - ./dockerfile:/config-file/dockerfile:ro,z
+      - ./docker-compose.yml:/config-file/docker-compose.yml:ro,z
+      - ./sidecar-ui:/sidecar-ui:rw,z
+
     cap_add:
       - SYS_ADMIN
 
@@ -60,7 +67,9 @@ services:
               count: 1
               capabilities: [gpu]
 
-    restart: unless-stopped
+    # Auto-start the container when Docker daemon starts (e.g. on laptop boot).
+    # Requires: sudo systemctl enable docker
+    restart: always
     stdin_open: true
     tty: true
     network_mode: "bridge"
@@ -71,9 +80,9 @@ services:
       dockerfile: Dockerfile.sidecar
     container_name: ai_sidecar_controller
     ports:
-      - "127.0.0.1:8502:8502"
+      - "8502:8502"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - .:/workspace:rw,z
-    restart: unless-stopped
+    restart: always
     network_mode: "bridge"
