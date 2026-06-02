@@ -15,7 +15,7 @@ services:
       # Ports WITHOUT 127.0.0.1: prefix so they are reachable from any LAN device.
       # Do NOT add "127.0.0.1:" in front — that restricts access to localhost only.
       - "3113:3113" # agentmemory viewer (via viewer-proxy)
-      - "8501:8501"
+      - "8501:8501" # Sidecar-ui
       - "8888:8888" # Jupyter Notebook
       - "8082:8082" # free claude code
       - "9119:9119" # Hermes dashboard (via dashboard-proxy)
@@ -49,7 +49,7 @@ services:
       - ./config-file/system-config/nvim:/home/ai_user/.config/nvim:rw,z
 
       # 6. Docker configs
-      - ./dockerfile:/config-file/dockerfile:ro,z
+      - ./Dockerfile:/config-file/Dockerfile:ro,z
       - ./docker-compose.yml:/config-file/docker-compose.yml:ro,z
       - ./sidecar-ui:/sidecar-ui:rw,z
 
@@ -72,17 +72,4 @@ services:
     restart: always
     stdin_open: true
     tty: true
-    network_mode: "bridge"
-
-  sidecar:
-    build:
-      context: ./sidecar-ui
-      dockerfile: Dockerfile.sidecar
-    container_name: ai_sidecar_controller
-    ports:
-      - "8502:8502"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - .:/workspace:rw,z
-    restart: always
     network_mode: "bridge"
