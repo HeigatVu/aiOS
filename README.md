@@ -62,7 +62,7 @@ my-assistance/
 │   ├── system-config/           # .zshrc, .p10k.zsh, nvim config
 │   └── prompt-to-fix.md        # Paste-in prompt for Claude after a container rebuild
 │
-├── sidecar-ui/                  # Web control panel (port 8502) — FastAPI + Vue 3
+├── aiOS-ui/                  # Web control panel (port 8502) — FastAPI + Vue 3
 │   ├── Dockerfile.sidecar       # Sidecar image
 │   ├── main.py                  # FastAPI app — all API routes + WebSocket endpoints
 │   ├── docker_bridge.py         # Docker SDK wrapper (exec, streaming, stats, PTY)
