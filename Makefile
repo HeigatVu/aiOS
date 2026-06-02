@@ -1,6 +1,7 @@
-UID := $(shell id -u)
-GID := $(shell id -g)
-export UID GID
+-include .env
+USER_ID ?= $(shell id -u)
+GROUP_ID ?= $(shell id -g)
+export USER_ID GROUP_ID
 
 .PHONY: up down build shell logs restart
 

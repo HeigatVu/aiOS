@@ -17,8 +17,8 @@ ENV AGENTMEMORY_III_VERSION=0.11.2
 RUN npm install -g @agentmemory/agentmemory
 
 # 3. Setup the isolated user
-ARG USER_ID=1001
-ARG GROUP_ID=1001
+ARG USER_ID=2000
+ARG GROUP_ID=2000
 ARG USERNAME=ai_user
 
 RUN groupadd -g ${GROUP_ID} ${USERNAME} && \
