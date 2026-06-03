@@ -3,7 +3,6 @@
 # Exclude persistent agent configs, caches, and ML environments
 persistent/*
 !persistent/.gitkeep
-aiOS-ui/*
 
 # Exclude heavy audio datasets and large binary archives
 data/*
