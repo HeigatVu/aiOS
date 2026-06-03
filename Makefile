@@ -3,7 +3,7 @@ USER_ID ?= $(shell id -u)
 GROUP_ID ?= $(shell id -g)
 export USER_ID GROUP_ID
 
-.PHONY: up down build shell logs restart
+.PHONY: up down build shell root-shell logs restart
 
 up: build
 	docker compose up -d
@@ -20,5 +20,9 @@ restart:
 shell:
 	docker compose exec --user $(USER_ID) sandbox zsh
 
+root-shell:
+	docker compose exec --user root sandbox zsh
+
 logs:
 	docker compose logs -f sandbox
+

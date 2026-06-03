@@ -35,6 +35,15 @@ if [ ! -f "$ENV_DIR/conda-meta/history" ]; then
     echo "[entrypoint] WARNING: conda env create failed — continuing without it."
 fi
 
+# Resolve python interpreter with fastapi/uvicorn
+PYTHON_EXE="python"
+for py in "/home/ai_user/.hermes/hermes-agent/venv/bin/python" "/aiOS-ui/.venv/bin/python" "/home/ai_user/miniconda3/envs/ai-baseline/bin/python" "python"; do
+  if [ -x "$py" ]; then
+    PYTHON_EXE="$py"
+    break
+  fi
+done
+
 # ── watchdog (starts FIRST so it survives even if later sections hang) ──────────
 # Covers: dashboard, proxy, viewer-proxy, fcc-server, gateway
 # Runs in background. Uses set +e internally to never die from transient errors.
@@ -57,6 +66,10 @@ fi
     fi
     # agentmemory viewer-proxy (LAN access to agentmemory viewer)
     if [ -f /home/ai_user/.agentmemory/viewer-proxy.pid ] && ! kill -0 "$(cat /home/ai_user/.agentmemory/viewer-proxy.pid 2>/dev/null)" 2>/dev/null; then
+      for f in /proc/[0-9]*/cmdline; do
+        pid=${f%/cmdline}; pid=${pid#/proc/}
+        grep -q "viewer-proxy" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
+      done
       runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'cp /config-file/agentmemory/viewer-proxy.mjs ~/.agentmemory/viewer-proxy.mjs 2>/dev/null || true'
       runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup node ~/.agentmemory/viewer-proxy.mjs >> ~/.agentmemory/viewer-proxy.log 2>&1' &
       echo $! >/home/ai_user/.agentmemory/viewer-proxy.pid
@@ -87,7 +100,7 @@ except Exception as e:
     fi
     # aiOS-ui (FastAPI on port 8501)
     if [ -f /tmp/aiOS-ui.pid ] && ! kill -0 "$(cat /tmp/aiOS-ui.pid 2>/dev/null)" 2>/dev/null; then
-      (cd /aiOS-ui && exec python main.py) >>/tmp/aiOS-ui.log 2>&1 &
+      (cd /aiOS-ui && exec env HERMES_HOME=/home/ai_user/.hermes HOME=/home/ai_user "$PYTHON_EXE" main.py) >>/config-file/aiOS-ui.log 2>&1 &
       echo $! > /tmp/aiOS-ui.pid
       echo "[watchdog] $(date -Iseconds): aiOS-ui restarted" >>/tmp/hermes-watchdog.log
     fi
@@ -130,6 +143,19 @@ fi
 PROXY="/home/ai_user/.agentmemory/viewer-proxy.mjs"
 PROXY_PID_FILE="/home/ai_user/.agentmemory/viewer-proxy.pid"
 if [ -f "$PROXY" ]; then
+  # Kill any stale viewer-proxy process holding port 3113.
+  for f in /proc/[0-9]*/cmdline; do
+    pid=${f%/cmdline}; pid=${pid#/proc/}
+    grep -q "viewer-proxy" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
+  done
+  rm -f "$PROXY_PID_FILE"
+  # Wait until port 3113 is released (up to 3 seconds).
+  for i in 1 2 3; do
+    if ! awk 'NR>1{split($2,a,":");p=strtonum("0x"a[2]);if(p==3113)print}' /proc/net/tcp 2>/dev/null | grep -q .; then
+      break
+    fi
+    sleep 1
+  done
   if [ ! -f "$PROXY_PID_FILE" ] || ! kill -0 "$(cat "$PROXY_PID_FILE" 2>/dev/null)" 2>/dev/null; then
     runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup node ~/.agentmemory/viewer-proxy.mjs >> ~/.agentmemory/viewer-proxy.log 2>&1' &
     echo $! >"$PROXY_PID_FILE"
@@ -220,9 +246,9 @@ if [ ! -f "$AIOS_UI_PID" ] || ! kill -0 "$(cat "$AIOS_UI_PID" 2>/dev/null)" 2>/d
     grep -q "main.py" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
   done
   rm -f "$AIOS_UI_PID"
-  (cd /aiOS-ui && exec python main.py) >>/tmp/aiOS-ui.log 2>&1 &
+  (cd /aiOS-ui && exec env HERMES_HOME=/home/ai_user/.hermes HOME=/home/ai_user "$PYTHON_EXE" main.py) >>/config-file/aiOS-ui.log 2>&1 &
   echo $! > "$AIOS_UI_PID"
-  echo "[entrypoint] aiOS-ui started (PID $!)"
+  echo "[entrypoint] aiOS-ui started (PID $!) with $PYTHON_EXE"
   sleep 3
 fi
 

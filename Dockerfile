@@ -7,7 +7,8 @@ RUN dnf upgrade --refresh -y && \
   git curl wget tar unzip sudo neovim zsh util-linux \
   gcc gcc-c++ make \
   lsd tealdeer fzf \
-  autojump-zsh jq lsof\
+  autojump-zsh jq lsof \
+  gtk3 alsa-lib dbus-libs \
   && dnf clean all
 
 # the ENV PATH line

@@ -4,6 +4,15 @@
 # Usage: bash /config-file/system-config/recover.sh
 set +e
 
+# Resolve python interpreter with fastapi/uvicorn
+PYTHON_EXE="python"
+for py in "/home/ai_user/.hermes/hermes-agent/venv/bin/python" "/aiOS-ui/.venv/bin/python" "/home/ai_user/miniconda3/envs/ai-baseline/bin/python" "python"; do
+  if [ -x "$py" ]; then
+    PYTHON_EXE="$py"
+    break
+  fi
+done
+
 echo "=== $(date -Iseconds): Recovery started ==="
 
 # ── iii engine ──
@@ -24,9 +33,21 @@ if ! curl -s -o /dev/null -w '' http://localhost:3113/ 2>/dev/null; then
 fi
 
 # ── viewer-proxy ──
+# Kill any stale viewer-proxy process holding port 3113.
+for f in /proc/[0-9]*/cmdline; do
+  pid=${f%/cmdline}; pid=${pid#/proc/}
+  grep -q "viewer-proxy" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
+done
+# Wait until port 3113 is released (up to 3 seconds).
+for i in 1 2 3; do
+  if ! awk 'NR>1{split($2,a,":");p=strtonum("0x"a[2]);if(p==3113)print}' /proc/net/tcp 2>/dev/null | grep -q .; then
+    break
+  fi
+  sleep 1
+done
+
 if [ ! -f ~/.agentmemory/viewer-proxy.pid ] || ! kill -0 "$(cat ~/.agentmemory/viewer-proxy.pid 2>/dev/null)" 2>/dev/null; then
   echo "[recover] viewer-proxy down, starting..."
-  kill $(cat ~/.agentmemory/viewer-proxy.pid 2>/dev/null) 2>/dev/null
   cp /config-file/agentmemory/viewer-proxy.mjs ~/.agentmemory/viewer-proxy.mjs
   nohup node ~/.agentmemory/viewer-proxy.mjs >> ~/.agentmemory/viewer-proxy.log 2>&1 &
   echo $! > ~/.agentmemory/viewer-proxy.pid
@@ -83,19 +104,15 @@ if [ "$GATEWAY_RUNNING" = false ]; then
 fi
 
 # ── aiOS-ui (FastAPI on port 8501) ──
-if [ "$(id -u)" -eq 0 ]; then
-  if [ ! -f /tmp/aiOS-ui.pid ] || ! kill -0 "$(cat /tmp/aiOS-ui.pid 2>/dev/null)" 2>/dev/null; then
-    echo "[recover] aiOS-ui down, starting..."
-    for f in /proc/[0-9]*/cmdline; do
-      pid=${f%/cmdline}; pid=${pid#/proc/}
-      grep -q "aiOS-ui\|main.py" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
-    done
-    (cd /aiOS-ui && exec python main.py) >>/tmp/aiOS-ui.log 2>&1 &
-    echo $! > /tmp/aiOS-ui.pid
-    sleep 2
-  fi
-else
-  echo "[recover] aiOS-ui is managed by root watchdog. Skipping."
+if [ ! -f /tmp/aiOS-ui.pid ] || ! kill -0 "$(cat /tmp/aiOS-ui.pid 2>/dev/null)" 2>/dev/null; then
+  echo "[recover] aiOS-ui down, starting..."
+  for f in /proc/[0-9]*/cmdline; do
+    pid=${f%/cmdline}; pid=${pid#/proc/}
+    grep -q "aiOS-ui\|main.py" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
+  done
+  (cd /aiOS-ui && exec env HERMES_HOME=/home/ai_user/.hermes HOME=/home/ai_user "$PYTHON_EXE" main.py) >>/config-file/aiOS-ui.log 2>&1 &
+  echo $! > /tmp/aiOS-ui.pid
+  sleep 2
 fi
 
 # ── watchdog ──
@@ -139,7 +156,7 @@ if [ "$(id -u)" -eq 0 ]; then
       fi
       # aiOS-ui
       if [ -f /tmp/aiOS-ui.pid ] && ! kill -0 "$(cat /tmp/aiOS-ui.pid 2>/dev/null)" 2>/dev/null; then
-        (cd /aiOS-ui && exec python main.py) >>/tmp/aiOS-ui.log 2>&1 &
+        (cd /aiOS-ui && exec env HERMES_HOME=/home/ai_user/.hermes HOME=/home/ai_user "$PYTHON_EXE" main.py) >>/config-file/aiOS-ui.log 2>&1 &
         echo $! > /tmp/aiOS-ui.pid
         echo "[watchdog] $(date -Iseconds): aiOS-ui restarted" >>/tmp/hermes-watchdog.log
       fi
