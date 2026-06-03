@@ -1,62 +1,87 @@
-# docker-compose.yml — Unified AI Dev Container
-# All services start automatically. Data survives rebuild via bind mounts.
-#
-# Usage:
-#   docker compose build && docker compose up -d
-#   docker compose logs -f    (tail all logs)
-#   docker compose ps          (status overview)
-
 services:
-  dev:
+  sandbox:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: ai-dev
-    hostname: ai-dev
-    restart: unless-stopped
-    ports:
-      - "3111:3111"   # agentmemory API
-      - "3113:3113"   # agentmemory viewer
-      - "9119:9119"   # hermes dashboard
-      - "8082:8082"   # fcc-server
-      - "9377:9377"   # camofox browser
-    volumes:
-      # === PERSISTENT (survive rebuild) ===
-      - ./config-file:/config-file                          # all configs, scripts, entrypoint source
-      - agentmemory_data:/home/ai_user/.agentmemory         # SQLite + iii binary
-      - hermes_config:/home/ai_user/.hermes                 # config.yaml, skills, plugins
-      - claude_config:/home/ai_user/.claude                 # settings, agents, ECC plugins
-      - gemini_config:/home/ai_user/.gemini                 # agy settings, skills, hooks
-      - fcc_config:/home/ai_user/.fcc                       # fcc-server config
-      - iii_config:/home/ai_user/.iii                       # iii engine
-      - agents_config:/home/ai_user/.agents                 # agent definitions
-      - conda_pkgs:/home/ai_user/miniconda3/pkgs            # conda package cache
-      - conda_env:/home/ai_user/miniconda3/envs/ai-baseline # conda environment
-      - local_bin:/home/ai_user/.local/bin                  # agy, rtk, iii restored here
-      - npm_cache:/home/ai_user/.npm                        # npm cache
-      - uv_cache:/home/ai_user/.cache/uv                    # uv/pip cache
-      # === WORKSPACE (optional, for dev work) ===
-      - ./workspace:/workspace
+      args:
+        USER_ID: ${USER_ID:-2000}
+        GROUP_ID: ${GROUP_ID:-2000}
+    container_name: ai_tui_sandbox
     environment:
-      - AGENTMEMORY_URL=http://localhost:3111
-      - PYTHONUNBUFFERED=1
-    healthcheck:
-      test: ["CMD", "python3", "/config-file/system-config/service_health.py"]
-      interval: 60s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+      - TERM=xterm-256color
+      - COLORTERM=truecolor
+      - LANG=C.UTF-8
+      - LC_ALL=C.UTF-8
+    ports:
+      # Ports WITHOUT 127.0.0.1: prefix so they are reachable from any LAN device.
+      # Do NOT add "127.0.0.1:" in front — that restricts access to localhost only.
+      - "3113:3113" # agentmemory viewer (via viewer-proxy)
+      - "8501:8501" # aiOS-ui
+      - "8888:8888" # Jupyter Notebook
+      - "8082:8082" # free claude code
+      - "9119:9119" # Hermes dashboard (via dashboard-proxy)
+      # --- General Development Ports ---
+      - "3000:3000" # React / Next.js / Node
+      - "4000:4000" # Alternative Node
+      - "5000:5000" # Flask / Python API
+      - "5173:5173" # Vite (Modern web frontend)
+      - "8000:8000" # Django / FastAPI
+      - "8080:8080" # General HTTP
+      - "8081:8081" # Alternative HTTP
+      - "8443:8443" # General HTTPS
+      - "9000:9000" # Generic dev port 1
+      - "9001:9001" # Browser ai folder
+      - "9090:9090" # Generic dev port 2
+    volumes:
+      # 1. Code & Data
+      - ./sandbox-data/working-space:/workspace:rw,z
+      - ./sandbox-data/my-data:/my-data:ro,z
+      - ./sandbox-data/outputs:/outputs:rw,z
+      - ./config-file:/config-file:rw,z
 
-volumes:
-  agentmemory_data:
-  hermes_config:
-  claude_config:
-  gemini_config:
-  fcc_config:
-  iii_config:
-  agents_config:
-  conda_pkgs:
-  conda_env:
-  local_bin:
-  npm_cache:
-  uv_cache:
+      # 2. Persistent Caches & Environments
+      - ./persistent/ml-env:/home/ai_user/miniconda3/envs/ai-baseline:rw,z
+      - ./persistent/uv-cache:/home/ai_user/.cache/uv:rw,z
+      - ./persistent/conda-pkgs:/home/ai_user/miniconda3/pkgs:rw,z
+
+      # 3. Agent Configurations
+      - ./persistent/agentmemory:/home/ai_user/.agentmemory:rw,z
+      - ./persistent/claude:/home/ai_user/.claude:rw,z
+      - ./persistent/hermes:/home/ai_user/.hermes:rw,z
+      - ./persistent/gemini:/home/ai_user/.gemini:rw,z
+      - ./persistent/agents:/home/ai_user/.agents:rw,z
+      - ./persistent/fcc:/home/ai_user/.fcc:rw,z
+      - ./persistent/iii:/home/ai_user/.iii:rw,z
+
+      # 4. Shell Configurations
+      - ./config-file/system-config/.p10k.zsh:/home/ai_user/.p10k.zsh:rw,z
+      - ./config-file/system-config/.zshrc:/home/ai_user/.zshrc_host:rw,z
+      - ./persistent/zshrc_docker:/home/ai_user/.zshrc:rw,z
+
+      # 5. Editor Configurations
+      - ./config-file/system-config/nvim:/home/ai_user/.config/nvim:rw,z
+
+      # 6. Docker configs
+      - ./Dockerfile:/config-file/Dockerfile:ro,z
+      - ./docker-compose.yml:/config-file/docker-compose.yml:ro,z
+      - ./aiOS-ui:/aiOS-ui:rw,z
+
+    cap_add:
+      - SYS_ADMIN
+
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 18G
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+    # Auto-start the container when Docker daemon starts (e.g. on laptop boot).
+    # Requires: sudo systemctl enable docker
+    restart: always
+    stdin_open: true
+    tty: true
+    network_mode: "bridge"

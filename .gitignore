@@ -8,12 +8,9 @@ aiOS-ui/*
 # Exclude heavy audio datasets and large binary archives
 data/*
 # Ignore all actual folder contents
-config-file/*
-config-file/agentmemory/*
 config-file/credentials/*
-config-file/hermes/*
-config-file/system-config/*
-config-file/claude/*
+config-file/agentmemory/.env
+
 
 # Allow tracking the empty directory structures of config-file and its subfolders
 !config-file/
@@ -56,14 +53,7 @@ sandbox-data/working-space/*
 **/*.pyo
 **/*.pyd
 .DS_Store
-
 .env
-
-how-to-use.md
-
-agent-configs/*
-
-prompt-to-fix.md
 
 .antigravitycli/
 .codegraph/

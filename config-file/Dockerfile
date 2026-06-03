@@ -1,89 +1,85 @@
-# Dockerfile — AI Dev Container
-# Multi-service environment: agentmemory, hermes, fcc-server, camofox browser.
-# agy/Gemini, Claude Code, and ECC all available.
+FROM fedora:44
 
-FROM debian:bookworm-slim
+# 1. Update OS and install all system-level tools & extensions
+RUN dnf upgrade --refresh -y && \
+  dnf install -y \
+  nodejs npm \
+  git curl wget tar unzip sudo neovim zsh util-linux \
+  gcc gcc-c++ make \
+  lsd tealdeer fzf \
+  autojump-zsh jq lsof\
+  && dnf clean all
 
-# ── System packages ────────────────────────────────────────────────────────────
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl ca-certificates git wget unzip xz-utils \
-    python3 python3-pip python3-venv \
-    nodejs npm \
-    zsh sudo procps \
-    # Firefox/Camoufox deps (for browser automation)
-    libgtk-3-0 libdbus-glib-1-2 libxt6 libasound2 \
-    libx11-xcb1 libxcomposite1 libxcursor1 libxdamage1 \
-    libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 \
-    libegl1-mesa libgl1-mesa-dri libgbm1 xvfb \
-    fonts-liberation fontconfig \
-    && rm -rf /var/lib/apt/lists/*
+# the ENV PATH line
+ENV AGENTMEMORY_III_VERSION=0.11.2
 
-# ── User setup ─────────────────────────────────────────────────────────────────
-RUN useradd -m -s /bin/zsh ai_user && \
-    echo "ai_user ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+# 2. Install global NPM packages
+RUN npm install -g @agentmemory/agentmemory
 
-USER ai_user
-WORKDIR /home/ai_user
-ENV HOME=/home/ai_user
-ENV PATH="${HOME}/.local/bin:${HOME}/miniconda3/bin:${PATH}"
+# 3. Setup the isolated user
+ARG USER_ID=2000
+ARG GROUP_ID=2000
+ARG USERNAME=ai_user
 
-# ── Conda + ai-baseline env ────────────────────────────────────────────────────
-# Pre-installed into image; bind mount preserves envs/ and pkgs/ across rebuilds
-COPY --chown=ai_user:ai_user environment.yml /tmp/environment.yml
-RUN curl -fsSL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
-        -o /tmp/miniconda.sh && \
-    bash /tmp/miniconda.sh -b -p ${HOME}/miniconda3 && \
-    rm /tmp/miniconda.sh && \
-    ${HOME}/miniconda3/bin/conda env create -f /tmp/environment.yml -p ${HOME}/miniconda3/envs/ai-baseline || true
+RUN groupadd -g ${GROUP_ID} ${USERNAME} && \
+  useradd -u ${USER_ID} -g ${GROUP_ID} -m -s /bin/zsh ${USERNAME} && \
+  echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USERNAME}
 
-# ── npm global packages ────────────────────────────────────────────────────────
-RUN npm install -g \
-    @agentmemory/agentmemory \
-    @agentmemory/mcp \
-    @anthropic-ai/claude-code \
-    && rm -rf /tmp/*
+# 4. Copy entrypoint (as root, before switching user)
+COPY ./config-file/system-config/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# ── iii engine (v0.11.2, pinned for agentmemory compatibility) ──────────────────
-RUN mkdir -p ${HOME}/.agentmemory/bin && \
-    curl -fsSL -o /tmp/iii.tar.gz \
-        https://github.com/iii-hq/iii/releases/download/iii/v0.11.2/iii-x86_64-unknown-linux-gnu.tar.gz && \
-    tar -xzf /tmp/iii.tar.gz -C ${HOME}/.agentmemory/bin && \
-    chmod +x ${HOME}/.agentmemory/bin/iii && \
-    cp ${HOME}/.agentmemory/bin/iii ${HOME}/.local/bin/iii && \
-    rm /tmp/iii.tar.gz
+# 5. Switch to user to ensure AI agents install securely in user-space
+USER ${USERNAME}
+WORKDIR /workspace
 
-# ── agy/Gemini (pre-baked for immediate use) ────────────────────────────────────
-# Installed to ~/.local/bin which IS bind-mounted, so it survives rebuilds
-RUN curl -fsSL -o ${HOME}/.local/bin/agy \
-        https://github.com/antigravity/antigravity-cli/releases/latest/download/agy-linux-x86_64 && \
-    chmod +x ${HOME}/.local/bin/agy
+# 6. Pre-create all directories that will be bind-mounted
+#    This ensures correct ownership even if Docker creates host dirs as root
+RUN mkdir -p \
+  /home/${USERNAME}/.cache/uv \
+  /home/${USERNAME}/miniconda3/pkgs \
+  /home/${USERNAME}/.agentmemory \
+  /home/${USERNAME}/.claude \
+  /home/${USERNAME}/.hermes \
+  /home/${USERNAME}/.gemini \
+  /home/${USERNAME}/.agents \
+  /home/${USERNAME}/.fcc \
+  /home/${USERNAME}/.iii \
 
-# ── rtk (Rust Token Killer — token-compact CLI proxy) ───────────────────────────
-RUN curl -fsSL https://github.com/reachingforthejack/rtk/releases/latest/download/rtk-linux-x86_64 \
-        -o ${HOME}/.local/bin/rtk && \
-    chmod +x ${HOME}/.local/bin/rtk
+# 7. Install Environment Managers (uv & Conda)
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+RUN mkdir -p /home/${USERNAME}/miniconda3 && \
+  curl -sSL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o miniconda.sh && \
+  bash miniconda.sh -b -u -p /home/${USERNAME}/miniconda3 && \
+  rm miniconda.sh
 
-# ── codegraph ──────────────────────────────────────────────────────────────────
-RUN npm install -g @codegraph/cli
+# 8. Prepare environment files (Do NOT bake the heavy ML environment here)
+COPY --chown=${USERNAME}:${GROUP_ID} environment.yml /home/${USERNAME}/environment.yml
+RUN /home/${USERNAME}/miniconda3/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
+  /home/${USERNAME}/miniconda3/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
 
-# ── Copy config and entrypoint ──────────────────────────────────────────────────
-COPY --chown=ai_user:ai_user config-file/system-config/entrypoint.sh /usr/local/bin/entrypoint.sh
-COPY --chown=ai_user:ai_user config-file/agentmemory/iii-config.yaml /config-file/agentmemory/iii-config.yaml
-COPY --chown=ai_user:ai_user config-file/agentmemory/viewer-proxy.mjs /config-file/agentmemory/viewer-proxy.mjs
-COPY --chown=ai_user:ai_user config-file/hermes/dashboard-proxy.mjs /config-file/hermes/dashboard-proxy.mjs
-COPY --chown=ai_user:ai_user config-file/fcc/.env /config-file/fcc/.env
+# 9. Update PATH so the terminal can find installed agents and Conda
+ENV PATH="/home/${USERNAME}/.local/bin:/home/${USERNAME}/miniconda3/bin:${PATH}"
 
-# ── Camofox browser ─────────────────────────────────────────────────────────────
-# Pre-baked into image; uses pinned version for reproducible builds
-ARG CAMOUFOX_VERSION=135.0.1
-ARG CAMOUFOX_RELEASE=beta.24
-RUN mkdir -p /home/ai_user/.cache/camoufox && \
-    curl -fsSL -o /tmp/camoufox.zip \
-        "https://github.com/daijro/camoufox/releases/download/v${CAMOUFOX_VERSION}+${CAMOUFOX_RELEASE}/camoufox-${CAMOUFOX_VERSION}-x86_64.zip" && \
-    unzip -q /tmp/camoufox.zip -d /home/ai_user/.cache/camoufox || true && \
-    chmod -R 755 /home/ai_user/.cache/camoufox && \
-    rm /tmp/camoufox.zip
+# 10. Install Zinit & Powerlevel10k via direct Git clone (Failsafe method)
+RUN git clone --depth=1 https://github.com/romkatv/powerlevel10k.git /home/${USERNAME}/powerlevel10k
+RUN mkdir -p /home/${USERNAME}/.local/share/zinit && \
+  git clone https://github.com/zdharma-continuum/zinit.git /home/${USERNAME}/.local/share/zinit/zinit.git
 
-# ── Entrypoint ──────────────────────────────────────────────────────────────────
-ENTRYPOINT ["/bin/bash", "/usr/local/bin/entrypoint.sh"]
+# 11. Install your requested AI Agents
+RUN curl -fsSL https://antigravity.google/cli/install.sh | bash
+RUN curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+RUN curl -fsSL https://claude.ai/install.sh | bash
+RUN curl -fsSL "https://github.com/Alishahryar1/free-claude-code/blob/main/scripts/install.sh?raw=1" | sh
+RUN curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
+RUN curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/read-once/install.sh | bash
+RUN curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh
+
+
+
+# --- AI SIDECAR AUTO-INSTALLS ---
+# (Sidecar UI injects new RUN layers directly under this marker. Do not remove.)
+
+# Default entrypoint fixes bind-mount permissions, then runs CMD
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["/bin/zsh"]
