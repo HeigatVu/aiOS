@@ -1,32 +1,38 @@
 # aiOS: AI OS for Workspace (v2.0)
 
-This repository houses a secure, GPU-accelerated multi-container workspace for AI agents and advanced signal processing.
+This repository houses a secure, GPU-accelerated workspace for AI agents.
 
-By leveraging the **Sidecar Pattern**, it isolates the heavy AI sandbox from your host machine while providing a web control panel to manage installations and shared directories.
+By leveraging the **Sidecar Pattern**, it isolates the heavy AI sandbox from your host machine while providing a web control panel in the background to manage installations, file permissions, and shared directories.
 
 ## Step to do
 
-```
+```bash
 make down && make build && make up
 ```
 
 - Then attach to the container and verify:
 
-```
+```bash
 make shell
 ```
 
 - Once inside, check:
 
-```
+```bash
   iii --version          # expect 0.11.2 (set by AGENTMEMORY_III_VERSION)
   agentmemory status     # expect Health: ✓ healthy
   claude auth status     # expect "loggedIn": true
 ```
 
-- If all three pass, everything works. If anything fails, paste into a new Claude Code session:
+- If all three pass, everything works. If anything fails, run the automated recovery script inside the container:
 
+```bash
+bash /config-file/system-config/recover.sh
 ```
+
+Or paste into a new Claude Code session:
+
+```text
 Read /config-file/step-to-reconfig.md and execute every step in order.
 ```
 
@@ -40,6 +46,8 @@ Read /config-file/step-to-reconfig.md and execute every step in order.
 4. [How to Configure in the Dockerfile](#4-how-to-configure-in-the-dockerfile)
 5. [Git Security & Push Safety](#5-git-security--push-safety)
 6. [Troubleshooting & Edge Cases](#6-troubleshooting--edge-cases)
+7. [Secure AI Permissions Boundary](#7-secure-ai-permissions-boundary)
+8. [Automated Diagnostics & Recovery](#8-automated-diagnostics--recovery)
 
 ---
 
@@ -47,55 +55,58 @@ Read /config-file/step-to-reconfig.md and execute every step in order.
 
 ```text
 my-assistance/
-├── Dockerfile                   # Software blueprint for the AI sandbox
+├── Dockerfile                   # Software blueprint for the AI sandbox & tools
 ├── docker-compose.yml           # Core wiring (ports, GPU passthrough, volume mounts)
 ├── Makefile                     # Build/run shortcuts — auto-detects your UID/GID
-├── .env                         # UID/GID override (gitignored; Makefile fills this automatically)
-├── entrypoint.sh                # Runs on every container start: fixes permissions, starts services
 ├── environment.yml              # Deep ML & signal processing conda baseline
 ├── .gitignore                   # Anti-leak protections & heavy file ignores
 ├── .dockerignore                # Excludes heavy folders from the builder
 │
+├── sandbox-data/                # Docker bind-mounts for persistent working files
+│   ├── working-space/           # Mapped to /workspace (code & scripts)
+│   ├── my-data/                 # Mapped to /my-data (heavy datasets — read-only, gitignored)
+│   └── outputs/                 # Mapped to /outputs (generated results — gitignored)
+│
 ├── config-file/                 # Persistent configs bind-mounted into the container
-│   ├── agentmemory/             # agentmemory .env, iii-config.yaml, viewer-proxy.mjs
+│   ├── agentmemory/             # agentmemory iii-config.yaml, viewer-proxy.mjs
 │   ├── hermes/                  # hermes dashboard-proxy.mjs
-│   ├── system-config/           # .zshrc, .p10k.zsh, nvim config
-│   └── prompt-to-fix.md        # Paste-in prompt for Claude after a container rebuild
+│   ├── system-config/           # Shell configs (.zshrc, .p10k.zsh), nvim config, entrypoint, & recovery tools
+│   │   ├── entrypoint.sh        # Runs on every container start: fixes permissions, starts background services
+│   │   ├── recover.sh           # One-shot recovery script for all services
+│   │   ├── service_health.py    # Async health checks for all 7 services (runs on terminal login)
+│   │   └── RESTORATION.md       # Deep troubleshooting and system restoration log
+│   └── step-to-reconfig.md      # Manual step-by-step reconfiguration instructions
 │
-├── aiOS-ui/                  # Web control panel (port 8502) — FastAPI + Vue 3
-│   ├── Dockerfile.sidecar       # Sidecar image
-│   ├── main.py                  # FastAPI app — all API routes + WebSocket endpoints
-│   ├── docker_bridge.py         # Docker SDK wrapper (exec, streaming, stats, PTY)
-│   ├── git_manager.py           # Git operations inside the sandbox container
-│   ├── volumes.py               # docker-compose.yml volume parser
-│   ├── config_editors.py        # Dockerfile / README / environment.yml writers
-│   └── static/                  # Vue 3 SPA (CDN, no build step)
-│       ├── index.html
-│       ├── app.js
-│       └── style.css
+├── aiOS-ui/                     # Web control panel (port 8501) — FastAPI + Vue 3 Hermes wrapper
+│   ├── main.py                  # FastAPI BFF app — all API routes + custom File Browser endpoints
+│   ├── server.py                # Hermes Web UI main server entry point
+│   ├── api/                     # Backend implementation modules (auth, workspace, session lifecycle, etc.)
+│   └── static/                  # Vue 3 SPA frontend files (chat, settings, terminal, etc.)
+│       └── file-browser/        # Custom file browser SPA (accessible at /files)
 │
-├── working-space/               # Mapped to /workspace (code & scripts)
-├── data/                        # Mapped to /data (heavy datasets — gitignored)
-└── outputs/                     # Mapped to /outputs (generated results — gitignored)
+└── persistent/                  # Heavy caches & credentials (gitignored, bind-mounted)
+    ├── ml-env/                  # Conda environment cache
+    ├── uv-cache/                # Astral uv package installer cache
+    ├── conda-pkgs/              # Conda package download cache
+    └── [agent directories]/     # Persistent settings for Claude, Gemini, Hermes, AgentMemory, etc.
 ```
 
-### Container 1: The AI Sandbox (`ai_tui_sandbox`)
+### The AI Sandbox (`ai_tui_sandbox`)
 
-- **Purpose:** Where AI agents (Gemini, Claude, Hermes, agentmemory, etc.) run.
+- **Purpose:** Where AI agents (Gemini, Claude, Hermes, agentmemory, etc.) run in a secure, isolated workspace.
 - **Privileges:** Strictly isolated — no Docker socket access.
 - **User:** Runs as your host UID/GID (auto-detected by Makefile) so bind-mount files are always owned by you.
 - **Environments:** Pre-activated Conda `ai-baseline` env, plus `uv` for fast Python installs.
 - **GPU Passthrough:** Wires your host NVIDIA GPU for local model inference.
 
-### Container 2: The Sidecar Controller (`ai_sidecar_controller`)
+### The Sidecar Web Control Panel
 
-- **Purpose:** Web control panel at `http://localhost:8502` — FastAPI backend + Vue 3 SPA.
-- **Privileges:** Mounts `/var/run/docker.sock` to execute commands inside the sandbox.
+- **Purpose:** Web control panel at `http://localhost:8501` — FastAPI backend + Vue 3 Hermes SPA running as a background service inside the sandbox container.
 - **Views:**
   - **Dashboard** — live CPU / RAM / GPU cards + 5-minute Chart.js history charts, container logs stream, rebuild button
   - **Terminal** — package installer (uv / conda / dnf / npm), raw command executor with history, custom snippet bank
   - **PTY Shell** — full interactive xterm.js shell session directly into the sandbox
-  - **Volumes** — file browser with upload / download, chmod, rw/ro toggle, volume detach
+  - **File Browser** — browse, upload/download, chmod, rw/ro toggle, volume detach, and configure AI permissions
   - **Processes & Ports** — live `ps aux` with CPU/MEM bars + kill, listening ports
   - **Git** — branch status, diff viewer, stage-all / commit / push inside the sandbox
   - **Config** — Dockerfile / README / environment.yml editors, volume mapper, `.env` Manager (multi-file CRUD)
@@ -112,7 +123,7 @@ All commands are run from the project root on the **host machine**.
 make up
 ```
 
-Builds the image (if needed) with your current UID/GID, then starts both containers in the background.
+Builds the image (if needed) with your current UID/GID, then starts the sandbox container in the background.
 
 > If you see DNS/network timeouts during build:
 >
@@ -122,7 +133,7 @@ Builds the image (if needed) with your current UID/GID, then starts both contain
 
 ### Access the Web Control Panel
 
-Open `http://localhost:8502` in your browser.
+Open `http://localhost:8501` in your browser.
 
 ### Enter the Sandbox Terminal
 
@@ -156,7 +167,7 @@ make down
 | **Install Python packages** | ❌ (use Sidecar UI) | `uv pip install <pkg>` |
 | **Install system tools** | ❌ (use Sidecar UI) | `sudo dnf install <pkg>` |
 | **Edit configs (.zshrc, nvim)** | Edit files in `config-file/system-config/` | Changes reflect immediately |
-| **Restore agentmemory/hermes** | ❌ | Paste prompt from `config-file/prompt-to-fix.md` into Claude Code |
+| **Restore agentmemory/hermes** | ❌ | Run `bash /config-file/system-config/recover.sh` or follow `/config-file/step-to-reconfig.md` |
 
 ---
 
@@ -206,4 +217,33 @@ git commit -m "chore: secure all private directories and workspaces"
 - **File ownership issues on host:** Always run Docker via `make up` — it exports the correct UID/GID. If you ran `docker compose up` directly without exporting `UID`/`GID`, files may be owned by the wrong user; fix with `sudo chown -R $(id -u):$(id -g) persistent/ config-file/`.
 - **GPU Connection Failure:** Ensure `nvidia-container-toolkit` is installed on the host and the Docker daemon is restarted after toolkit setup.
 - **ResolvePackageNotFound (Conda):** Open `environment.yml`, remove strict version build strings (e.g., change `python=3.12.13=hd63d673_0` to `python=3.12.13`), then `make build`.
-- **agentmemory or hermes not healthy after rebuild:** Open a sandbox shell (`make shell`) and paste the prompt from `config-file/prompt-to-fix.md` into Claude Code.
+- **agentmemory or hermes not healthy after rebuild:** Open a sandbox shell (`make shell`) and run the automated recovery script: `bash /config-file/system-config/recover.sh`. If that fails, follow the manual steps in `/config-file/step-to-reconfig.md`.
+
+---
+
+## 7. Secure AI Permissions Boundary
+
+The Sidecar Web UI includes an **AI Permissions** system designed to restrict what AI agents running inside the Docker sandbox are allowed to see or edit.
+
+- **Storage**: Mappings are saved in a JSON file at `/tmp/aios-permissions.json` (configured via `FILE_BROWSER_PERMISSIONS_CONFIG` in FastAPI).
+- **Permission Levels**:
+  - `rw` (Read-Write): Normal access to files and directories.
+  - `ro` (Read-Only): Forces files/directories to read-only filesystem modes (`444` for files, `555` for directories).
+  - `none` (No Access): Restricts the AI from viewing or accessing the directory/file entirely by setting strict mode permissions (`600` for files, `700` for directories) and filtering these items out of the `/api/files/list` API responses.
+- **Longest-Prefix Matching**: If no exact mapping is found for a path, the permissions system resolves the level using a longest-prefix match on parent directories, falling back to `rw` if no rule matches.
+
+---
+
+## 8. Automated Diagnostics & Recovery
+
+Two critical maintenance utilities are provided inside the container at `/config-file/system-config/`:
+
+### A. Async Health Checker (`service_health.py`)
+This tool runs concurrently via Python's `asyncio` (stdlib only, zero external dependencies) with a 2-second timeout per probe.
+- **Status Table**: It verifies the health of **7 services**: `iii engine`, `agentmemory`, `viewer-proxy`, `hermes dashboard`, `dashboard-proxy`, `fcc-server`, and `hermes gateway`.
+- **Interactive Shell Feedback**: Runs automatically on every new terminal login via `~/.zshrc` to show a clean color-coded status table, ensuring any degradation is noticed immediately.
+
+### B. One-Shot recovery (`recover.sh`)
+When services go down (e.g., after the host computer wakes from sleep or Docker restarts), this script restores everything automatically.
+- **Conflict Resolution**: Scans `/proc` to kill any stale or conflicting background processes holding ports (`3113`, `9119`, `8082`).
+- **State Restorer**: Restores correct binaries (e.g., pinned `iii` engine), boots all services, registers a fresh watchdog loop, and outputs the final service health table.
