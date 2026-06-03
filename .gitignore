@@ -54,5 +54,10 @@ sandbox-data/working-space/*
 .DS_Store
 .env
 
+# Agent
 .antigravitycli/
 .codegraph/
+.agents/
+
+# Nested git config ignores
+config-file/.gitignore
