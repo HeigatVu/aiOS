@@ -15,8 +15,10 @@ fi
 # ── agentmemory ──
 if ! curl -s -o /dev/null -w '' http://localhost:3113/ 2>/dev/null; then
   echo "[recover] agentmemory down, starting..."
-  sudo cp /config-file/agentmemory/iii-config.yaml \
-    /usr/local/lib/node_modules/@agentmemory/agentmemory/dist/iii-config.yaml 2>/dev/null
+  if [ "$(id -u)" -eq 0 ]; then
+    cp /config-file/agentmemory/iii-config.yaml \
+      /usr/local/lib/node_modules/@agentmemory/agentmemory/dist/iii-config.yaml 2>/dev/null
+  fi
   agentmemory start >> ~/.agentmemory/agentmemory.log 2>&1 || true
   sleep 4
 fi
@@ -81,64 +83,69 @@ if [ "$GATEWAY_RUNNING" = false ]; then
 fi
 
 # ── aiOS-ui (FastAPI on port 8501) ──
-if [ ! -f /tmp/aiOS-ui.pid ] || ! kill -0 "$(cat /tmp/aiOS-ui.pid 2>/dev/null)" 2>/dev/null; then
-  echo "[recover] aiOS-ui down, starting..."
-  for f in /proc/[0-9]*/cmdline; do
-    pid=${f%/cmdline}; pid=${pid#/proc/}
-    grep -q "aiOS-ui\|main.py" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
-  done
-  (cd /aiOS-ui && exec python main.py) >>/tmp/aiOS-ui.log 2>&1 &
-  echo $! > /tmp/aiOS-ui.pid
-  sleep 2
+if [ "$(id -u)" -eq 0 ]; then
+  if [ ! -f /tmp/aiOS-ui.pid ] || ! kill -0 "$(cat /tmp/aiOS-ui.pid 2>/dev/null)" 2>/dev/null; then
+    echo "[recover] aiOS-ui down, starting..."
+    for f in /proc/[0-9]*/cmdline; do
+      pid=${f%/cmdline}; pid=${pid#/proc/}
+      grep -q "aiOS-ui\|main.py" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
+    done
+    (cd /aiOS-ui && exec python main.py) >>/tmp/aiOS-ui.log 2>&1 &
+    echo $! > /tmp/aiOS-ui.pid
+    sleep 2
+  fi
+else
+  echo "[recover] aiOS-ui is managed by root watchdog. Skipping."
 fi
 
-# ── watchdog (always restart it) ──
-echo "[recover] ensuring watchdog is running..."
-# Kill any existing watchdog
-for f in /proc/[0-9]*/cmdline; do
-  pid=${f%/cmdline}; pid=${pid#/proc/}
-  grep -q "while true.*hermes-dashboard" "$f" 2>/dev/null && kill "$pid" 2>/dev/null || true
-done
-# Start fresh
-(
-  set +e
-  while true; do
-    sleep 60
-    # Dashboard
-    if [ -f /tmp/hermes-dashboard.pid ] && ! kill -0 "$(cat /tmp/hermes-dashboard.pid 2>/dev/null)" 2>/dev/null; then
-      mkdir -p "$HOME/.hermes/logs"
-      hermes dashboard --no-open >>"$HOME/.hermes/logs/dashboard.log" 2>&1 &
-      echo $! >/tmp/hermes-dashboard.pid
-      echo "[watchdog] $(date -Iseconds): dashboard restarted" >>/tmp/hermes-watchdog.log
-    fi
-    # Dashboard-proxy
-    if [ -f /tmp/hermes-proxy.pid ] && ! kill -0 "$(cat /tmp/hermes-proxy.pid 2>/dev/null)" 2>/dev/null; then
-      nohup node /config-file/hermes/dashboard-proxy.mjs >>/tmp/hermes-proxy.log 2>&1 &
-      echo $! >/tmp/hermes-proxy.pid
-      echo "[watchdog] $(date -Iseconds): dashboard-proxy restarted" >>/tmp/hermes-watchdog.log
-    fi
-    # viewer-proxy
-    if [ -f "$HOME/.agentmemory/viewer-proxy.pid" ] && ! kill -0 "$(cat "$HOME/.agentmemory/viewer-proxy.pid" 2>/dev/null)" 2>/dev/null; then
-      cp /config-file/agentmemory/viewer-proxy.mjs "$HOME/.agentmemory/viewer-proxy.mjs" 2>/dev/null || true
-      nohup node "$HOME/.agentmemory/viewer-proxy.mjs" >>"$HOME/.agentmemory/viewer-proxy.log" 2>&1 &
-      echo $! >"$HOME/.agentmemory/viewer-proxy.pid"
-      echo "[watchdog] $(date -Iseconds): viewer-proxy restarted" >>/tmp/hermes-watchdog.log
-    fi
-    # fcc-server
-    if [ -f /tmp/fcc-server.pid ] && ! kill -0 "$(cat /tmp/fcc-server.pid 2>/dev/null)" 2>/dev/null; then
-      nohup fcc-server >>"$HOME/.fcc/logs/fcc-server.log" 2>&1 &
-      echo $! >/tmp/fcc-server.pid
-      echo "[watchdog] $(date -Iseconds): fcc-server restarted" >>/tmp/hermes-watchdog.log
-    fi
-    # aiOS-ui
-    if [ -f /tmp/aiOS-ui.pid ] && ! kill -0 "$(cat /tmp/aiOS-ui.pid 2>/dev/null)" 2>/dev/null; then
-      (cd /aiOS-ui && exec python main.py) >>/tmp/aiOS-ui.log 2>&1 &
-      echo $! > /tmp/aiOS-ui.pid
-      echo "[watchdog] $(date -Iseconds): aiOS-ui restarted" >>/tmp/hermes-watchdog.log
-    fi
-    # Gateway
-    if [ -f "$HOME/.hermes/gateway_state.json" ]; then
-      TG_STATE=$(python3 -c "
+# ── watchdog ──
+if [ "$(id -u)" -eq 0 ]; then
+  echo "[recover] ensuring watchdog is running..."
+  # Kill any existing watchdog
+  for f in /proc/[0-9]*/cmdline; do
+    pid=${f%/cmdline}; pid=${pid#/proc/}
+    grep -q "while true.*hermes-dashboard" "$f" 2>/dev/null && kill "$pid" 2>/dev/null || true
+  done
+  # Start fresh
+  (
+    set +e
+    while true; do
+      sleep 60
+      # Dashboard
+      if [ -f /tmp/hermes-dashboard.pid ] && ! kill -0 "$(cat /tmp/hermes-dashboard.pid 2>/dev/null)" 2>/dev/null; then
+        mkdir -p "$HOME/.hermes/logs"
+        hermes dashboard --no-open >>"$HOME/.hermes/logs/dashboard.log" 2>&1 &
+        echo $! >/tmp/hermes-dashboard.pid
+        echo "[watchdog] $(date -Iseconds): dashboard restarted" >>/tmp/hermes-watchdog.log
+      fi
+      # Dashboard-proxy
+      if [ -f /tmp/hermes-proxy.pid ] && ! kill -0 "$(cat /tmp/hermes-proxy.pid 2>/dev/null)" 2>/dev/null; then
+        nohup node /config-file/hermes/dashboard-proxy.mjs >>/tmp/hermes-proxy.log 2>&1 &
+        echo $! >/tmp/hermes-proxy.pid
+        echo "[watchdog] $(date -Iseconds): dashboard-proxy restarted" >>/tmp/hermes-watchdog.log
+      fi
+      # viewer-proxy
+      if [ -f "$HOME/.agentmemory/viewer-proxy.pid" ] && ! kill -0 "$(cat "$HOME/.agentmemory/viewer-proxy.pid" 2>/dev/null)" 2>/dev/null; then
+        cp /config-file/agentmemory/viewer-proxy.mjs "$HOME/.agentmemory/viewer-proxy.mjs" 2>/dev/null || true
+        nohup node "$HOME/.agentmemory/viewer-proxy.mjs" >>"$HOME/.agentmemory/viewer-proxy.log" 2>&1 &
+        echo $! >"$HOME/.agentmemory/viewer-proxy.pid"
+        echo "[watchdog] $(date -Iseconds): viewer-proxy restarted" >>/tmp/hermes-watchdog.log
+      fi
+      # fcc-server
+      if [ -f /tmp/fcc-server.pid ] && ! kill -0 "$(cat /tmp/fcc-server.pid 2>/dev/null)" 2>/dev/null; then
+        nohup fcc-server >>"$HOME/.fcc/logs/fcc-server.log" 2>&1 &
+        echo $! >/tmp/fcc-server.pid
+        echo "[watchdog] $(date -Iseconds): fcc-server restarted" >>/tmp/hermes-watchdog.log
+      fi
+      # aiOS-ui
+      if [ -f /tmp/aiOS-ui.pid ] && ! kill -0 "$(cat /tmp/aiOS-ui.pid 2>/dev/null)" 2>/dev/null; then
+        (cd /aiOS-ui && exec python main.py) >>/tmp/aiOS-ui.log 2>&1 &
+        echo $! > /tmp/aiOS-ui.pid
+        echo "[watchdog] $(date -Iseconds): aiOS-ui restarted" >>/tmp/hermes-watchdog.log
+      fi
+      # Gateway
+      if [ -f "$HOME/.hermes/gateway_state.json" ]; then
+        TG_STATE=$(python3 -c "
 import json
 try:
     d = json.load(open('$HOME/.hermes/gateway_state.json'))
@@ -148,14 +155,17 @@ try:
 except Exception:
     print('error')
 " 2>/dev/null)
-      if ! echo "$TG_STATE" | grep -q "running connected"; then
-        hermes gateway restart >>"$HOME/.hermes/logs/gateway.log" 2>&1 || true
-        echo "[watchdog] $(date -Iseconds): gateway restarted (state: $TG_STATE)" >>/tmp/hermes-watchdog.log
+        if ! echo "$TG_STATE" | grep -q "running connected"; then
+          hermes gateway restart >>"$HOME/.hermes/logs/gateway.log" 2>&1 || true
+          echo "[watchdog] $(date -Iseconds): gateway restarted (state: $TG_STATE)" >>/tmp/hermes-watchdog.log
+        fi
       fi
-    fi
-  done
-) >>/tmp/hermes-watchdog.log 2>&1 &
-echo "[recover] watchdog PID=$!"
+    done
+  ) >>/tmp/hermes-watchdog.log 2>&1 &
+  echo "[recover] watchdog PID=$!"
+else
+  echo "[recover] watchdog is managed by root. Skipping."
+fi
 
 # ── status report ──
 echo ""

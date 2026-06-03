@@ -18,7 +18,7 @@ restart:
 	docker compose restart sandbox
 
 shell:
-	docker compose exec sandbox zsh
+	docker compose exec --user $(USER_ID) sandbox zsh
 
 logs:
 	docker compose logs -f sandbox

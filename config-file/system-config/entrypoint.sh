@@ -7,30 +7,31 @@ set +e
 # ── system init ───────────────────────────────────────────────────────────────
 
 # Fix ownership of bind-mounted directories (Docker may create them as root).
+AI_HOME="/home/ai_user"
 DIRS=(
-  "$HOME/.cache/uv"
-  "$HOME/miniconda3/envs/ai-baseline"
-  "$HOME/miniconda3/pkgs"
-  "$HOME/.agentmemory"
-  "$HOME/.claude"
-  "$HOME/.hermes"
-  "$HOME/.gemini"
-  "$HOME/.agents"
-  "$HOME/.fcc"
-  "$HOME/.iii"
-  "$HOME/.feynman"
+  "$AI_HOME/.cache/uv"
+  "$AI_HOME/miniconda3/envs/ai-baseline"
+  "$AI_HOME/miniconda3/pkgs"
+  "$AI_HOME/.agentmemory"
+  "$AI_HOME/.claude"
+  "$AI_HOME/.hermes"
+  "$AI_HOME/.gemini"
+  "$AI_HOME/.agents"
+  "$AI_HOME/.fcc"
+  "$AI_HOME/.iii"
+  "$AI_HOME/.feynman"
 )
 for dir in "${DIRS[@]}"; do
-  if [ -d "$dir" ] && [ ! -w "$dir" ]; then
-    sudo chown -R "$(id -u):$(id -g)" "$dir"
+  if [ -d "$dir" ]; then
+    chown -R ai_user:ai_user "$dir"
   fi
 done
 
 # Build the Conda ai-baseline env on first launch if the bind-mount is empty.
-ENV_DIR="$HOME/miniconda3/envs/ai-baseline"
+ENV_DIR="/home/ai_user/miniconda3/envs/ai-baseline"
 if [ ! -f "$ENV_DIR/conda-meta/history" ]; then
   echo "[entrypoint] Building Conda env 'ai-baseline' (first launch — this is slow)..."
-  "$HOME/miniconda3/bin/conda" env create -f "$HOME/environment.yml" -p "$ENV_DIR" ||
+  runuser -u ai_user -- env HOME=/home/ai_user /home/ai_user/miniconda3/bin/conda env create -f /home/ai_user/environment.yml -p "$ENV_DIR" ||
     echo "[entrypoint] WARNING: conda env create failed — continuing without it."
 fi
 
@@ -44,36 +45,35 @@ fi
     sleep 60
     # Dashboard
     if [ -f /tmp/hermes-dashboard.pid ] && ! kill -0 "$(cat /tmp/hermes-dashboard.pid 2>/dev/null)" 2>/dev/null; then
-      mkdir -p "$HOME/.hermes/logs"
-      hermes dashboard --no-open >>"$HOME/.hermes/logs/dashboard.log" 2>&1 &
+      runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'mkdir -p ~/.hermes/logs && hermes dashboard --no-open >> ~/.hermes/logs/dashboard.log 2>&1' &
       echo $! >/tmp/hermes-dashboard.pid
       echo "[watchdog] $(date -Iseconds): dashboard restarted" >>/tmp/hermes-watchdog.log
     fi
     # Dashboard-proxy
     if [ -f /tmp/hermes-proxy.pid ] && ! kill -0 "$(cat /tmp/hermes-proxy.pid 2>/dev/null)" 2>/dev/null; then
-      nohup node /config-file/hermes/dashboard-proxy.mjs >>/tmp/hermes-proxy.log 2>&1 &
+      runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup node /config-file/hermes/dashboard-proxy.mjs >> /tmp/hermes-proxy.log 2>&1' &
       echo $! >/tmp/hermes-proxy.pid
       echo "[watchdog] $(date -Iseconds): dashboard-proxy restarted" >>/tmp/hermes-watchdog.log
     fi
     # agentmemory viewer-proxy (LAN access to agentmemory viewer)
-    if [ -f "$HOME/.agentmemory/viewer-proxy.pid" ] && ! kill -0 "$(cat "$HOME/.agentmemory/viewer-proxy.pid" 2>/dev/null)" 2>/dev/null; then
-      cp /config-file/agentmemory/viewer-proxy.mjs "$HOME/.agentmemory/viewer-proxy.mjs" 2>/dev/null || true
-      nohup node "$HOME/.agentmemory/viewer-proxy.mjs" >>"$HOME/.agentmemory/viewer-proxy.log" 2>&1 &
-      echo $! >"$HOME/.agentmemory/viewer-proxy.pid"
+    if [ -f /home/ai_user/.agentmemory/viewer-proxy.pid ] && ! kill -0 "$(cat /home/ai_user/.agentmemory/viewer-proxy.pid 2>/dev/null)" 2>/dev/null; then
+      runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'cp /config-file/agentmemory/viewer-proxy.mjs ~/.agentmemory/viewer-proxy.mjs 2>/dev/null || true'
+      runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup node ~/.agentmemory/viewer-proxy.mjs >> ~/.agentmemory/viewer-proxy.log 2>&1' &
+      echo $! >/home/ai_user/.agentmemory/viewer-proxy.pid
       echo "[watchdog] $(date -Iseconds): viewer-proxy restarted" >>/tmp/hermes-watchdog.log
     fi
     # fcc-server
     if [ -f /tmp/fcc-server.pid ] && ! kill -0 "$(cat /tmp/fcc-server.pid 2>/dev/null)" 2>/dev/null; then
-      nohup fcc-server >>"$HOME/.fcc/logs/fcc-server.log" 2>&1 &
+      runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup fcc-server >> ~/.fcc/logs/fcc-server.log 2>&1' &
       echo $! >/tmp/fcc-server.pid
       echo "[watchdog] $(date -Iseconds): fcc-server restarted" >>/tmp/hermes-watchdog.log
     fi
     # Gateway (Telegram reconnect)
-    if [ -f "$HOME/.hermes/gateway_state.json" ]; then
-      TG_STATE=$(python3 -c "
+    if [ -f /home/ai_user/.hermes/gateway_state.json ]; then
+      TG_STATE=$(runuser -u ai_user -- env HOME=/home/ai_user python3 -c "
 import json
 try:
-    d = json.load(open('$HOME/.hermes/gateway_state.json'))
+    d = json.load(open('/home/ai_user/.hermes/gateway_state.json'))
     gw = d.get('gateway_state', '')
     tg = d.get('platforms', {}).get('telegram', {}).get('state', 'unknown')
     print(gw, tg)
@@ -81,7 +81,7 @@ except Exception as e:
     print('error')
 " 2>/dev/null)
       if ! echo "$TG_STATE" | grep -q "running connected"; then
-        hermes gateway restart >>"$HOME/.hermes/logs/gateway.log" 2>&1 || true
+        runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'hermes gateway restart >> ~/.hermes/logs/gateway.log 2>&1' || true
         echo "[watchdog] $(date -Iseconds): gateway restarted (state: $TG_STATE)" >>/tmp/hermes-watchdog.log
       fi
     fi
@@ -101,38 +101,37 @@ echo "[entrypoint] watchdog started"
 # Restore pinned iii v0.11.2 from persistent storage.
 # ~/.local/bin is ephemeral (not a bind-mount) so it reverts to the image
 # version (v0.16.1) on every rebuild. agentmemory v0.9.24 hard-pins v0.11.2.
-if [ -f "$HOME/.agentmemory/bin/iii" ]; then
-  cp "$HOME/.agentmemory/bin/iii" "$HOME/.local/bin/iii"
-  chmod +x "$HOME/.local/bin/iii"
+if [ -f "/home/ai_user/.agentmemory/bin/iii" ]; then
+  runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'cp ~/.agentmemory/bin/iii ~/.local/bin/iii && chmod +x ~/.local/bin/iii'
   echo "[entrypoint] iii v0.11.2 restored to ~/.local/bin"
 fi
 
 if [ -f /config-file/agentmemory/iii-config.yaml ]; then
-  sudo cp /config-file/agentmemory/iii-config.yaml \
+  cp /config-file/agentmemory/iii-config.yaml \
     /usr/local/lib/node_modules/@agentmemory/agentmemory/dist/iii-config.yaml
   echo "[entrypoint] iii-config.yaml copied"
 fi
-mkdir -p "$HOME/.agentmemory/data"
+runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'mkdir -p ~/.agentmemory/data'
 
 # Install the patched viewer-proxy (rewrites Host header for LAN access).
 if [ -f /config-file/agentmemory/viewer-proxy.mjs ]; then
-  cp /config-file/agentmemory/viewer-proxy.mjs "$HOME/.agentmemory/viewer-proxy.mjs"
+  runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'cp /config-file/agentmemory/viewer-proxy.mjs ~/.agentmemory/viewer-proxy.mjs'
   echo "[entrypoint] viewer-proxy.mjs (patched) installed"
 fi
 
 # Start agentmemory if not already running.
-if [ ! -f "$HOME/.agentmemory/iii.pid" ] || ! kill -0 "$(cat "$HOME/.agentmemory/iii.pid" 2>/dev/null)" 2>/dev/null; then
-  agentmemory start >>"$HOME/.agentmemory/agentmemory.log" 2>&1 || true
+if [ ! -f "/home/ai_user/.agentmemory/iii.pid" ] || ! kill -0 "$(cat "/home/ai_user/.agentmemory/iii.pid" 2>/dev/null)" 2>/dev/null; then
+  runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'agentmemory start >> ~/.agentmemory/agentmemory.log 2>&1' || true
   echo "[entrypoint] agentmemory started"
   sleep 4
 fi
 
 # Start viewer proxy if not already running.
-PROXY="$HOME/.agentmemory/viewer-proxy.mjs"
-PROXY_PID_FILE="$HOME/.agentmemory/viewer-proxy.pid"
+PROXY="/home/ai_user/.agentmemory/viewer-proxy.mjs"
+PROXY_PID_FILE="/home/ai_user/.agentmemory/viewer-proxy.pid"
 if [ -f "$PROXY" ]; then
   if [ ! -f "$PROXY_PID_FILE" ] || ! kill -0 "$(cat "$PROXY_PID_FILE" 2>/dev/null)" 2>/dev/null; then
-    nohup node "$PROXY" >>"$HOME/.agentmemory/viewer-proxy.log" 2>&1 &
+    runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup node ~/.agentmemory/viewer-proxy.mjs >> ~/.agentmemory/viewer-proxy.log 2>&1' &
     echo $! >"$PROXY_PID_FILE"
     echo "[entrypoint] viewer-proxy started (PID $!)"
   fi
@@ -142,8 +141,7 @@ fi
 
 HERMES_DASH_PID=/tmp/hermes-dashboard.pid
 if [ ! -f "$HERMES_DASH_PID" ] || ! kill -0 "$(cat "$HERMES_DASH_PID" 2>/dev/null)" 2>/dev/null; then
-  mkdir -p "$HOME/.hermes/logs"
-  hermes dashboard --no-open >>"$HOME/.hermes/logs/dashboard.log" 2>&1 &
+  runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'mkdir -p ~/.hermes/logs && hermes dashboard --no-open >> ~/.hermes/logs/dashboard.log 2>&1' &
   echo $! >"$HERMES_DASH_PID"
   echo "[entrypoint] hermes dashboard started (PID $!)"
   sleep 4
@@ -166,7 +164,7 @@ if [ -f "$HERMES_PROXY" ]; then
     fi
     sleep 1
   done
-  nohup node "$HERMES_PROXY" >>/tmp/hermes-proxy.log 2>&1 &
+  runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup node /config-file/hermes/dashboard-proxy.mjs >> /tmp/hermes-proxy.log 2>&1' &
   echo $! >"$HERMES_PROXY_PID"
   echo "[entrypoint] hermes dashboard-proxy started (PID $!)"
 fi
@@ -174,10 +172,10 @@ fi
 # ── fcc-server ────────────────────────────────────────────────────────────────
 
 if [ -f /config-file/fcc/.env ]; then
-  cp /config-file/fcc/.env "$HOME/.fcc/.env"
+  runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'cp /config-file/fcc/.env ~/.fcc/.env'
   echo "[entrypoint] fcc-server .env copied"
 fi
-mkdir -p "$HOME/.fcc/logs"
+runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'mkdir -p ~/.fcc/logs'
 
 FCC_PID_FILE=/tmp/fcc-server.pid
 if [ ! -f "$FCC_PID_FILE" ] || ! kill -0 "$(cat "$FCC_PID_FILE" 2>/dev/null)" 2>/dev/null; then
@@ -195,7 +193,7 @@ if [ ! -f "$FCC_PID_FILE" ] || ! kill -0 "$(cat "$FCC_PID_FILE" 2>/dev/null)" 2>
     fi
     sleep 1
   done
-  nohup fcc-server >>"$HOME/.fcc/logs/fcc-server.log" 2>&1 &
+  runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup fcc-server >> ~/.fcc/logs/fcc-server.log 2>&1' &
   echo $! >"$FCC_PID_FILE"
   echo "[entrypoint] fcc-server started (PID $!)"
   sleep 2
@@ -203,13 +201,13 @@ fi
 
 # ── hermes gateway ────────────────────────────────────────────────────────────
 
-GATEWAY_STATE_FILE="$HOME/.hermes/gateway_state.json"
+GATEWAY_STATE_FILE="/home/ai_user/.hermes/gateway_state.json"
 GATEWAY_PID=""
 if [ -f "$GATEWAY_STATE_FILE" ]; then
-  GATEWAY_PID=$(python3 -c "import json; print(json.load(open('$GATEWAY_STATE_FILE')).get('pid',''))" 2>/dev/null)
+  GATEWAY_PID=$(runuser -u ai_user -- env HOME=/home/ai_user python3 -c "import json; print(json.load(open('$GATEWAY_STATE_FILE')).get('pid',''))" 2>/dev/null)
 fi
 if [ -z "$GATEWAY_PID" ] || ! kill -0 "$GATEWAY_PID" 2>/dev/null; then
-  nohup hermes gateway run >>"$HOME/.hermes/logs/gateway.log" 2>&1 &
+  runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup hermes gateway run >> ~/.hermes/logs/gateway.log 2>&1' &
   echo "[entrypoint] hermes gateway started"
   sleep 3
 fi
@@ -231,4 +229,4 @@ fi
 # ── hand off to CMD (/bin/zsh) ────────────────────────────────────────────────
 # disown all background jobs so PID 1 does not wait for them (prevents do_wait hang)
 disown -a 2>/dev/null || true
-exec "$@"
+exec runuser -u ai_user -- "$@"

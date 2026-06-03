@@ -22,8 +22,7 @@ ARG GROUP_ID=2000
 ARG USERNAME=ai_user
 
 RUN groupadd -g ${GROUP_ID} ${USERNAME} && \
-  useradd -u ${USER_ID} -g ${GROUP_ID} -m -s /bin/zsh ${USERNAME} && \
-  echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USERNAME}
+  useradd -u ${USER_ID} -g ${GROUP_ID} -m -s /bin/zsh ${USERNAME}
 
 # 4. Copy entrypoint (as root, before switching user)
 COPY ./config-file/system-config/entrypoint.sh /usr/local/bin/entrypoint.sh
@@ -79,6 +78,8 @@ RUN curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/ins
 
 # --- AI SIDECAR AUTO-INSTALLS ---
 # (Sidecar UI injects new RUN layers directly under this marker. Do not remove.)
+
+USER root
 
 # Default entrypoint fixes bind-mount permissions, then runs CMD
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
