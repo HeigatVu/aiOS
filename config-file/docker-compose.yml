@@ -1,0 +1,62 @@
+# docker-compose.yml — Unified AI Dev Container
+# All services start automatically. Data survives rebuild via bind mounts.
+#
+# Usage:
+#   docker compose build && docker compose up -d
+#   docker compose logs -f    (tail all logs)
+#   docker compose ps          (status overview)
+
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-dev
+    hostname: ai-dev
+    restart: unless-stopped
+    ports:
+      - "3111:3111"   # agentmemory API
+      - "3113:3113"   # agentmemory viewer
+      - "9119:9119"   # hermes dashboard
+      - "8082:8082"   # fcc-server
+      - "9377:9377"   # camofox browser
+    volumes:
+      # === PERSISTENT (survive rebuild) ===
+      - ./config-file:/config-file                          # all configs, scripts, entrypoint source
+      - agentmemory_data:/home/ai_user/.agentmemory         # SQLite + iii binary
+      - hermes_config:/home/ai_user/.hermes                 # config.yaml, skills, plugins
+      - claude_config:/home/ai_user/.claude                 # settings, agents, ECC plugins
+      - gemini_config:/home/ai_user/.gemini                 # agy settings, skills, hooks
+      - fcc_config:/home/ai_user/.fcc                       # fcc-server config
+      - iii_config:/home/ai_user/.iii                       # iii engine
+      - agents_config:/home/ai_user/.agents                 # agent definitions
+      - conda_pkgs:/home/ai_user/miniconda3/pkgs            # conda package cache
+      - conda_env:/home/ai_user/miniconda3/envs/ai-baseline # conda environment
+      - local_bin:/home/ai_user/.local/bin                  # agy, rtk, iii restored here
+      - npm_cache:/home/ai_user/.npm                        # npm cache
+      - uv_cache:/home/ai_user/.cache/uv                    # uv/pip cache
+      # === WORKSPACE (optional, for dev work) ===
+      - ./workspace:/workspace
+    environment:
+      - AGENTMEMORY_URL=http://localhost:3111
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "python3", "/config-file/system-config/service_health.py"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  agentmemory_data:
+  hermes_config:
+  claude_config:
+  gemini_config:
+  fcc_config:
+  iii_config:
+  agents_config:
+  conda_pkgs:
+  conda_env:
+  local_bin:
+  npm_cache:
+  uv_cache:
