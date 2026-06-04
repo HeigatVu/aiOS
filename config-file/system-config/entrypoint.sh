@@ -100,7 +100,7 @@ except Exception as e:
     fi
     # aiOS-ui (FastAPI on port 8501)
     if [ -f /tmp/aiOS-ui.pid ] && ! kill -0 "$(cat /tmp/aiOS-ui.pid 2>/dev/null)" 2>/dev/null; then
-      (cd /aiOS-ui && exec env HERMES_HOME=/home/ai_user/.hermes HOME=/home/ai_user "$PYTHON_EXE" main.py) >>/config-file/aiOS-ui.log 2>&1 &
+      (cd /aiOS-ui && exec runuser -u ai_user -- env HERMES_HOME=/home/ai_user/.hermes HOME=/home/ai_user "$PYTHON_EXE" main.py) >>/config-file/aiOS-ui.log 2>&1 &
       echo $! > /tmp/aiOS-ui.pid
       echo "[watchdog] $(date -Iseconds): aiOS-ui restarted" >>/tmp/hermes-watchdog.log
     fi
@@ -246,7 +246,7 @@ if [ ! -f "$AIOS_UI_PID" ] || ! kill -0 "$(cat "$AIOS_UI_PID" 2>/dev/null)" 2>/d
     grep -q "main.py" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
   done
   rm -f "$AIOS_UI_PID"
-  (cd /aiOS-ui && exec env HERMES_HOME=/home/ai_user/.hermes HOME=/home/ai_user "$PYTHON_EXE" main.py) >>/config-file/aiOS-ui.log 2>&1 &
+  (cd /aiOS-ui && exec runuser -u ai_user -- env HERMES_HOME=/home/ai_user/.hermes HOME=/home/ai_user "$PYTHON_EXE" main.py) >>/config-file/aiOS-ui.log 2>&1 &
   echo $! > "$AIOS_UI_PID"
   echo "[entrypoint] aiOS-ui started (PID $!) with $PYTHON_EXE"
   sleep 3

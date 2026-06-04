@@ -1,0 +1,746 @@
+2026-06-04 01:44:43,780 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:44:43,780 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:44:43,780 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [176]
+INFO:     Waiting for application startup.
+2026-06-04 01:44:43,827 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:45:43,705 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:45:43,705 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:45:43,705 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [223]
+INFO:     Waiting for application startup.
+2026-06-04 01:45:43,728 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:46:43,747 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:46:43,748 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:46:43,748 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [1119]
+INFO:     Waiting for application startup.
+2026-06-04 01:46:43,763 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:47:43,786 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:47:43,786 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:47:43,786 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [1850]
+INFO:     Waiting for application startup.
+2026-06-04 01:47:43,801 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:48:43,838 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:48:43,838 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:48:43,838 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [2015]
+INFO:     Waiting for application startup.
+2026-06-04 01:48:43,853 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:49:43,868 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:49:43,868 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:49:43,868 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [2956]
+INFO:     Waiting for application startup.
+2026-06-04 01:49:43,883 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:49:43,926 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:49:43,926 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:49:43,926 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [2995]
+INFO:     Waiting for application startup.
+2026-06-04 01:49:43,941 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:50:00,125 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:50:00,125 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:50:00,125 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [3142]
+INFO:     Waiting for application startup.
+2026-06-04 01:50:00,140 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:50:43,993 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:50:43,993 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:50:43,993 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [3244]
+INFO:     Waiting for application startup.
+2026-06-04 01:50:44,008 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:50:45,910 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:50:45,911 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:50:45,911 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [3263]
+INFO:     Waiting for application startup.
+2026-06-04 01:50:45,927 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:51:02,190 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:51:02,190 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:51:02,190 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [3309]
+INFO:     Waiting for application startup.
+2026-06-04 01:51:02,206 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:51:44,048 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:51:44,049 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:51:44,049 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [3338]
+INFO:     Waiting for application startup.
+2026-06-04 01:51:44,064 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:52:02,242 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:52:02,243 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:52:02,243 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [3358]
+INFO:     Waiting for application startup.
+2026-06-04 01:52:02,257 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:52:44,086 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:52:44,086 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:52:44,086 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [3387]
+INFO:     Waiting for application startup.
+2026-06-04 01:52:44,101 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:53:02,295 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:53:02,295 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:53:02,295 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [3406]
+INFO:     Waiting for application startup.
+2026-06-04 01:53:02,309 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:53:44,143 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:53:44,143 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:53:44,143 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [3615]
+INFO:     Waiting for application startup.
+2026-06-04 01:53:44,159 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:54:02,343 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:54:02,343 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:54:02,343 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [3634]
+INFO:     Waiting for application startup.
+2026-06-04 01:54:02,357 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:54:44,178 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:54:44,178 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:54:44,179 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [4058]
+INFO:     Waiting for application startup.
+2026-06-04 01:54:44,198 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:55:02,373 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:55:02,373 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:55:02,373 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [4269]
+INFO:     Waiting for application startup.
+2026-06-04 01:55:02,388 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:55:44,204 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:55:44,204 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:55:44,204 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [5130]
+INFO:     Waiting for application startup.
+2026-06-04 01:55:44,221 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:56:02,398 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:56:02,398 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:56:02,398 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [5149]
+INFO:     Waiting for application startup.
+2026-06-04 01:56:02,413 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:56:44,233 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:56:44,233 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:56:44,233 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [5178]
+INFO:     Waiting for application startup.
+2026-06-04 01:56:44,248 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:57:02,455 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:57:02,455 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:57:02,455 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [5197]
+INFO:     Waiting for application startup.
+2026-06-04 01:57:02,470 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:57:44,270 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:57:44,270 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:57:44,270 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [5242]
+INFO:     Waiting for application startup.
+2026-06-04 01:57:44,286 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:58:02,488 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:58:02,488 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:58:02,488 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [5261]
+INFO:     Waiting for application startup.
+2026-06-04 01:58:02,502 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:58:44,315 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:58:44,315 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:58:44,315 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [5290]
+INFO:     Waiting for application startup.
+2026-06-04 01:58:44,330 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:59:02,535 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:59:02,536 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:59:02,536 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [5309]
+INFO:     Waiting for application startup.
+2026-06-04 01:59:02,550 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 01:59:44,367 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 01:59:44,367 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 01:59:44,367 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [5342]
+INFO:     Waiting for application startup.
+2026-06-04 01:59:44,382 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 02:00:02,581 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:00:02,581 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:00:02,582 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [5361]
+INFO:     Waiting for application startup.
+2026-06-04 02:00:02,596 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 02:00:44,412 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:00:44,412 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:00:44,412 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [5390]
+INFO:     Waiting for application startup.
+2026-06-04 02:00:44,427 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 02:01:02,634 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:01:02,634 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:01:02,634 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [5542]
+INFO:     Waiting for application startup.
+2026-06-04 02:01:02,648 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 02:01:44,468 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:01:44,468 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:01:44,468 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [5571]
+INFO:     Waiting for application startup.
+2026-06-04 02:01:44,483 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 02:02:02,681 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:02:02,681 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:02:02,681 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [5590]
+INFO:     Waiting for application startup.
+2026-06-04 02:02:02,696 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 199, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 126, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 02:02:44,516 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:02:44,516 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:02:44,516 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [5619]
+INFO:     Waiting for application startup.
+2026-06-04 02:02:44,536 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:02:46,078 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:02:46,078 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8501 (Press CTRL+C to quit)
+2026-06-04 02:03:02,734 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:03:02,734 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:03:02,734 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [5649]
+INFO:     Waiting for application startup.
+2026-06-04 02:03:02,750 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:03:02,777 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:03:02,777 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:03:02,781 [bff] INFO Stopping subprocess group PGID=5658
+INFO:     Application shutdown complete.
+2026-06-04 02:03:44,570 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:03:44,570 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:03:44,570 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [5948]
+INFO:     Waiting for application startup.
+2026-06-04 02:03:44,585 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:03:44,611 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:03:44,611 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:03:44,616 [bff] INFO Stopping subprocess group PGID=5951
+INFO:     Application shutdown complete.
+INFO:     172.17.0.1:34040 - "GET / HTTP/1.1" 200 OK
+INFO:     172.17.0.1:34040 - "GET /health HTTP/1.1" 200 OK
+2026-06-04 02:03:59,809 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/sw.js?v=unknown "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:34040 - "GET /sw.js?v=unknown HTTP/1.1" 200 OK
+2026-06-04 02:04:02,777 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:04:02,777 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:04:02,777 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6169]
+INFO:     Waiting for application startup.
+2026-06-04 02:04:02,792 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:04:02,817 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:04:02,817 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:04:02,821 [bff] INFO Stopping subprocess group PGID=6178
+INFO:     Application shutdown complete.

@@ -110,7 +110,11 @@ if [ ! -f /tmp/aiOS-ui.pid ] || ! kill -0 "$(cat /tmp/aiOS-ui.pid 2>/dev/null)" 
     pid=${f%/cmdline}; pid=${pid#/proc/}
     grep -q "aiOS-ui\|main.py" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
   done
-  (cd /aiOS-ui && exec env HERMES_HOME=/home/ai_user/.hermes HOME=/home/ai_user "$PYTHON_EXE" main.py) >>/config-file/aiOS-ui.log 2>&1 &
+  if [ "$(id -u)" -eq 0 ]; then
+    (cd /aiOS-ui && exec runuser -u ai_user -- env HERMES_HOME=/home/ai_user/.hermes HOME=/home/ai_user "$PYTHON_EXE" main.py) >>/config-file/aiOS-ui.log 2>&1 &
+  else
+    (cd /aiOS-ui && exec env HERMES_HOME=/home/ai_user/.hermes HOME=/home/ai_user "$PYTHON_EXE" main.py) >>/config-file/aiOS-ui.log 2>&1 &
+  fi
   echo $! > /tmp/aiOS-ui.pid
   sleep 2
 fi
@@ -156,7 +160,11 @@ if [ "$(id -u)" -eq 0 ]; then
       fi
       # aiOS-ui
       if [ -f /tmp/aiOS-ui.pid ] && ! kill -0 "$(cat /tmp/aiOS-ui.pid 2>/dev/null)" 2>/dev/null; then
-        (cd /aiOS-ui && exec env HERMES_HOME=/home/ai_user/.hermes HOME=/home/ai_user "$PYTHON_EXE" main.py) >>/config-file/aiOS-ui.log 2>&1 &
+        if [ "$(id -u)" -eq 0 ]; then
+          (cd /aiOS-ui && exec runuser -u ai_user -- env HERMES_HOME=/home/ai_user/.hermes HOME=/home/ai_user "$PYTHON_EXE" main.py) >>/config-file/aiOS-ui.log 2>&1 &
+        else
+          (cd /aiOS-ui && exec env HERMES_HOME=/home/ai_user/.hermes HOME=/home/ai_user "$PYTHON_EXE" main.py) >>/config-file/aiOS-ui.log 2>&1 &
+        fi
         echo $! > /tmp/aiOS-ui.pid
         echo "[watchdog] $(date -Iseconds): aiOS-ui restarted" >>/tmp/hermes-watchdog.log
       fi
