@@ -744,3 +744,691 @@ ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501)
 INFO:     Waiting for application shutdown.
 2026-06-04 02:04:02,821 [bff] INFO Stopping subprocess group PGID=6178
 INFO:     Application shutdown complete.
+2026-06-04 02:04:44,637 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:04:44,638 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:04:44,638 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6209]
+INFO:     Waiting for application startup.
+2026-06-04 02:04:44,653 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:04:44,679 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:04:44,679 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:04:44,683 [bff] INFO Stopping subprocess group PGID=6212
+INFO:     Application shutdown complete.
+2026-06-04 02:05:02,821 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:05:02,822 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:05:02,822 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6235]
+INFO:     Waiting for application startup.
+2026-06-04 02:05:02,836 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:05:02,862 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:05:02,862 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:05:02,866 [bff] INFO Stopping subprocess group PGID=6244
+INFO:     Application shutdown complete.
+2026-06-04 02:05:44,691 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:05:44,691 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:05:44,691 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6271]
+INFO:     Waiting for application startup.
+2026-06-04 02:05:44,707 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:05:44,732 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:05:44,733 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:05:44,737 [bff] INFO Stopping subprocess group PGID=6274
+INFO:     Application shutdown complete.
+2026-06-04 02:06:02,873 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:06:02,873 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:06:02,873 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6297]
+INFO:     Waiting for application startup.
+2026-06-04 02:06:02,888 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:06:02,916 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:06:02,916 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:06:02,920 [bff] INFO Stopping subprocess group PGID=6306
+INFO:     Application shutdown complete.
+2026-06-04 02:06:44,730 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:06:44,730 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:06:44,730 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6333]
+INFO:     Waiting for application startup.
+2026-06-04 02:06:44,745 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:06:44,771 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:06:44,771 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:06:44,775 [bff] INFO Stopping subprocess group PGID=6336
+INFO:     Application shutdown complete.
+2026-06-04 02:07:02,916 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:07:02,916 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:07:02,916 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6359]
+INFO:     Waiting for application startup.
+2026-06-04 02:07:02,931 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:07:02,957 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:07:02,957 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:07:02,961 [bff] INFO Stopping subprocess group PGID=6368
+INFO:     Application shutdown complete.
+2026-06-04 02:07:44,789 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:07:44,789 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:07:44,789 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6395]
+INFO:     Waiting for application startup.
+2026-06-04 02:07:44,804 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:07:44,831 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:07:44,831 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:07:44,836 [bff] INFO Stopping subprocess group PGID=6398
+INFO:     Application shutdown complete.
+2026-06-04 02:08:02,970 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:08:02,970 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:08:02,970 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6421]
+INFO:     Waiting for application startup.
+2026-06-04 02:08:02,985 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:08:03,010 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:08:03,010 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:08:03,015 [bff] INFO Stopping subprocess group PGID=6430
+INFO:     Application shutdown complete.
+INFO:     172.17.0.1:59994 - "GET / HTTP/1.1" 200 OK
+INFO:     172.17.0.1:59994 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.17.0.1:59994 - "GET /hermes HTTP/1.1" 302 Found
+2026-06-04 02:08:35,128 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/ "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:59994 - "GET /_hermes_spa HTTP/1.1" 200 OK
+2026-06-04 02:08:35,158 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/pwa-startup.js?v=unknown "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:59994 - "GET /static/pwa-startup.js?v=unknown HTTP/1.1" 200 OK
+2026-06-04 02:08:35,162 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/vendor/katex/0.16.22/katex.min.css "HTTP/1.1 304 Not Modified"
+INFO:     172.17.0.1:60016 - "GET /static/vendor/katex/0.16.22/katex.min.css HTTP/1.1" 304 Not Modified
+2026-06-04 02:08:35,172 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/style.css?v=unknown "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:59996 - "GET /static/style.css?v=unknown HTTP/1.1" 200 OK
+2026-06-04 02:08:35,278 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/icons.js?v=unknown "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:59994 - "GET /static/icons.js?v=unknown HTTP/1.1" 200 OK
+2026-06-04 02:08:35,280 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/terminal.js?v=unknown "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:60028 - "GET /static/terminal.js?v=unknown HTTP/1.1" 200 OK
+2026-06-04 02:08:35,281 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/workspace.js?v=unknown "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:60018 - "GET /static/workspace.js?v=unknown HTTP/1.1" 200 OK
+2026-06-04 02:08:35,290 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/ui.js?v=unknown "HTTP/1.1 200 OK"
+2026-06-04 02:08:35,293 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/commands.js?v=unknown "HTTP/1.1 200 OK"
+2026-06-04 02:08:35,293 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/sessions.js?v=unknown "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:60016 - "GET /static/ui.js?v=unknown HTTP/1.1" 200 OK
+INFO:     172.17.0.1:60018 - "GET /static/commands.js?v=unknown HTTP/1.1" 200 OK
+INFO:     172.17.0.1:60036 - "GET /static/sessions.js?v=unknown HTTP/1.1" 200 OK
+2026-06-04 02:08:35,303 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/messages.js?v=unknown "HTTP/1.1 200 OK"
+2026-06-04 02:08:35,309 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/vendor/smd.min.js "HTTP/1.1 304 Not Modified"
+INFO:     172.17.0.1:60028 - "GET /static/messages.js?v=unknown HTTP/1.1" 200 OK
+INFO:     172.17.0.1:60018 - "GET /static/vendor/smd.min.js HTTP/1.1" 304 Not Modified
+2026-06-04 02:08:35,310 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/panels.js?v=unknown "HTTP/1.1 200 OK"
+2026-06-04 02:08:35,311 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/i18n.js?v=unknown "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:59994 - "GET /static/panels.js?v=unknown HTTP/1.1" 200 OK
+2026-06-04 02:08:35,317 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/manifest.json "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:60016 - "GET /manifest.json HTTP/1.1" 200 OK
+INFO:     172.17.0.1:59996 - "GET /static/i18n.js?v=unknown HTTP/1.1" 200 OK
+2026-06-04 02:08:35,321 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/onboarding.js?v=unknown "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:60036 - "GET /static/onboarding.js?v=unknown HTTP/1.1" 200 OK
+2026-06-04 02:08:35,323 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/boot.js?v=unknown "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:60028 - "GET /static/boot.js?v=unknown HTTP/1.1" 200 OK
+2026-06-04 02:08:35,490 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/settings "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:60028 - "GET /api/settings HTTP/1.1" 200 OK
+2026-06-04 02:08:35,493 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/dashboard/config "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:60036 - "GET /api/dashboard/config HTTP/1.1" 200 OK
+2026-06-04 02:08:35,533 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/dashboard/status "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:59996 - "GET /api/dashboard/status HTTP/1.1" 200 OK
+2026-06-04 02:08:35,700 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/favicon-192.png "HTTP/1.1 304 Not Modified"
+INFO:     172.17.0.1:59996 - "GET /static/favicon-192.png HTTP/1.1" 304 Not Modified
+2026-06-04 02:08:35,727 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/favicon-32.png "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:59996 - "GET /static/favicon-32.png HTTP/1.1" 200 OK
+2026-06-04 02:08:35,728 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/favicon.svg "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:59994 - "GET /static/favicon.svg HTTP/1.1" 200 OK
+2026-06-04 02:08:35,729 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/favicon.svg "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:60016 - "GET /static/favicon.svg HTTP/1.1" 200 OK
+2026-06-04 02:08:35,730 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/favicon.svg "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:60028 - "GET /static/favicon.svg HTTP/1.1" 200 OK
+2026-06-04 02:08:35,731 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/favicon.svg "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:60018 - "GET /static/favicon.svg HTTP/1.1" 200 OK
+2026-06-04 02:08:35,733 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/favicon.svg "HTTP/1.1 200 OK"
+2026-06-04 02:08:35,734 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/favicon-512.png "HTTP/1.1 304 Not Modified"
+INFO:     172.17.0.1:59996 - "GET /static/favicon.svg HTTP/1.1" 200 OK
+INFO:     172.17.0.1:60036 - "GET /static/favicon-512.png HTTP/1.1" 304 Not Modified
+2026-06-04 02:08:35,736 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/favicon.svg "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:59994 - "GET /static/favicon.svg HTTP/1.1" 200 OK
+2026-06-04 02:08:35,738 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/profile/active "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:60018 - "GET /api/profile/active HTTP/1.1" 200 OK
+2026-06-04 02:08:35,739 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/favicon.svg "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:60016 - "GET /static/favicon.svg HTTP/1.1" 200 OK
+2026-06-04 02:08:35,745 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/updates/check "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:60028 - "GET /api/updates/check HTTP/1.1" 200 OK
+2026-06-04 02:08:36,262 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/favicon.svg "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:60016 - "GET /static/favicon.svg HTTP/1.1" 200 OK
+2026-06-04 02:08:36,262 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/workspaces "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:60028 - "GET /api/workspaces HTTP/1.1" 200 OK
+2026-06-04 02:08:36,264 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/projects "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:59994 - "GET /api/projects HTTP/1.1" 200 OK
+2026-06-04 02:08:36,266 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/sessions "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:60018 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-06-04 02:08:36,415 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/sessions/events "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:60028 - "GET /api/sessions/events HTTP/1.1" 200 OK
+2026-06-04 02:08:36,715 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/session?session_id=500c13fa1acb&messages=0&resolve_model=0 "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:59994 - "GET /api/session?session_id=500c13fa1acb&messages=0&resolve_model=0 HTTP/1.1" 200 OK
+2026-06-04 02:08:36,729 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/session?session_id=500c13fa1acb&messages=0&resolve_model=0 "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:59994 - "GET /api/session?session_id=500c13fa1acb&messages=0&resolve_model=0 HTTP/1.1" 200 OK
+2026-06-04 02:08:36,802 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/reasoning?model=%40nous%3Aanthropic%2Fclaude-opus-4.8&provider=nous "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:59994 - "GET /api/reasoning?model=%40nous%3Aanthropic%2Fclaude-opus-4.8&provider=nous HTTP/1.1" 200 OK
+2026-06-04 02:08:36,804 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/session?session_id=500c13fa1acb&messages=1&resolve_model=0&msg_limit=30 "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:60016 - "GET /api/session?session_id=500c13fa1acb&messages=1&resolve_model=0&msg_limit=30 HTTP/1.1" 200 OK
+2026-06-04 02:08:36,834 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/session/compress/status?session_id=500c13fa1acb "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:59994 - "GET /api/session/compress/status?session_id=500c13fa1acb HTTP/1.1" 200 OK
+2026-06-04 02:08:36,860 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/reasoning?model=%40nous%3Aanthropic%2Fclaude-opus-4.8&provider=nous "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:60016 - "GET /api/reasoning?model=%40nous%3Aanthropic%2Fclaude-opus-4.8&provider=nous HTTP/1.1" 200 OK
+2026-06-04 02:08:36,870 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/list?session_id=500c13fa1acb&path=. "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:59994 - "GET /api/list?session_id=500c13fa1acb&path=. HTTP/1.1" 200 OK
+2026-06-04 02:08:36,907 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/git-info?session_id=500c13fa1acb "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:59994 - "GET /api/git-info?session_id=500c13fa1acb HTTP/1.1" 200 OK
+2026-06-04 02:08:36,967 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/reasoning?model=deepseek-v4-flash&provider=deepseek "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:60018 - "GET /api/reasoning?model=deepseek-v4-flash&provider=deepseek HTTP/1.1" 200 OK
+2026-06-04 02:08:42,367 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/sw.js?v=unknown "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:60050 - "GET /sw.js?v=unknown HTTP/1.1" 200 OK
+2026-06-04 02:08:44,844 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:08:44,844 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:08:44,844 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6486]
+INFO:     Waiting for application startup.
+2026-06-04 02:08:44,859 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:08:44,885 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:08:44,885 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:08:44,889 [bff] INFO Stopping subprocess group PGID=6489
+INFO:     Application shutdown complete.
+2026-06-04 02:08:47,544 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/models "HTTP/1.1 200 OK"
+2026-06-04 02:08:47,549 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/session?session_id=500c13fa1acb&messages=0&resolve_model=1 "HTTP/1.1 200 OK"
+2026-06-04 02:09:03,030 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:09:03,030 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:09:03,030 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6512]
+INFO:     Waiting for application startup.
+2026-06-04 02:09:03,044 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:09:03,070 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:09:03,070 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:09:03,074 [bff] INFO Stopping subprocess group PGID=6521
+INFO:     Application shutdown complete.
+2026-06-04 02:09:44,895 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:09:44,895 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:09:44,895 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6548]
+INFO:     Waiting for application startup.
+2026-06-04 02:09:44,915 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 198, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 125, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 02:10:03,075 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:10:03,075 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:10:03,075 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6567]
+INFO:     Waiting for application startup.
+2026-06-04 02:10:03,094 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:10:03,120 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:10:03,121 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:10:03,125 [bff] INFO Stopping subprocess group PGID=6576
+INFO:     Application shutdown complete.
+INFO:     172.17.0.1:41892 - "GET / HTTP/1.1" 200 OK
+INFO:     172.17.0.1:41892 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.17.0.1:41892 - "GET /hermes HTTP/1.1" 302 Found
+2026-06-04 02:10:06,373 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/ "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41892 - "GET /_hermes_spa HTTP/1.1" 200 OK
+2026-06-04 02:10:06,407 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/pwa-startup.js?v=unknown "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41892 - "GET /static/pwa-startup.js?v=unknown HTTP/1.1" 200 OK
+2026-06-04 02:10:06,414 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/style.css?v=unknown "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41890 - "GET /static/style.css?v=unknown HTTP/1.1" 200 OK
+2026-06-04 02:10:06,490 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/icons.js?v=unknown "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41892 - "GET /static/icons.js?v=unknown HTTP/1.1" 200 OK
+2026-06-04 02:10:06,493 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/sessions.js?v=unknown "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41920 - "GET /static/sessions.js?v=unknown HTTP/1.1" 200 OK
+2026-06-04 02:10:06,495 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/ui.js?v=unknown "HTTP/1.1 200 OK"
+2026-06-04 02:10:06,496 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/workspace.js?v=unknown "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41902 - "GET /static/workspace.js?v=unknown HTTP/1.1" 200 OK
+2026-06-04 02:10:06,499 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/terminal.js?v=unknown "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41900 - "GET /static/ui.js?v=unknown HTTP/1.1" 200 OK
+INFO:     172.17.0.1:41904 - "GET /static/terminal.js?v=unknown HTTP/1.1" 200 OK
+2026-06-04 02:10:06,502 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/messages.js?v=unknown "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41920 - "GET /static/messages.js?v=unknown HTTP/1.1" 200 OK
+2026-06-04 02:10:06,505 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/commands.js?v=unknown "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41892 - "GET /static/commands.js?v=unknown HTTP/1.1" 200 OK
+2026-06-04 02:10:06,511 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/boot.js?v=unknown "HTTP/1.1 200 OK"
+2026-06-04 02:10:06,512 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/onboarding.js?v=unknown "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41904 - "GET /static/onboarding.js?v=unknown HTTP/1.1" 200 OK
+INFO:     172.17.0.1:41902 - "GET /static/boot.js?v=unknown HTTP/1.1" 200 OK
+2026-06-04 02:10:06,519 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/panels.js?v=unknown "HTTP/1.1 200 OK"
+2026-06-04 02:10:06,522 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/i18n.js?v=unknown "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41900 - "GET /static/panels.js?v=unknown HTTP/1.1" 200 OK
+INFO:     172.17.0.1:41890 - "GET /static/i18n.js?v=unknown HTTP/1.1" 200 OK
+2026-06-04 02:10:06,542 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/manifest.json "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41890 - "GET /manifest.json HTTP/1.1" 200 OK
+2026-06-04 02:10:06,675 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/settings "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41890 - "GET /api/settings HTTP/1.1" 200 OK
+2026-06-04 02:10:06,675 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/dashboard/config "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41900 - "GET /api/dashboard/config HTTP/1.1" 200 OK
+2026-06-04 02:10:06,709 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/dashboard/status "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41902 - "GET /api/dashboard/status HTTP/1.1" 200 OK
+2026-06-04 02:10:06,917 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/favicon-32.png "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41902 - "GET /static/favicon-32.png HTTP/1.1" 200 OK
+2026-06-04 02:10:06,918 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/favicon.svg "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41900 - "GET /static/favicon.svg HTTP/1.1" 200 OK
+2026-06-04 02:10:06,920 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/favicon.svg "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41890 - "GET /static/favicon.svg HTTP/1.1" 200 OK
+2026-06-04 02:10:06,921 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/favicon.svg "HTTP/1.1 200 OK"
+2026-06-04 02:10:06,921 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/favicon.svg "HTTP/1.1 200 OK"
+2026-06-04 02:10:06,922 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/favicon.svg "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41920 - "GET /static/favicon.svg HTTP/1.1" 200 OK
+INFO:     172.17.0.1:41904 - "GET /static/favicon.svg HTTP/1.1" 200 OK
+INFO:     172.17.0.1:41892 - "GET /static/favicon.svg HTTP/1.1" 200 OK
+2026-06-04 02:10:06,927 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/favicon.svg "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41902 - "GET /static/favicon.svg HTTP/1.1" 200 OK
+2026-06-04 02:10:06,929 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/favicon.svg "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41900 - "GET /static/favicon.svg HTTP/1.1" 200 OK
+2026-06-04 02:10:06,933 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/updates/check "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41890 - "GET /api/updates/check HTTP/1.1" 200 OK
+2026-06-04 02:10:06,936 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/profile/active "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41892 - "GET /api/profile/active HTTP/1.1" 200 OK
+2026-06-04 02:10:07,453 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/static/favicon.svg "HTTP/1.1 200 OK"
+2026-06-04 02:10:07,454 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/projects "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41892 - "GET /static/favicon.svg HTTP/1.1" 200 OK
+INFO:     172.17.0.1:41902 - "GET /api/projects HTTP/1.1" 200 OK
+2026-06-04 02:10:07,456 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/workspaces "HTTP/1.1 200 OK"
+2026-06-04 02:10:07,456 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/sessions "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41890 - "GET /api/workspaces HTTP/1.1" 200 OK
+INFO:     172.17.0.1:41900 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-06-04 02:10:07,460 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/models "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41920 - "GET /api/models HTTP/1.1" 200 OK
+2026-06-04 02:10:07,611 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/reasoning?model=deepseek-v4-flash&provider=deepseek "HTTP/1.1 200 OK"
+2026-06-04 02:10:07,611 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/sessions/events "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41920 - "GET /api/reasoning?model=deepseek-v4-flash&provider=deepseek HTTP/1.1" 200 OK
+INFO:     172.17.0.1:41892 - "GET /api/sessions/events HTTP/1.1" 200 OK
+2026-06-04 02:10:07,613 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/session?session_id=500c13fa1acb&messages=0&resolve_model=0 "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41890 - "GET /api/session?session_id=500c13fa1acb&messages=0&resolve_model=0 HTTP/1.1" 200 OK
+2026-06-04 02:10:07,634 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/session?session_id=500c13fa1acb&messages=0&resolve_model=0 "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41890 - "GET /api/session?session_id=500c13fa1acb&messages=0&resolve_model=0 HTTP/1.1" 200 OK
+2026-06-04 02:10:07,688 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/reasoning?model=%40nous%3Aanthropic%2Fclaude-opus-4.8&provider=nous "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41890 - "GET /api/reasoning?model=%40nous%3Aanthropic%2Fclaude-opus-4.8&provider=nous HTTP/1.1" 200 OK
+2026-06-04 02:10:07,693 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/session?session_id=500c13fa1acb&messages=0&resolve_model=1 "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41902 - "GET /api/session?session_id=500c13fa1acb&messages=0&resolve_model=1 HTTP/1.1" 200 OK
+2026-06-04 02:10:07,695 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/session?session_id=500c13fa1acb&messages=1&resolve_model=0&msg_limit=30 "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41920 - "GET /api/session?session_id=500c13fa1acb&messages=1&resolve_model=0&msg_limit=30 HTTP/1.1" 200 OK
+2026-06-04 02:10:07,735 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/reasoning?model=%40nous%3Aanthropic%2Fclaude-opus-4.8&provider=nous "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41920 - "GET /api/reasoning?model=%40nous%3Aanthropic%2Fclaude-opus-4.8&provider=nous HTTP/1.1" 200 OK
+2026-06-04 02:10:07,736 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/session/compress/status?session_id=500c13fa1acb "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41902 - "GET /api/session/compress/status?session_id=500c13fa1acb HTTP/1.1" 200 OK
+2026-06-04 02:10:07,737 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/list?session_id=500c13fa1acb&path=. "HTTP/1.1 200 OK"
+2026-06-04 02:10:07,737 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/sessions "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41890 - "GET /api/list?session_id=500c13fa1acb&path=. HTTP/1.1" 200 OK
+INFO:     172.17.0.1:41904 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-06-04 02:10:07,741 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/projects "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41920 - "GET /api/projects HTTP/1.1" 200 OK
+2026-06-04 02:10:07,766 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/reasoning?model=%40nous%3Aanthropic%2Fclaude-opus-4.8&provider=nous "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41902 - "GET /api/reasoning?model=%40nous%3Aanthropic%2Fclaude-opus-4.8&provider=nous HTTP/1.1" 200 OK
+2026-06-04 02:10:07,889 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/models/live?provider=deepseek "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41900 - "GET /api/models/live?provider=deepseek HTTP/1.1" 200 OK
+2026-06-04 02:10:09,351 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/sw.js?v=unknown "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:41900 - "GET /sw.js?v=unknown HTTP/1.1" 200 OK
+2026-06-04 02:10:14,720 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/workspaces "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:50196 - "GET /api/workspaces HTTP/1.1" 200 OK
+INFO:     172.17.0.1:50196 - "GET /health HTTP/1.1" 200 OK
+2026-06-04 02:10:18,126 [httpx] INFO HTTP Request: POST http://127.0.0.1:8787/api/session/new "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:50196 - "POST /api/session/new HTTP/1.1" 200 OK
+2026-06-04 02:10:18,172 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/reasoning?model=deepseek-v4-flash&provider=deepseek "HTTP/1.1 200 OK"
+2026-06-04 02:10:18,172 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/projects "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:50196 - "GET /api/reasoning?model=deepseek-v4-flash&provider=deepseek HTTP/1.1" 200 OK
+INFO:     172.17.0.1:50202 - "GET /api/projects HTTP/1.1" 200 OK
+2026-06-04 02:10:18,173 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/sessions "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:50200 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-06-04 02:10:18,191 [httpx] INFO HTTP Request: POST http://127.0.0.1:8787/api/session/update "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:50200 - "POST /api/session/update HTTP/1.1" 200 OK
+2026-06-04 02:10:18,259 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/reasoning?model=deepseek-v4-flash&provider=deepseek "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:50200 - "GET /api/reasoning?model=deepseek-v4-flash&provider=deepseek HTTP/1.1" 200 OK
+2026-06-04 02:10:18,260 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/list?session_id=a0549a50efe2&path=. "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:50202 - "GET /api/list?session_id=a0549a50efe2&path=. HTTP/1.1" 200 OK
+2026-06-04 02:10:18,285 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/api/git-info?session_id=a0549a50efe2 "HTTP/1.1 200 OK"
+INFO:     172.17.0.1:50202 - "GET /api/git-info?session_id=a0549a50efe2 HTTP/1.1" 200 OK
+2026-06-04 02:10:44,937 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:10:44,937 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:10:44,937 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6616]
+INFO:     Waiting for application startup.
+2026-06-04 02:10:44,952 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:10:44,978 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:10:44,978 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:10:44,983 [bff] INFO Stopping subprocess group PGID=6619
+INFO:     Application shutdown complete.
+2026-06-04 02:11:03,140 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:11:03,140 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:11:03,140 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6642]
+INFO:     Waiting for application startup.
+2026-06-04 02:11:03,156 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:11:03,181 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:11:03,182 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:11:03,186 [bff] INFO Stopping subprocess group PGID=6651
+INFO:     Application shutdown complete.
+2026-06-04 02:11:44,994 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:11:44,994 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:11:44,994 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6678]
+INFO:     Waiting for application startup.
+2026-06-04 02:11:45,009 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:11:45,035 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:11:45,035 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:11:45,040 [bff] INFO Stopping subprocess group PGID=6681
+INFO:     Application shutdown complete.
+2026-06-04 02:12:03,170 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:12:03,170 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:12:03,170 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6704]
+INFO:     Waiting for application startup.
+2026-06-04 02:12:03,190 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+ERROR:    Traceback (most recent call last):
+  File "/home/ai_user/.hermes/hermes-agent/venv/lib/python3.11/site-packages/starlette/routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ai_user/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 198, in lifespan
+    _proc = _subprocess_start()
+            ^^^^^^^^^^^^^^^^^^^
+  File "/aiOS-ui/main.py", line 125, in _subprocess_start
+    log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/tmp/hermes-subserver.log'
+
+ERROR:    Application startup failed. Exiting.
+2026-06-04 02:12:45,039 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:12:45,039 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:12:45,039 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6733]
+INFO:     Waiting for application startup.
+2026-06-04 02:12:45,059 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:12:45,084 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:12:45,085 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:12:45,089 [bff] INFO Stopping subprocess group PGID=6736
+INFO:     Application shutdown complete.
+2026-06-04 02:13:03,208 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:13:03,208 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:13:03,208 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6759]
+INFO:     Waiting for application startup.
+2026-06-04 02:13:03,222 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:13:03,249 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:13:03,249 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:13:03,253 [bff] INFO Stopping subprocess group PGID=6768
+INFO:     Application shutdown complete.
+2026-06-04 02:13:45,097 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:13:45,098 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:13:45,098 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6795]
+INFO:     Waiting for application startup.
+2026-06-04 02:13:45,113 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:13:45,141 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:13:45,142 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:13:45,146 [bff] INFO Stopping subprocess group PGID=6798
+INFO:     Application shutdown complete.
+2026-06-04 02:14:03,271 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:14:03,271 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:14:03,271 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6821]
+INFO:     Waiting for application startup.
+2026-06-04 02:14:03,286 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:14:03,312 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:14:03,312 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:14:03,316 [bff] INFO Stopping subprocess group PGID=6830
+INFO:     Application shutdown complete.
+2026-06-04 02:14:45,147 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:14:45,147 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:14:45,147 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6857]
+INFO:     Waiting for application startup.
+2026-06-04 02:14:45,162 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:14:45,193 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:14:45,194 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:14:45,198 [bff] INFO Stopping subprocess group PGID=6860
+INFO:     Application shutdown complete.
+2026-06-04 02:15:03,314 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:15:03,314 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:15:03,314 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6883]
+INFO:     Waiting for application startup.
+2026-06-04 02:15:03,333 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:15:03,358 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:15:03,359 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:15:03,363 [bff] INFO Stopping subprocess group PGID=6892
+INFO:     Application shutdown complete.
+2026-06-04 02:15:45,201 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:15:45,201 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:15:45,201 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6919]
+INFO:     Waiting for application startup.
+2026-06-04 02:15:45,216 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:15:45,243 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:15:45,243 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:15:45,247 [bff] INFO Stopping subprocess group PGID=6922
+INFO:     Application shutdown complete.
+2026-06-04 02:16:03,364 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:16:03,364 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:16:03,364 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6945]
+INFO:     Waiting for application startup.
+2026-06-04 02:16:03,378 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:16:03,405 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:16:03,405 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:16:03,410 [bff] INFO Stopping subprocess group PGID=6954
+INFO:     Application shutdown complete.
+2026-06-04 02:16:45,254 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:16:45,254 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:16:45,254 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [6981]
+INFO:     Waiting for application startup.
+2026-06-04 02:16:45,269 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:16:45,296 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:16:45,297 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:16:45,301 [bff] INFO Stopping subprocess group PGID=6984
+INFO:     Application shutdown complete.
+2026-06-04 02:17:03,409 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:17:03,409 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:17:03,409 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [7007]
+INFO:     Waiting for application startup.
+2026-06-04 02:17:03,424 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:17:03,450 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:17:03,450 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:17:03,454 [bff] INFO Stopping subprocess group PGID=7016
+INFO:     Application shutdown complete.
+2026-06-04 02:17:45,286 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:17:45,286 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:17:45,286 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [7043]
+INFO:     Waiting for application startup.
+2026-06-04 02:17:45,301 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:17:45,327 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:17:45,327 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:17:45,331 [bff] INFO Stopping subprocess group PGID=7046
+INFO:     Application shutdown complete.
+2026-06-04 02:18:03,466 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:18:03,466 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:18:03,466 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [7069]
+INFO:     Waiting for application startup.
+2026-06-04 02:18:03,481 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:18:03,507 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:18:03,507 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:18:03,512 [bff] INFO Stopping subprocess group PGID=7078
+INFO:     Application shutdown complete.
+2026-06-04 02:18:45,353 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:18:45,353 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:18:45,353 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [7105]
+INFO:     Waiting for application startup.
+2026-06-04 02:18:45,369 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:18:45,396 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:18:45,397 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:18:45,401 [bff] INFO Stopping subprocess group PGID=7108
+INFO:     Application shutdown complete.
+2026-06-04 02:19:03,519 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:19:03,519 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:19:03,519 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [7131]
+INFO:     Waiting for application startup.
+2026-06-04 02:19:03,536 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:19:03,567 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:19:03,567 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:19:03,575 [bff] INFO Stopping subprocess group PGID=7140
+INFO:     Application shutdown complete.
+2026-06-04 02:19:45,393 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:19:45,393 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:19:45,393 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [7167]
+INFO:     Waiting for application startup.
+2026-06-04 02:19:45,408 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:19:45,435 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:19:45,435 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:19:45,440 [bff] INFO Stopping subprocess group PGID=7170
+INFO:     Application shutdown complete.
+2026-06-04 02:20:03,559 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:20:03,559 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:20:03,559 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [7193]
+INFO:     Waiting for application startup.
+2026-06-04 02:20:03,574 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:20:03,600 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:20:03,600 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:20:03,604 [bff] INFO Stopping subprocess group PGID=7202
+INFO:     Application shutdown complete.
+2026-06-04 02:20:45,456 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:20:45,456 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:20:45,456 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [7229]
+INFO:     Waiting for application startup.
+2026-06-04 02:20:45,471 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:20:45,497 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:20:45,497 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:20:45,502 [bff] INFO Stopping subprocess group PGID=7232
+INFO:     Application shutdown complete.
+2026-06-04 02:21:03,609 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:21:03,609 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:21:03,609 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [7255]
+INFO:     Waiting for application startup.
+2026-06-04 02:21:03,624 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:21:03,650 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:21:03,650 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:21:03,654 [bff] INFO Stopping subprocess group PGID=7264
+INFO:     Application shutdown complete.
+2026-06-04 02:21:45,501 [bff] INFO Starting BFF on 0.0.0.0:8501
+2026-06-04 02:21:45,501 [bff] INFO Hermes subserver target: 127.0.0.1:8787
+2026-06-04 02:21:45,501 [bff] INFO HERMES_HOME: /home/ai_user/.hermes
+INFO:     Started server process [7291]
+INFO:     Waiting for application startup.
+2026-06-04 02:21:45,516 [bff] INFO Starting hermes-webui subprocess on 127.0.0.1:8787
+2026-06-04 02:21:45,543 [httpx] INFO HTTP Request: GET http://127.0.0.1:8787/health "HTTP/1.1 200 OK"
+2026-06-04 02:21:45,543 [bff] INFO Subserver healthy on 127.0.0.1:8787
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8501): address already in use
+INFO:     Waiting for application shutdown.
+2026-06-04 02:21:45,547 [bff] INFO Stopping subprocess group PGID=7294
+INFO:     Application shutdown complete.
