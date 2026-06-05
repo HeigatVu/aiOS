@@ -37,7 +37,7 @@ fi
 
 # Resolve python interpreter with fastapi/uvicorn
 PYTHON_EXE="python"
-for py in "/home/ai_user/.hermes/hermes-agent/venv/bin/python" "/aiOS-ui/.venv/bin/python" "/home/ai_user/miniconda3/envs/ai-baseline/bin/python" "python"; do
+for py in "/home/ai_user/.hermes/hermes-agent/venv/bin/python" "/aiOS-ui/hermes-webui/.venv/bin/python" "/home/ai_user/miniconda3/envs/ai-baseline/bin/python" "python"; do
   if [ -x "$py" ]; then
     PYTHON_EXE="$py"
     break
@@ -98,11 +98,11 @@ except Exception as e:
         echo "[watchdog] $(date -Iseconds): gateway restarted (state: $TG_STATE)" >>/tmp/hermes-watchdog.log
       fi
     fi
-    # aiOS-ui (FastAPI on port 8501)
-    if [ -f /tmp/aiOS-ui.pid ] && ! kill -0 "$(cat /tmp/aiOS-ui.pid 2>/dev/null)" 2>/dev/null; then
-      (cd /aiOS-ui && exec runuser -u ai_user -- env HERMES_HOME=/home/ai_user/.hermes HOME=/home/ai_user "$PYTHON_EXE" main.py) >>/config-file/aiOS-ui.log 2>&1 &
-      echo $! > /tmp/aiOS-ui.pid
-      echo "[watchdog] $(date -Iseconds): aiOS-ui restarted" >>/tmp/hermes-watchdog.log
+    # hermes-webui (server.py on port 8501)
+    if [ -f /tmp/hermes-subserver.pid ] && ! kill -0 "$(cat /tmp/hermes-subserver.pid 2>/dev/null)" 2>/dev/null; then
+      runuser -u ai_user -- env HOME=/home/ai_user HERMES_WEBUI_HOST=0.0.0.0 HERMES_WEBUI_PORT=8501 "$PYTHON_EXE" /aiOS-ui/hermes-webui/server.py >>/config-file/aiOS-ui.log 2>&1 &
+      echo $! >/tmp/hermes-subserver.pid
+      echo "[watchdog] $(date -Iseconds): hermes-webui restarted" >>/tmp/hermes-watchdog.log
     fi
   done
 ) >>/tmp/hermes-watchdog.log 2>&1 &
@@ -238,17 +238,17 @@ if [ -z "$GATEWAY_PID" ] || ! kill -0 "$GATEWAY_PID" 2>/dev/null; then
   sleep 3
 fi
 
-# ── aiOS-ui (FastAPI on port 8501) ────────────────────────────────────────
-AIOS_UI_PID=/tmp/aiOS-ui.pid
-if [ ! -f "$AIOS_UI_PID" ] || ! kill -0 "$(cat "$AIOS_UI_PID" 2>/dev/null)" 2>/dev/null; then
+# ── hermes-webui (server.py on port 8501) ───────────────────────────────────
+HERMES_SUB_PID=/tmp/hermes-subserver.pid
+if [ ! -f "$HERMES_SUB_PID" ] || ! kill -0 "$(cat "$HERMES_SUB_PID" 2>/dev/null)" 2>/dev/null; then
   for f in /proc/[0-9]*/cmdline; do
     pid=${f%/cmdline}; pid=${pid#/proc/}
-    grep -q "main.py" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
+    grep -q "server.py" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
   done
-  rm -f "$AIOS_UI_PID"
-  (cd /aiOS-ui && exec runuser -u ai_user -- env HERMES_HOME=/home/ai_user/.hermes HOME=/home/ai_user "$PYTHON_EXE" main.py) >>/config-file/aiOS-ui.log 2>&1 &
-  echo $! > "$AIOS_UI_PID"
-  echo "[entrypoint] aiOS-ui started (PID $!) with $PYTHON_EXE"
+  rm -f "$HERMES_SUB_PID"
+  runuser -u ai_user -- env HOME=/home/ai_user HERMES_WEBUI_HOST=0.0.0.0 HERMES_WEBUI_PORT=8501 "$PYTHON_EXE" /aiOS-ui/hermes-webui/server.py >>/config-file/aiOS-ui.log 2>&1 &
+  echo $! > "$HERMES_SUB_PID"
+  echo "[entrypoint] hermes-webui started (PID $!) with $PYTHON_EXE"
   sleep 3
 fi
 

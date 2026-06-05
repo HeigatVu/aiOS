@@ -6,7 +6,7 @@ set +e
 
 # Resolve python interpreter with fastapi/uvicorn
 PYTHON_EXE="python"
-for py in "/home/ai_user/.hermes/hermes-agent/venv/bin/python" "/aiOS-ui/.venv/bin/python" "/home/ai_user/miniconda3/envs/ai-baseline/bin/python" "python"; do
+for py in "/home/ai_user/.hermes/hermes-agent/venv/bin/python" "/aiOS-ui/hermes-webui/.venv/bin/python" "/home/ai_user/miniconda3/envs/ai-baseline/bin/python" "python"; do
   if [ -x "$py" ]; then
     PYTHON_EXE="$py"
     break
@@ -103,19 +103,19 @@ if [ "$GATEWAY_RUNNING" = false ]; then
   sleep 3
 fi
 
-# ── aiOS-ui (FastAPI on port 8501) ──
-if [ ! -f /tmp/aiOS-ui.pid ] || ! kill -0 "$(cat /tmp/aiOS-ui.pid 2>/dev/null)" 2>/dev/null; then
-  echo "[recover] aiOS-ui down, starting..."
+# ── hermes-webui (server.py on port 8501) ──
+if [ ! -f /tmp/hermes-subserver.pid ] || ! kill -0 "$(cat /tmp/hermes-subserver.pid 2>/dev/null)" 2>/dev/null; then
+  echo "[recover] hermes-webui down, starting..."
   for f in /proc/[0-9]*/cmdline; do
     pid=${f%/cmdline}; pid=${pid#/proc/}
-    grep -q "aiOS-ui\|main.py" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
+    grep -q "server.py" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
   done
   if [ "$(id -u)" -eq 0 ]; then
-    (cd /aiOS-ui && exec runuser -u ai_user -- env HERMES_HOME=/home/ai_user/.hermes HOME=/home/ai_user "$PYTHON_EXE" main.py) >>/config-file/aiOS-ui.log 2>&1 &
+    runuser -u ai_user -- env HOME=/home/ai_user HERMES_WEBUI_HOST=0.0.0.0 HERMES_WEBUI_PORT=8501 "$PYTHON_EXE" /aiOS-ui/hermes-webui/server.py >>/config-file/aiOS-ui.log 2>&1 &
   else
-    (cd /aiOS-ui && exec env HERMES_HOME=/home/ai_user/.hermes HOME=/home/ai_user "$PYTHON_EXE" main.py) >>/config-file/aiOS-ui.log 2>&1 &
+    env HOME=/home/ai_user HERMES_WEBUI_HOST=0.0.0.0 HERMES_WEBUI_PORT=8501 "$PYTHON_EXE" /aiOS-ui/hermes-webui/server.py >>/config-file/aiOS-ui.log 2>&1 &
   fi
-  echo $! > /tmp/aiOS-ui.pid
+  echo $! > /tmp/hermes-subserver.pid
   sleep 2
 fi
 
@@ -158,15 +158,15 @@ if [ "$(id -u)" -eq 0 ]; then
         echo $! >/tmp/fcc-server.pid
         echo "[watchdog] $(date -Iseconds): fcc-server restarted" >>/tmp/hermes-watchdog.log
       fi
-      # aiOS-ui
-      if [ -f /tmp/aiOS-ui.pid ] && ! kill -0 "$(cat /tmp/aiOS-ui.pid 2>/dev/null)" 2>/dev/null; then
+      # hermes-webui
+      if [ -f /tmp/hermes-subserver.pid ] && ! kill -0 "$(cat /tmp/hermes-subserver.pid 2>/dev/null)" 2>/dev/null; then
         if [ "$(id -u)" -eq 0 ]; then
-          (cd /aiOS-ui && exec runuser -u ai_user -- env HERMES_HOME=/home/ai_user/.hermes HOME=/home/ai_user "$PYTHON_EXE" main.py) >>/config-file/aiOS-ui.log 2>&1 &
+          runuser -u ai_user -- env HOME=/home/ai_user HERMES_WEBUI_HOST=0.0.0.0 HERMES_WEBUI_PORT=8501 "$PYTHON_EXE" /aiOS-ui/hermes-webui/server.py >>/config-file/aiOS-ui.log 2>&1 &
         else
-          (cd /aiOS-ui && exec env HERMES_HOME=/home/ai_user/.hermes HOME=/home/ai_user "$PYTHON_EXE" main.py) >>/config-file/aiOS-ui.log 2>&1 &
+          env HOME=/home/ai_user HERMES_WEBUI_HOST=0.0.0.0 HERMES_WEBUI_PORT=8501 "$PYTHON_EXE" /aiOS-ui/hermes-webui/server.py >>/config-file/aiOS-ui.log 2>&1 &
         fi
-        echo $! > /tmp/aiOS-ui.pid
-        echo "[watchdog] $(date -Iseconds): aiOS-ui restarted" >>/tmp/hermes-watchdog.log
+        echo $! > /tmp/hermes-subserver.pid
+        echo "[watchdog] $(date -Iseconds): hermes-webui restarted" >>/tmp/hermes-watchdog.log
       fi
       # Gateway
       if [ -f "$HOME/.hermes/gateway_state.json" ]; then
@@ -201,6 +201,6 @@ echo -n "dashboard: " && kill -0 $(cat /tmp/hermes-dashboard.pid 2>/dev/null) 2>
 echo -n "proxy: " && kill -0 $(cat /tmp/hermes-proxy.pid 2>/dev/null) 2>/dev/null && echo "PID $(cat /tmp/hermes-proxy.pid) OK" || echo "FAIL"
 echo -n "fcc-server: " && kill -0 $(cat /tmp/fcc-server.pid 2>/dev/null) 2>/dev/null && echo "PID $(cat /tmp/fcc-server.pid) OK" || echo "FAIL"
 echo -n "gateway: " && hermes gateway status 2>&1 | head -1
-echo -n "aiOS-ui: " && kill -0 $(cat /tmp/aiOS-ui.pid 2>/dev/null) 2>/dev/null && echo "PID $(cat /tmp/aiOS-ui.pid) OK (port 8501)" || echo "FAIL"
+echo -n "hermes-webui: " && kill -0 $(cat /tmp/hermes-subserver.pid 2>/dev/null) 2>/dev/null && echo "PID $(cat /tmp/hermes-subserver.pid) OK (port 8501)" || echo "FAIL"
 echo -n "watchdog: " && ls -la /tmp/hermes-watchdog.log 2>/dev/null | awk '{print "log size:", $5, "bytes"}'
 echo -n "ports: " && curl -s -o /dev/null -w '9119:%{http_code} ' http://localhost:9119/ && curl -s -o /dev/null -w '3113:%{http_code} ' http://localhost:3113/ && curl -s -o /dev/null -w '8082:%{http_code}' http://localhost:8082/health && echo
