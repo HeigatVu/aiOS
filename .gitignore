@@ -9,6 +9,7 @@ data/*
 # Ignore all actual folder contents
 config-file/credentials/*
 config-file/agentmemory/.env
+config-file/aiOS-ui.log
 
 
 # Allow tracking the empty directory structures of config-file and its subfolders

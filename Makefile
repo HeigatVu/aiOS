@@ -18,7 +18,7 @@ restart:
 	docker compose restart sandbox
 
 shell:
-	docker compose exec --user $(USER_ID) sandbox zsh
+	docker compose exec --user $(USER_ID) sandbox zsh -c "bash /config-file/system-config/recover.sh; exec zsh"
 
 root-shell:
 	docker compose exec --user root sandbox zsh
