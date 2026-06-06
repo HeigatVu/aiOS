@@ -139,7 +139,7 @@ if [ ! -f "/home/ai_user/.agentmemory/iii.pid" ] || ! kill -0 "$(cat "/home/ai_u
     sed -i 's/^AGENTMEMORY_VIEWER_HOST=0.0.0.0/# AGENTMEMORY_VIEWER_HOST=0.0.0.0/g' /home/ai_user/.agentmemory/.env
     sed -i 's/^VIEWER_ALLOWED_HOSTS=/# VIEWER_ALLOWED_HOSTS=/g' /home/ai_user/.agentmemory/.env
   fi
-  runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'agentmemory start >> ~/.agentmemory/agentmemory.log 2>&1' || true
+  runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'agentmemory start >> ~/.agentmemory/agentmemory.log 2>&1 &' || true
   echo "[entrypoint] agentmemory started"
   sleep 4
 fi

@@ -131,7 +131,7 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;user-select
   display:flex;flex-direction:row;flex-shrink:0;overflow:hidden;
   transition:width .18s ease;
 }
-.right-panel.open{width:262px}
+.right-panel.open{width:40%}
 .panel-resize-handle{
   width:5px;flex-shrink:0;cursor:col-resize;background:transparent;
   transition:background .15s;z-index:10;
@@ -828,7 +828,7 @@ async function saveFileContent(path){
   var handle, panel, startX, startW;
   function onMouseMove(ev){
     var newW = startW - (ev.clientX - startX);
-    panel.style.width = Math.max(200, Math.min(700, newW)) + 'px';
+    panel.style.width = Math.max(200, Math.min(window.innerWidth * 0.8, newW)) + 'px';
   }
   function onMouseUp(){
     handle.classList.remove('dragging');

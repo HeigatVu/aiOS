@@ -478,6 +478,44 @@ DASHBOARD_HTML = """<!DOCTYPE html>
   .card-spa    { --accent: #58a6ff; }
   .card-memory { --accent: #3fb950; }
   .card-files  { --accent: #f0883e; }
+  .card-update { --accent: #8957e5; }
+
+  /* Modal Overlay */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal {
+    background: #161b22; border-radius: 12px; border: 1px solid #30363d;
+    min-width: 450px; max-width: 800px; width: 90%;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.65);
+    display: flex; flex-direction: column; max-height: 80vh;
+  }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid #30363d; flex-shrink: 0;
+  }
+  .modal-header h3 { font-size: 16px; font-weight: 600; color: #f0f6fc; }
+  .modal-close { background: none; border: none; color: #8b949e; cursor: pointer; font-size: 24px; padding: 0 4px; }
+  .modal-close:hover { color: #f0f6fc; }
+  .modal-body { padding: 20px; overflow-y: auto; flex: 1; background: #0d1117; }
+  .modal-footer {
+    display: flex; justify-content: flex-end; gap: 12px;
+    padding: 16px 20px; border-top: 1px solid #30363d; flex-shrink: 0;
+  }
+  .mbtn {
+    padding: 8px 18px; border-radius: 6px;
+    font-size: 13px; font-weight: 500; cursor: pointer; border: none;
+    transition: background 0.2s;
+  }
+  .mbtn.secondary { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; }
+  .mbtn.secondary:hover:not(:disabled) { background: #30363d; }
+  .mbtn.secondary:disabled { opacity: 0.5; cursor: default; }
+  #update-output {
+    font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 12px; color: #c9d1d9; white-space: pre-wrap; word-break: break-all;
+    background: #0d1117; padding: 0; margin: 0; line-height: 1.5;
+  }
   /* Footer */
   .footer {
     position: relative; z-index: 2;
@@ -516,11 +554,32 @@ DASHBOARD_HTML = """<!DOCTYPE html>
       <span class="label">File Browser</span>
       <span class="desc">Browse, chmod, watch &amp; edit</span>
     </a>
+    <div class="launch-card card-update" id="btn-update">
+      <span class="icon">🔄</span>
+      <span class="label">Update System</span>
+      <span class="desc">Run update-all.sh script</span>
+    </div>
   </div>
 
   <div class="footer">
     <span class="dot" id="status-dot"></span>
     <span id="status-text">checking...</span>
+  </div>
+</div>
+
+<!-- Update Progress Modal -->
+<div class="modal-overlay" id="update-modal" style="display:none;" onclick="closeModalOutside(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3>System Update Logs</h3>
+      <button class="modal-close" onclick="closeUpdateModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <pre id="update-output">Ready to update...</pre>
+    </div>
+    <div class="modal-footer">
+      <button class="mbtn secondary" id="btn-close-update" onclick="closeUpdateModal()" disabled>Close</button>
+    </div>
   </div>
 </div>
 
@@ -573,6 +632,48 @@ async function checkHealth() {
 }
 checkHealth();
 setInterval(checkHealth, 10000);
+
+// ── Update System ──
+document.getElementById('btn-update').addEventListener('click', async function() {
+  var modal = document.getElementById('update-modal');
+  var output = document.getElementById('update-output');
+  var closeBtn = document.getElementById('btn-close-update');
+  
+  modal.style.display = 'flex';
+  output.textContent = 'Starting system update... Please wait...\\n';
+  closeBtn.disabled = true;
+  
+  try {
+    var response = await fetch('/api/update', { method: 'POST' });
+    if (!response.ok) {
+      throw new Error('Server returned ' + response.status);
+    }
+    var reader = response.body.getReader();
+    var decoder = new TextDecoder('utf-8');
+    while (true) {
+      var { done, value } = await reader.read();
+      if (done) break;
+      output.textContent += decoder.decode(value, { stream: true });
+      output.scrollTop = output.scrollHeight;
+    }
+    output.textContent += '\\n\\nUpdate process finished.\\n';
+  } catch (err) {
+    output.textContent += '\\nError running update: ' + err.message;
+  } finally {
+    closeBtn.disabled = false;
+  }
+});
+
+function closeUpdateModal() {
+  document.getElementById('update-modal').style.display = 'none';
+}
+
+function closeModalOutside(event) {
+  var closeBtn = document.getElementById('btn-close-update');
+  if (!closeBtn.disabled && event.target === document.getElementById('update-modal')) {
+    closeUpdateModal();
+  }
+}
 </script>
 </body>
 </html>"""
@@ -588,6 +689,36 @@ async def dashboard():
             "Expires": "0",
         },
     )
+
+
+@app.post("/api/update")
+async def run_update():
+    script_path = PROJECT_ROOT / "config-file" / "update-all.sh"
+    if not script_path.exists():
+        raise HTTPException(status_code=404, detail="Update script not found")
+    
+    async def _stream_update():
+        try:
+            # We must NOT use '-i' (interactive) here because we are not sending input.
+            # Using '-i' without closing stdin causes git fetch / ssh to hang indefinitely
+            # waiting for input that never comes!
+            proc = await asyncio.create_subprocess_exec(
+                "bash", "config-file/update-all.sh",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+                cwd=str(PROJECT_ROOT)
+            )
+            while True:
+                line = await proc.stdout.readline()
+                if not line:
+                    break
+                yield line.decode("utf-8", errors="replace")
+            await proc.wait()
+            yield f"\n[Process exited with code {proc.returncode}]\n"
+        except Exception as e:
+            yield f"\n[Error: {str(e)}]\n"
+
+    return StreamingResponse(_stream_update(), media_type="text/plain")
 
 
 # ── Hermes SPA redirect ───────────────────────────────────────────────────────

@@ -36,7 +36,7 @@ if ! curl -s -o /dev/null -w '' http://localhost:3113/ 2>/dev/null; then
     sed -i 's/^AGENTMEMORY_VIEWER_HOST=0.0.0.0/# AGENTMEMORY_VIEWER_HOST=0.0.0.0/g' ~/.agentmemory/.env
     sed -i 's/^VIEWER_ALLOWED_HOSTS=/# VIEWER_ALLOWED_HOSTS=/g' ~/.agentmemory/.env
   fi
-  agentmemory start >> ~/.agentmemory/agentmemory.log 2>&1 || true
+  agentmemory start >> ~/.agentmemory/agentmemory.log 2>&1 &
   sleep 4
 fi
 

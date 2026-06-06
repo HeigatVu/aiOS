@@ -14,10 +14,18 @@ if [ -f /.dockerenv ] || [ "${USER:-}" = "ai_user" ]; then
     echo "🐳 Running INSIDE the Docker container."
 else
     IS_INSIDE_CONTAINER=false
-    HERMES_AGENT_DIR="${WORKSPACE_DIR}/persistent/hermes/hermes-agent"
-    HERMES_WEBUI_DIR="${WORKSPACE_DIR}/aiOS-ui/hermes-webui"
+    # WORKSPACE_DIR is the config-file directory, so we need to go up one level
+    ROOT_DIR="$(dirname "$WORKSPACE_DIR")"
+    HERMES_AGENT_DIR="${ROOT_DIR}/persistent/hermes/hermes-agent"
+    HERMES_WEBUI_DIR="${ROOT_DIR}/aiOS-ui/hermes-webui"
     echo "💻 Running on the HOST machine."
 fi
+
+# Fix git issues inside the container
+git config --global --add safe.directory "$HERMES_AGENT_DIR" || true
+git config --global --add safe.directory "$HERMES_WEBUI_DIR" || true
+# Rewrite SSH URLs to HTTPS so we don't need SSH keys just to fetch
+git config --global url."https://github.com/".insteadOf "git@github.com:" || true
 
 # Helper to remove stale lock file
 clear_lock() {
@@ -33,29 +41,14 @@ clear_lock() {
 update_agent_inside_container() {
     local agent_dir="/home/ai_user/.hermes/hermes-agent"
     
+    # Fix dubious ownership since this function is run via docker exec
+    git config --global --add safe.directory "$agent_dir" || true
+    git config --global url."https://github.com/".insteadOf "git@github.com:" || true
+    
     clear_lock "$agent_dir"
     cd "$agent_dir"
     echo "→ Fetching updates..."
     git fetch origin
-    
-    local has_changes=0
-    if ! git diff --quiet || ! git diff --cached --quiet; then
-        has_changes=1
-        echo "⚠️ Hermes Agent has local changes. Stashing them..."
-        git stash
-    fi
-    
-    echo "→ Resetting to origin/main..."
-    git reset --hard origin/main
-    
-    if [ "$has_changes" -eq 1 ]; then
-        echo "→ Re-applying your local agent changes..."
-        if git stash pop; then
-            echo "✅ Local agent changes re-applied successfully."
-        else
-            echo "⚠️ Conflicts occurred while re-applying local changes."
-        fi
-    fi
 }
 
 update_agent() {
@@ -91,25 +84,8 @@ update_agent() {
             fi
             
             $cmd_prefix rm -f "${HERMES_AGENT_DIR}/.git/index.lock"
+            echo "→ Fetching updates..."
             $cmd_prefix git -C "$HERMES_AGENT_DIR" fetch origin
-            
-            local has_changes=0
-            if ! $cmd_prefix git -C "$HERMES_AGENT_DIR" diff --quiet || ! $cmd_prefix git -C "$HERMES_AGENT_DIR" diff --cached --quiet; then
-                has_changes=1
-                echo "⚠️ Hermes Agent has local changes. Stashing them..."
-                $cmd_prefix git -C "$HERMES_AGENT_DIR" stash
-            fi
-            
-            $cmd_prefix git -C "$HERMES_AGENT_DIR" reset --hard origin/main
-            
-            if [ "$has_changes" -eq 1 ]; then
-                echo "→ Re-applying your local agent changes..."
-                if $cmd_prefix git -C "$HERMES_AGENT_DIR" stash pop; then
-                    echo "✅ Local agent changes re-applied successfully."
-                else
-                    echo "⚠️ Conflicts occurred while re-applying local changes."
-                fi
-            fi
         fi
     fi
     echo "✅ Hermes Agent update process completed."
@@ -127,54 +103,21 @@ update_webui() {
     echo "→ Fetching Hermes WebUI updates..."
     cd "$HERMES_WEBUI_DIR"
     
+    # Ensure git user is configured so git stash doesn't fail
+    git config user.email "auto-updater@localhost" || true
+    git config user.name "Auto Updater" || true
+    
     git fetch origin
     if git remote | grep -q "upstream"; then
+        echo "→ Fetching updates from upstream..."
         git fetch upstream
     fi
-
-    # Check for local changes
-    local has_changes=0
-    if ! git diff --quiet || ! git diff --cached --quiet; then
-        has_changes=1
-        echo "⚠️ Hermes WebUI has local changes. Stashing them..."
-        git stash
-    fi
-
-    # Determine local active branch
-    local active_branch
-    active_branch=$(git symbolic-ref --short HEAD 2>/dev/null || echo "master")
-
-    # Determine upstream branch (main or master)
-    local upstream_branch="master"
-    if git show-ref --quiet refs/remotes/upstream/main || git show-ref --quiet refs/remotes/upstream/master; then
-        if git show-ref --quiet refs/remotes/upstream/main; then
-            upstream_branch="main"
-        else
-            upstream_branch="master"
-        fi
-    elif git show-ref --quiet refs/remotes/origin/main; then
-        upstream_branch="main"
-    fi
-
-    if git remote | grep -q "upstream"; then
-        echo "→ Resetting local branch '${active_branch}' to upstream/${upstream_branch}..."
-        git reset --hard "upstream/${upstream_branch}"
-        
-        echo "→ Pushing updates to your fork (origin/${active_branch})..."
-        git push origin "${active_branch}" || echo "⚠️ Could not push to fork automatically. You may need to push manually."
-    else
-        echo "→ Resetting Hermes WebUI to origin/${upstream_branch}..."
-        git reset --hard "origin/${upstream_branch}"
-    fi
-
-    if [ "$has_changes" -eq 1 ]; then
-        echo "→ Re-applying your local WebUI changes..."
-        if git stash pop; then
-            echo "✅ Local WebUI changes re-applied successfully."
-        else
-            echo "⚠️ Conflicts occurred while re-applying local changes. Please resolve them manually in $HERMES_WEBUI_DIR."
-        fi
-    fi
+    
+    echo "→ Applying updates (stashing local changes first)..."
+    git stash
+    git pull origin master || true
+    git stash pop || echo "⚠️ Could not pop stash (maybe nothing was stashed, or there's a merge conflict)"
+    
     echo "✅ Hermes WebUI update process completed."
 }
 
