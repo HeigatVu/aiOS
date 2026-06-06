@@ -11,6 +11,7 @@ services:
       - COLORTERM=truecolor
       - LANG=C.UTF-8
       - LC_ALL=C.UTF-8
+      - HERMES_WEBUI_TRUST_FORWARDED_HOST=1
     ports:
       # Ports WITHOUT 127.0.0.1: prefix so they are reachable from any LAN device.
       # Do NOT add "127.0.0.1:" in front — that restricts access to localhost only.

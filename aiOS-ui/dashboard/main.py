@@ -77,6 +77,69 @@ _ALLOWED_WORKDIR_ROOTS = [
     Path("/my-data").resolve(),
 ]
 
+# ── Path translation for host-level execution ─────────────────────────────────
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+def _check_outside_docker() -> bool:
+    if Path("/.dockerenv").exists() or Path("/run/.containerenv").exists():
+        return False
+    try:
+        import getpass
+        if getpass.getuser() == "ai_user":
+            return False
+    except Exception:
+        pass
+    if Path("/workspace").exists() and Path("/home/ai_user").exists():
+        return False
+    return True
+
+is_outside_docker = _check_outside_docker()
+
+CONTAINER_TO_HOST_MAPPING = {
+    "/workspace": PROJECT_ROOT / "sandbox-data" / "working-space",
+    "/outputs": PROJECT_ROOT / "sandbox-data" / "outputs",
+    "/my-data": PROJECT_ROOT / "sandbox-data" / "my-data",
+    "/config-file": PROJECT_ROOT / "config-file",
+    "/aiOS-ui": PROJECT_ROOT / "aiOS-ui",
+    "/home/ai_user/.agentmemory": PROJECT_ROOT / "persistent" / "agentmemory",
+    "/home/ai_user/.claude": PROJECT_ROOT / "persistent" / "claude",
+    "/home/ai_user/.hermes": PROJECT_ROOT / "persistent" / "hermes",
+    "/home/ai_user/.gemini": PROJECT_ROOT / "persistent" / "gemini",
+    "/home/ai_user/.agents": PROJECT_ROOT / "persistent" / "agents",
+    "/home/ai_user/.fcc": PROJECT_ROOT / "persistent" / "fcc",
+    "/home/ai_user/.iii": PROJECT_ROOT / "persistent" / "iii",
+    "/home/ai_user": PROJECT_ROOT / "sandbox-data" / "home_ai_user",
+}
+
+if is_outside_docker:
+    (PROJECT_ROOT / "sandbox-data" / "home_ai_user").mkdir(parents=True, exist_ok=True)
+
+def _to_host_path(path_str: str) -> Path:
+    if not is_outside_docker:
+        return Path(path_str)
+    normalized = os.path.normpath(path_str)
+    for c_prefix, h_path in sorted(CONTAINER_TO_HOST_MAPPING.items(), key=lambda x: len(x[0]), reverse=True):
+        if normalized == c_prefix:
+            return h_path
+        if normalized.startswith(c_prefix.rstrip("/") + "/"):
+            rel = os.path.relpath(normalized, c_prefix)
+            return h_path / rel
+    return Path(normalized)
+
+def _to_container_path(host_path: Path | str) -> str:
+    if not is_outside_docker:
+        return str(host_path)
+    h_abs = Path(host_path).resolve()
+    for c_prefix, h_path in sorted(CONTAINER_TO_HOST_MAPPING.items(), key=lambda x: len(str(x[1])), reverse=True):
+        h_abs_prefix = h_path.resolve()
+        if h_abs == h_abs_prefix:
+            return c_prefix
+        try:
+            rel = h_abs.relative_to(h_abs_prefix)
+            return (Path(c_prefix) / rel).as_posix()
+        except ValueError:
+            continue
+    return h_abs.as_posix()
+
 
 def _validate_workdir(workdir: str) -> Path:
     """Validate workdir is within an allowed root. Returns resolved Path."""
@@ -122,6 +185,7 @@ def _subprocess_start() -> subprocess.Popen:
         "HERMES_HOME": HERMES_HOME,
         "HERMES_WEBUI_HOST": HERMES_SUB_HOST,
         "HERMES_WEBUI_PORT": str(HERMES_SUB_PORT),
+        "HERMES_WEBUI_TRUST_FORWARDED_HOST": "1",
     }
     log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
     return subprocess.Popen(
@@ -192,6 +256,37 @@ async def _wait_for_subserver(timeout: float = 60.0) -> bool:
     return False
 
 
+_client_lock = asyncio.Lock()
+
+
+async def _ensure_client() -> httpx.AsyncClient | None:
+    global _healthy, _client
+    if _healthy and _client is not None:
+        return _client
+    async with _client_lock:
+        if _healthy and _client is not None:
+            return _client
+        if _is_port_open(HERMES_SUB_HOST, HERMES_SUB_PORT, timeout=0.5):
+            try:
+                async with httpx.AsyncClient() as check_client:
+                    resp = await check_client.get(
+                        f"http://{HERMES_SUB_HOST}:{HERMES_SUB_PORT}/health",
+                        timeout=2.0,
+                    )
+                    if resp.status_code == 200:
+                        _client = httpx.AsyncClient(
+                            base_url=f"http://{HERMES_SUB_HOST}:{HERMES_SUB_PORT}",
+                            timeout=httpx.Timeout(300.0, connect=5.0),
+                            limits=httpx.Limits(max_keepalive_connections=50, max_connections=200),
+                        )
+                        _healthy = True
+                        logger.info(f"Subserver connected and healthy on {HERMES_SUB_HOST}:{HERMES_SUB_PORT}")
+                        return _client
+            except Exception:
+                pass
+        return None
+
+
 # ── Lifespan ─────────────────────────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -241,6 +336,7 @@ app.add_middleware(
 # ── Health endpoint ──────────────────────────────────────────────────────────
 @app.get("/health")
 async def health():
+    await _ensure_client()
     subserver_info = {
         "healthy": _healthy,
         "host": HERMES_SUB_HOST,
@@ -509,10 +605,11 @@ async def hermes_spa_redirect():
 @app.get("/_hermes_spa")
 async def proxy_hermes_root(request: Request):
     """Proxy /hermes → subserver / to serve the SPA shell in the iframe."""
-    if not _healthy or _client is None:
+    client = await _ensure_client()
+    if not _healthy or client is None:
         raise HTTPException(status_code=503, detail="Hermes WebUI not ready")
     try:
-        resp = await _client.get("/", headers={
+        resp = await client.get("/", headers={
             k: v for k, v in request.headers.items()
             if k.lower() not in ("host", "transfer-encoding")
         })
@@ -534,7 +631,8 @@ async def proxy_hermes_root(request: Request):
 @app.api_route("/_hermes_spa/{path:path}", methods=PROXIED_METHODS)
 async def proxy_hermes_path(request: Request, path: str):
     """Proxy /_hermes_spa/* → subserver /* for iframe static assets and API calls."""
-    if not _healthy or _client is None:
+    client = await _ensure_client()
+    if not _healthy or client is None:
         raise HTTPException(status_code=503, detail="Hermes WebUI not ready")
     url = f"/{path}" if path else "/"
     if request.url.query:
@@ -550,8 +648,8 @@ async def proxy_hermes_path(request: Request, path: str):
     from starlette.background import BackgroundTask
     try:
         upstream_method = "GET" if request.method == "HEAD" else request.method
-        req = _client.build_request(method=upstream_method, url=url, headers=headers, content=body)
-        resp = await _client.send(req, stream=True, follow_redirects=False)
+        req = client.build_request(method=upstream_method, url=url, headers=headers, content=body)
+        resp = await client.send(req, stream=True, follow_redirects=False)
     except httpx.RequestError as e:
         raise HTTPException(status_code=502, detail=f"Subserver unreachable: {e}")
     resp_headers = {
@@ -593,12 +691,12 @@ _FILE_BROWSER_DENY = {"/proc", "/sys", "/dev", "/run", "/etc/shadow", "/etc/pass
 # what AI agents inside Docker are allowed to do with that path.
 _PERMISSIONS_CONFIG = os.environ.get(
     "FILE_BROWSER_PERMISSIONS_CONFIG",
-    "/tmp/aios-permissions.json",
+    "/config-file/aios-permissions.json",
 )
 
 _PERMISSION_MODES = {
-    "rw":   {"file": "644", "dir": "755"},
-    "ro":   {"file": "444", "dir": "555"},
+    "rw":   {"file": "666", "dir": "777"},
+    "ro":   {"file": "644", "dir": "755"},
     "none": {"file": "600", "dir": "700"},
 }
 
@@ -606,7 +704,7 @@ _PERMISSION_MODES = {
 def _load_ai_permissions() -> dict[str, str]:
     """Load AI permission config → {path_prefix: rw|ro|none}."""
     try:
-        cfg = Path(_PERMISSIONS_CONFIG)
+        cfg = _to_host_path(_PERMISSIONS_CONFIG)
         if cfg.exists():
             return json.loads(cfg.read_text())
     except Exception:
@@ -616,8 +714,9 @@ def _load_ai_permissions() -> dict[str, str]:
 
 def _save_ai_permissions(data: dict[str, str]) -> None:
     """Persist AI permission config to disk."""
-    Path(_PERMISSIONS_CONFIG).parent.mkdir(parents=True, exist_ok=True)
-    Path(_PERMISSIONS_CONFIG).write_text(json.dumps(data, indent=2))
+    cfg = _to_host_path(_PERMISSIONS_CONFIG)
+    cfg.parent.mkdir(parents=True, exist_ok=True)
+    cfg.write_text(json.dumps(data, indent=2))
 
 
 def _get_ai_permission_level(abs_path: str) -> str:
@@ -638,7 +737,7 @@ def _get_ai_permission_level(abs_path: str) -> str:
 
 def _check_ai_permission(target: Path, allow: list[str]) -> None:
     """Raise HTTP 403 if the path's AI permission level is not in *allow*."""
-    level = _get_ai_permission_level(str(target))
+    level = _get_ai_permission_level(_to_container_path(target))
     if level not in allow:
         raise HTTPException(
             status_code=403,
@@ -659,17 +758,20 @@ def _resolve_safe_path(rel: str) -> Path:
         target.relative_to(root)
     except ValueError:
         raise HTTPException(status_code=403, detail="Path outside file browser root")
-    if str(target) in _FILE_BROWSER_DENY or any(
-        str(target).startswith(d + "/") for d in _FILE_BROWSER_DENY
+    
+    target_str = str(target)
+    if target_str in _FILE_BROWSER_DENY or any(
+        target_str.startswith(d + "/") for d in _FILE_BROWSER_DENY
     ):
         raise HTTPException(status_code=403, detail="Path is blocked")
-    return target
+    return _to_host_path(target_str)
 
 
 @app.get("/api/files/list")
 async def files_list(path: str = ""):
     """List directory contents."""
     target = _resolve_safe_path(path)
+    logger.warning(f"DEBUG files_list: path={path!r} target={target!r} exists={target.exists()} is_outside_docker={is_outside_docker}")
     if not target.exists():
         raise HTTPException(status_code=404, detail="Path not found")
     if not target.is_dir():
@@ -691,7 +793,7 @@ async def files_list(path: str = ""):
                     "unreadable": True,
                 })
                 continue
-            abs_path = str(target / entry.name)
+            abs_path = _to_container_path(target / entry.name)
             entries.append({
                 "name": entry.name,
                 "type": "dir" if entry.is_dir() else "file",
@@ -711,7 +813,7 @@ async def files_list(path: str = ""):
     # ── Filter out entries the AI is not allowed to see ──
     entries = [e for e in entries if e.get("ai_level") != "none"]
 
-    return {"path": str(target), "entries": entries}
+    return {"path": _to_container_path(target), "entries": entries}
 
 
 @app.get("/api/files/read")
@@ -727,7 +829,7 @@ async def files_read(path: str = ""):
         raise HTTPException(status_code=403, detail="Permission denied")
     except UnicodeDecodeError:
         raise HTTPException(status_code=400, detail="Binary file — cannot display as text")
-    return {"path": str(target), "content": content, "size": target.stat().st_size}
+    return {"path": _to_container_path(target), "content": content, "size": target.stat().st_size}
 
 
 @app.post("/api/files/write")
@@ -742,7 +844,7 @@ async def files_write(request: Request):
         target.write_text(content)
     except PermissionError:
         raise HTTPException(status_code=403, detail="Permission denied")
-    return {"path": str(target), "written": len(content)}
+    return {"path": _to_container_path(target), "written": len(content)}
 
 
 @app.post("/api/files/chmod")
@@ -766,7 +868,7 @@ async def files_chmod(request: Request):
         raise HTTPException(status_code=400, detail=str(e))
 
     return {
-        "path": str(target),
+        "path": _to_container_path(target),
         "mode": _stat.filemode(st.st_mode),
         "mode_octal": oct(st.st_mode)[-3:],
     }
@@ -800,7 +902,7 @@ async def files_copy(request: Request):
         raise HTTPException(status_code=403, detail="Permission denied")
     except OSError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    return {"src": str(src), "dst": str(dst)}
+    return {"src": _to_container_path(src), "dst": _to_container_path(dst)}
 
 
 @app.post("/api/files/move")
@@ -823,7 +925,7 @@ async def files_move(request: Request):
         raise HTTPException(status_code=403, detail="Permission denied")
     except OSError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    return {"src": str(src), "dst": str(dst)}
+    return {"src": _to_container_path(src), "dst": _to_container_path(dst)}
 
 
 @app.post("/api/files/delete")
@@ -844,7 +946,7 @@ async def files_delete(request: Request):
         raise HTTPException(status_code=403, detail="Permission denied")
     except OSError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    return {"deleted": str(target)}
+    return {"deleted": _to_container_path(target)}
 
 
 @app.get("/api/files/watch")
@@ -857,7 +959,7 @@ async def files_watch(path: str = ""):
         raise HTTPException(status_code=400, detail="Not a file")
 
     async def _tail():
-        yield "data: {\"status\": \"watching\", \"path\": \"" + str(target) + "\"}\n\n"
+        yield "data: {\"status\": \"watching\", \"path\": \"" + _to_container_path(target) + "\"}\n\n"
         try:
             with open(target, "r") as f:
                 f.seek(0, 2)  # end of file
@@ -885,8 +987,9 @@ async def files_permissions_get(path: str = ""):
     """Get AI permissions config. Pass ?path= to query a single path."""
     if path:
         target = _resolve_safe_path(path)
-        level = _get_ai_permission_level(str(target))
-        return {"path": str(target), "level": level, "mode": _PERMISSION_MODES.get(level)}
+        container_path = _to_container_path(target)
+        level = _get_ai_permission_level(container_path)
+        return {"path": container_path, "level": level, "mode": _PERMISSION_MODES.get(level)}
     return _load_ai_permissions()
 
 
@@ -907,15 +1010,17 @@ async def files_permissions_set(request: Request):
         raise HTTPException(status_code=400, detail="Invalid type: must be 'file' or 'dir'")
 
     target = _resolve_safe_path(rel)
-    abs_path = str(target)
+    container_path = _to_container_path(target)
 
     # ── Persist permission level ──
     perms = _load_ai_permissions()
-    perms[abs_path] = level
+    perms[container_path] = level
     _save_ai_permissions(perms)
 
-    # ── Apply filesystem mode and ownership directly (backend runs as root) ──
+    # ── Apply filesystem mode and ownership directly ──
+    is_root = (os.geteuid() == 0)
     mode_octal = _PERMISSION_MODES[level][entry_type]
+
     chmod_error = None
     chmod_applied = False
 
@@ -923,17 +1028,14 @@ async def files_permissions_set(request: Request):
         chmod_error = "target does not exist"
     else:
         try:
-            # Change file/folder ownership to root or ai_user based on permission level:
-            # - rw (read-write): owned by ai_user (UID 2000, GID 2000 by default)
-            # - ro (read-only) or none (hidden): owned by root (UID 0, GID 0)
-            import shutil
-            target_uid = int(os.environ.get("USER_ID", "2000"))
-            target_gid = int(os.environ.get("GROUP_ID", "2000"))
-
-            if level == "rw":
-                shutil.chown(target, user=target_uid, group=target_gid)
-            else:
-                shutil.chown(target, user=0, group=0)
+            if is_root:
+                import shutil
+                target_uid = int(os.environ.get("USER_ID", str(os.getuid())))
+                target_gid = int(os.environ.get("GROUP_ID", str(os.getgid())))
+                try:
+                    shutil.chown(target, user=target_uid, group=target_gid)
+                except Exception as e:
+                    logger.warning(f"Failed to chown {target}: {e}")
 
             # Change filesystem permission mode
             os.chmod(target, int(mode_octal, 8))
@@ -942,11 +1044,32 @@ async def files_permissions_set(request: Request):
                 chmod_applied = True
             else:
                 chmod_error = f"chmod succeeded but mode is {applied_mode}, expected {mode_octal}"
+        except PermissionError as pe:
+            # Fallback: if permission is denied and we are outside Docker, try running chmod inside the container
+            if is_outside_docker:
+                try:
+                    # Try docker first
+                    cmd = ["docker", "exec", "-u", "root", "ai_tui_sandbox", "chmod", mode_octal, container_path]
+                    res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+                    if res.returncode == 0:
+                        chmod_applied = True
+                    else:
+                        # Try podman as fallback
+                        cmd_pm = ["podman", "exec", "-u", "root", "ai_tui_sandbox", "chmod", mode_octal, container_path]
+                        res_pm = subprocess.run(cmd_pm, capture_output=True, text=True, timeout=5)
+                        if res_pm.returncode == 0:
+                            chmod_applied = True
+                        else:
+                            chmod_error = f"Permission denied on host, container chmod failed: {res.stderr or res_pm.stderr}"
+                except Exception as ex:
+                    chmod_error = f"Permission denied on host, container chmod failed: {str(ex)}"
+            else:
+                chmod_error = str(pe)
         except OSError as e:
             chmod_error = str(e)
 
     return {
-        "path": abs_path, "level": level, "mode": mode_octal,
+        "path": container_path, "level": level, "mode": mode_octal,
         "chmod_applied": chmod_applied,
         "chmod_error": chmod_error,
     }
@@ -958,15 +1081,15 @@ async def files_permissions_remove(request: Request):
     body = await request.json()
     rel = body.get("path", "")
     target = _resolve_safe_path(rel)
-    abs_path = str(target)
+    container_path = _to_container_path(target)
 
     perms = _load_ai_permissions()
-    to_remove = [k for k in perms if k == abs_path or k.startswith(abs_path.rstrip("/") + "/")]
+    to_remove = [k for k in perms if k == container_path or k.startswith(container_path.rstrip("/") + "/")]
     for k in to_remove:
         del perms[k]
     _save_ai_permissions(perms)
 
-    return {"path": abs_path, "removed": to_remove}
+    return {"path": container_path, "removed": to_remove}
 
 
 # ── File Browser SPA ─────────────────────────────────────────────────────────
@@ -998,7 +1121,8 @@ async def file_browser_spa():
 @app.api_route("/{path:path}", methods=PROXIED_METHODS)
 async def proxy_to_hermes(request: Request, path: str):
     """Forward all unmatched requests to the hermes-webui subserver."""
-    if not _healthy or _client is None:
+    client = await _ensure_client()
+    if not _healthy or client is None:
         raise HTTPException(status_code=503, detail="Hermes WebUI not ready")
     url = f"/{path}" if path else "/"
     if request.url.query:
@@ -1017,13 +1141,13 @@ async def proxy_to_hermes(request: Request, path: str):
         # The sync subserver doesn't support HEAD; convert to GET internally
         # but return a HEAD-style response (no body) to the client.
         upstream_method = "GET" if request.method == "HEAD" else request.method
-        req = _client.build_request(
+        req = client.build_request(
             method=upstream_method,
             url=url,
             headers=headers,
             content=body,
         )
-        resp = await _client.send(req, stream=True, follow_redirects=False)
+        resp = await client.send(req, stream=True, follow_redirects=False)
     except httpx.RequestError as e:
         raise HTTPException(status_code=502, detail=f"Subserver unreachable: {e}")
 
@@ -1088,6 +1212,9 @@ if __name__ == "__main__":
     logger.info(f"Starting BFF on {SIDECAR_HOST}:{SIDECAR_PORT}")
     logger.info(f"Hermes subserver target: {HERMES_SUB_HOST}:{HERMES_SUB_PORT}")
     logger.info(f"HERMES_HOME: {HERMES_HOME}")
+    logger.info(f"is_outside_docker: {is_outside_docker}")
+    logger.info(f"PROJECT_ROOT: {PROJECT_ROOT}")
+    logger.info(f"CONTAINER_TO_HOST_MAPPING: {CONTAINER_TO_HOST_MAPPING}")
 
     uvicorn.run(
         "main:app",

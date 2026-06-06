@@ -127,10 +127,15 @@ tail -5 ~/.agentmemory/agentmemory.log # agentmemory start log
 | `agentmemory/iii-config.yaml` | agentmemory dist dir | Service bind config |
 | `agentmemory/viewer-proxy.mjs` | `~/.agentmemory/viewer-proxy.mjs` | HTTP reverse proxy (Host-header fix) |
 | `/config-file/hermes/dashboard-proxy.mjs` | `—` (started from source) | HTTP reverse proxy (Host-header fix) |
-| `fcc/.env` *(optional)* | `~/.fcc/.env` | API keys |
+| `fcc/.env` *(optional)* | `~/.fcc/.env` | API keys (copied from backup) |
+
+**Config backups stored in `/config-file/`:**
+- `agentmemory/.env` — backed up to `/config-file/agentmemory/.env`
+- `fcc/.env` — backed up to `/config-file/fcc/.env`
+- `claude/settings.json` — backed up to `/config-file/claude/settings.json`
+- `gemini/settings.json` — backed up to `/config-file/gemini/settings.json`
 
 **Not in `/config-file/` (excluded via `.gitignore`):**
-- `agentmemory/.env` — in `~/.agentmemory/.env` (persistent mount)
 - `agentmemory/bin/iii` — in `~/.agentmemory/bin/iii` (persistent mount, 32 MB binary)
 - `claude/.credentials.json` — in `~/.claude/.credentials.json` (persistent mount)
 

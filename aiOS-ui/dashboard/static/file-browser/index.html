@@ -438,7 +438,7 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;user-select
 <script>
 // ── State ──
 var S = {
-  path: '/workspace',
+  path: '',
   history: [],
   future: [],
   entries: [],
@@ -448,17 +448,6 @@ var S = {
   panelOpen: false,
   activeTab: 'props',
 };
-
-// ── Boot ──
-(function(){
-  restoreNotes();
-  navigateTo('/workspace');
-  loadQuickAccess();
-  document.addEventListener('click', hideCtx);
-  document.addEventListener('keydown', onKey);
-  // Open notes panel by default
-  openPanel('notes');
-})();
 
 // ── Navigation ──
 function navigateTo(path){
@@ -667,8 +656,8 @@ function fileIcon(e){
 function permPill(e){
   if(e.unreadable) return '<span class="perm-pill denied">🔒 denied</span>';
   var ai = e.ai_level || 'rw';
-  var labels = { rw: '✅ AI rw', ro: '👁 AI ro' };
-  var cls = ai === 'ro' ? 'world-w' : '';
+  var labels = { rw: '✅ AI rw', ro: '👁 AI ro', none: '🔒 AI none' };
+  var cls = ai === 'ro' ? 'world-w' : (ai === 'none' ? 'denied' : '');
   var oct = e.mode_octal || '000';
   return '<span class="perm-pill ' + cls + '" onclick="openPropsFromPill(event)" ' +
     'data-name="' + esc(e.name) + '" title="AI: ' + ai + '  mode: ' + oct + '">' +
@@ -754,12 +743,12 @@ var PERM_PRESETS = [
   {
     icon: '✅', label: 'AI read + write',
     desc: 'Claude / agy / hermes can read and modify',
-    file: '644', dir: '755',
+    file: '666', dir: '777',
   },
   {
     icon: '👁', label: 'AI read only',
     desc: 'Claude / agy / hermes can read, not write',
-    file: '444', dir: '555',
+    file: '644', dir: '755',
   },
   {
     icon: '🔒', label: 'AI cannot see',
@@ -867,8 +856,8 @@ async function saveFileContent(path){
 async function applyPerm(filepath, mode, type){
   // Map chmod preset back to permission level
   var levelMap = {
-    '644': 'rw', '755': 'rw',
-    '444': 'ro', '555': 'ro',
+    '666': 'rw', '777': 'rw',
+    '644': 'ro', '755': 'ro',
     '600': 'none', '700': 'none',
   };
   var level = levelMap[mode] || 'rw';
@@ -1084,7 +1073,11 @@ var DEFAULT_NOTE = [
 ].join('\n');
 
 function restoreNotes(){
-  document.getElementById('notes-textarea').value = localStorage.getItem('aios-notes') || DEFAULT_NOTE;
+  var saved = localStorage.getItem('aios-notes');
+  if (saved === 'undefined' || saved === 'null') {
+    saved = null;
+  }
+  document.getElementById('notes-textarea').value = saved || DEFAULT_NOTE;
   document.getElementById('notes-textarea').addEventListener('input', function(){
     clearTimeout(notesTimer);
     notesTimer = setTimeout(function(){
@@ -1245,6 +1238,17 @@ function esc(s){
   d.textContent = String(s);
   return d.innerHTML;
 }
+
+// ── Boot ──
+(function(){
+  restoreNotes();
+  navigateTo('/workspace');
+  loadQuickAccess();
+  document.addEventListener('click', hideCtx);
+  document.addEventListener('keydown', onKey);
+  // Open notes panel by default
+  openPanel('notes');
+})();
 </script>
 </body>
 </html>

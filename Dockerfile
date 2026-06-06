@@ -14,9 +14,6 @@ RUN dnf upgrade --refresh -y && \
 # the ENV PATH line
 ENV AGENTMEMORY_III_VERSION=0.11.2
 
-# 2. Install global NPM packages
-RUN npm install -g @agentmemory/agentmemory
-
 # 3. Setup the isolated user
 ARG USER_ID=2000
 ARG GROUP_ID=2000
@@ -33,6 +30,9 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 USER ${USERNAME}
 WORKDIR /workspace
 
+# Configure NPM global prefix to user-space
+ENV NPM_CONFIG_PREFIX=/home/${USERNAME}/.npm-global
+
 # 6. Pre-create all directories that will be bind-mounted
 #    This ensures correct ownership even if Docker creates host dirs as root
 RUN mkdir -p \
@@ -45,6 +45,10 @@ RUN mkdir -p \
   /home/${USERNAME}/.agents \
   /home/${USERNAME}/.fcc \
   /home/${USERNAME}/.iii \
+  /home/${USERNAME}/.npm-global
+
+# Install global NPM packages inside user-space
+RUN npm install -g @agentmemory/agentmemory
 
 # 7. Install Environment Managers (uv & Conda)
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -59,7 +63,7 @@ RUN /home/${USERNAME}/miniconda3/bin/conda tos accept --override-channels --chan
   /home/${USERNAME}/miniconda3/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
 
 # 9. Update PATH so the terminal can find installed agents and Conda
-ENV PATH="/home/${USERNAME}/.local/bin:/home/${USERNAME}/miniconda3/bin:${PATH}"
+ENV PATH="/home/${USERNAME}/.npm-global/bin:/home/${USERNAME}/.local/bin:/home/${USERNAME}/miniconda3/bin:${PATH}"
 
 # 10. Install Zinit & Powerlevel10k via direct Git clone (Failsafe method)
 RUN git clone --depth=1 https://github.com/romkatv/powerlevel10k.git /home/${USERNAME}/powerlevel10k

@@ -107,7 +107,7 @@ tail -1 /tmp/hermes-proxy.log
 
 ```bash
 # loopback
-curl -s -o /dev/null -w '%{http_code}\n' http://localhost:9119/rgical: touch only what was asked; match existing style; remove orphans you created, not pre-existing dead code
+curl -s -o /dev/null -w '%{http_code}\n' http://localhost:9119/
 # Expected: 200
 
 # container LAN IP (what the host/port mapping forwards to)

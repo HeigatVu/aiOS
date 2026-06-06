@@ -15,22 +15,22 @@ services:
       # Ports WITHOUT 127.0.0.1: prefix so they are reachable from any LAN device.
       # Do NOT add "127.0.0.1:" in front — that restricts access to localhost only.
       - "3113:3113" # agentmemory viewer (via viewer-proxy)
-      - "8501:8501" # aiOS-ui
+      - "8501:8501" # hermes-webui (upstream server.py)
       - "8888:8888" # Jupyter Notebook
       - "8082:8082" # free claude code
       - "9119:9119" # Hermes dashboard (via dashboard-proxy)
-      # --- General Development Ports ---
-      - "3000:3000" # React / Next.js / Node
-      - "4000:4000" # Alternative Node
-      - "5000:5000" # Flask / Python API
-      - "5173:5173" # Vite (Modern web frontend)
-      - "8000:8000" # Django / FastAPI
-      - "8080:8080" # General HTTP
-      - "8081:8081" # Alternative HTTP
-      - "8443:8443" # General HTTPS
-      - "9000:9000" # Generic dev port 1
+      # General Development Ports (Left open for external testing)
+      - "3000:3000"
+      - "4000:4000"
+      - "5000:5000"
+      - "5173:5173"
+      - "8000:8000"
+      - "8080:8080"
+      - "8081:8081"
+      - "8443:8443"
+      - "9000:9000"
       - "9001:9001" # Browser ai folder
-      - "9090:9090" # Generic dev port 2
+      - "9090:9090"
     volumes:
       # 1. Code & Data
       - ./sandbox-data/working-space:/workspace:rw,z
@@ -64,9 +64,6 @@ services:
       - ./Dockerfile:/config-file/Dockerfile:ro,z
       - ./docker-compose.yml:/config-file/docker-compose.yml:ro,z
       - ./aiOS-ui:/aiOS-ui:rw,z
-
-    cap_add:
-      - SYS_ADMIN
 
     deploy:
       resources:

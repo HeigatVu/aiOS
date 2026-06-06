@@ -62,3 +62,6 @@ sandbox-data/working-space/*
 
 # Nested git config ignores
 config-file/.gitignore
+
+# User custom deploy script
+scratch/
