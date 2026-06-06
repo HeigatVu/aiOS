@@ -134,6 +134,11 @@ fi
 
 # Start agentmemory if not already running.
 if [ ! -f "/home/ai_user/.agentmemory/iii.pid" ] || ! kill -0 "$(cat "/home/ai_user/.agentmemory/iii.pid" 2>/dev/null)" 2>/dev/null; then
+  # Comment out AGENTMEMORY_VIEWER_HOST=0.0.0.0 in .env if present (causes port 3113 EADDRINUSE conflict with viewer-proxy)
+  if [ -f "/home/ai_user/.agentmemory/.env" ]; then
+    sed -i 's/^AGENTMEMORY_VIEWER_HOST=0.0.0.0/# AGENTMEMORY_VIEWER_HOST=0.0.0.0/g' /home/ai_user/.agentmemory/.env
+    sed -i 's/^VIEWER_ALLOWED_HOSTS=/# VIEWER_ALLOWED_HOSTS=/g' /home/ai_user/.agentmemory/.env
+  fi
   runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'agentmemory start >> ~/.agentmemory/agentmemory.log 2>&1' || true
   echo "[entrypoint] agentmemory started"
   sleep 4

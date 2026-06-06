@@ -5,5 +5,10 @@
   "/home/HeigatWorkspace/My-file/my-project/my-assistance/MagicMock/_resolve_safe_path()/140260547228880": "none",
   "/workspace/test_perm_dummy.txt": "none",
   "/aiOS-ui/hermes-webui": "rw",
-  "/aiOS-ui/dashboard": "rw"
+  "/aiOS-ui/dashboard": "rw",
+  "/outputs/feynman": "rw",
+  "/workspace/lab-run/ADReSSo-feature-extraction-vi": "ro",
+  "/workspace/lab-run/ADReSSo-feature-extraction-en": "ro",
+  "/workspace/lab-run/speech-analysis-for-you": "ro",
+  "/my-data/Obsidian-llm-wiki": "ro"
 }

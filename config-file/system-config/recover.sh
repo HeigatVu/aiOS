@@ -31,6 +31,11 @@ if ! curl -s -o /dev/null -w '' http://localhost:3113/ 2>/dev/null; then
     cp /config-file/aiOS-ui/agentmemory/iii-config.yaml \
       /usr/local/lib/node_modules/@agentmemory/agentmemory/dist/iii-config.yaml 2>/dev/null
   fi
+  # Comment out AGENTMEMORY_VIEWER_HOST=0.0.0.0 in .env if present (causes port 3113 EADDRINUSE conflict with viewer-proxy)
+  if [ -f ~/.agentmemory/.env ]; then
+    sed -i 's/^AGENTMEMORY_VIEWER_HOST=0.0.0.0/# AGENTMEMORY_VIEWER_HOST=0.0.0.0/g' ~/.agentmemory/.env
+    sed -i 's/^VIEWER_ALLOWED_HOSTS=/# VIEWER_ALLOWED_HOSTS=/g' ~/.agentmemory/.env
+  fi
   agentmemory start >> ~/.agentmemory/agentmemory.log 2>&1 || true
   sleep 4
 fi

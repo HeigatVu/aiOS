@@ -1,4 +1,4 @@
-# aiOS: AI OS for Workspace (v2.0)
+# aiOS: Agent Intelligence Operating System for Workspace (v2.0)
 
 This repository houses a secure, GPU-accelerated workspace for AI agents.
 
@@ -239,11 +239,15 @@ The Sidecar Web UI includes an **AI Permissions** system designed to restrict wh
 Two critical maintenance utilities are provided inside the container at `/config-file/system-config/`:
 
 ### A. Async Health Checker (`service_health.py`)
+
 This tool runs concurrently via Python's `asyncio` (stdlib only, zero external dependencies) with a 2-second timeout per probe.
+
 - **Status Table**: It verifies the health of **7 services**: `iii engine`, `agentmemory`, `viewer-proxy`, `hermes dashboard`, `dashboard-proxy`, `fcc-server`, and `hermes gateway`.
 - **Interactive Shell Feedback**: Runs automatically on every new terminal login via `~/.zshrc` to show a clean color-coded status table, ensuring any degradation is noticed immediately.
 
 ### B. One-Shot recovery (`recover.sh`)
+
 When services go down (e.g., after the host computer wakes from sleep or Docker restarts), this script restores everything automatically.
+
 - **Conflict Resolution**: Scans `/proc` to kill any stale or conflicting background processes holding ports (`3113`, `9119`, `8082`).
 - **State Restorer**: Restores correct binaries (e.g., pinned `iii` engine), boots all services, registers a fresh watchdog loop, and outputs the final service health table.
