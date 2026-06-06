@@ -16,14 +16,6 @@ make down && make build && make up
 make shell
 ```
 
-- Once inside, check:
-
-```bash
-  iii --version          # expect 0.11.2 (set by AGENTMEMORY_III_VERSION)
-  agentmemory status     # expect Health: ✓ healthy
-  claude auth status     # expect "loggedIn": true
-```
-
 - If all three pass, everything works. If anything fails, run the automated recovery script inside the container:
 
 ```bash
@@ -68,21 +60,28 @@ my-assistance/
 │   └── outputs/                 # Mapped to /outputs (generated results — gitignored)
 │
 ├── config-file/                 # Persistent configs bind-mounted into the container
-│   ├── aiOS-ui/agentmemory/     # agentmemory iii-config.yaml, viewer-proxy.mjs
+│   ├── aiOS-ui/                 # Configurations for the UI services
+│   │   └── agentmemory/         # agentmemory iii-config.yaml, viewer-proxy.mjs, .env, RESTORATION.md
 │   ├── hermes/                  # hermes dashboard-proxy.mjs
+│   ├── claude/                  # Claude agent configurations (settings.json, CLAUDE.md, SKILLS_ROUTER.md)
+│   ├── gemini/                  # Gemini agent configurations (settings.json, mcp_config.json)
+│   ├── fcc/                     # Free Claude Code config template
 │   ├── system-config/           # Shell configs (.zshrc, .p10k.zsh), nvim config, entrypoint, & recovery tools
 │   │   ├── entrypoint.sh        # Runs on every container start: fixes permissions, starts background services
 │   │   ├── recover.sh           # One-shot recovery script for all services
 │   │   ├── service_health.py    # Async health checks for all 7 services (runs on terminal login)
 │   │   └── RESTORATION.md       # Deep troubleshooting and system restoration log
-│   └── step-to-reconfig.md      # Manual step-by-step reconfiguration instructions
+│   ├── step-to-reconfig.md      # Manual step-by-step reconfiguration instructions
+│   └── update-all.sh            # Hermes Agent & WebUI update utility
 │
-├── aiOS-ui/                     # Web control panel (port 8501) — FastAPI + Vue 3 Hermes wrapper
-│   ├── main.py                  # FastAPI BFF app — all API routes + custom File Browser endpoints
-│   ├── server.py                # Hermes Web UI main server entry point
-│   ├── api/                     # Backend implementation modules (auth, workspace, session lifecycle, etc.)
-│   └── static/                  # Vue 3 SPA frontend files (chat, settings, terminal, etc.)
-│       └── file-browser/        # Custom file browser SPA (accessible at /files)
+├── aiOS-ui/                     # Web control panel directory
+│   ├── dashboard/               # BFF Dashboard (runs on host)
+│   │   ├── main.py              # FastAPI BFF backend (port 8787) — routes, permissions & file browser SPA
+│   │   ├── start-host.sh        # Host bootstrap script to run the BFF
+│   │   └── static/
+│   │       └── file-browser/    # Custom File Browser SPA
+│   └── hermes-webui/            # Upstream Hermes Web UI submodule (runs on port 8501 inside container)
+│       └── server.py            # Hermes Web UI main server entry point
 │
 └── persistent/                  # Heavy caches & credentials (gitignored, bind-mounted)
     ├── ml-env/                  # Conda environment cache
@@ -99,17 +98,19 @@ my-assistance/
 - **Environments:** Pre-activated Conda `ai-baseline` env, plus `uv` for fast Python installs.
 - **GPU Passthrough:** Wires your host NVIDIA GPU for local model inference.
 
-### The Sidecar Web Control Panel
+### The Sidecar Web Control Panel (BFF Dashboard)
 
-- **Purpose:** Web control panel at `http://localhost:8501` — FastAPI backend + Vue 3 Hermes SPA running as a background service inside the sandbox container.
-- **Views:**
-  - **Dashboard** — live CPU / RAM / GPU cards + 5-minute Chart.js history charts, container logs stream, rebuild button
-  - **Terminal** — package installer (uv / conda / dnf / npm), raw command executor with history, custom snippet bank
-  - **PTY Shell** — full interactive xterm.js shell session directly into the sandbox
-  - **File Browser** — browse, upload/download, chmod, rw/ro toggle, volume detach, and configure AI permissions
-  - **Processes & Ports** — live `ps aux` with CPU/MEM bars + kill, listening ports
-  - **Git** — branch status, diff viewer, stage-all / commit / push inside the sandbox
-  - **Config** — Dockerfile / README / environment.yml editors, volume mapper, `.env` Manager (multi-file CRUD)
+- **Purpose:** Web dashboard running at `http://localhost:8787` on the host, launched via `aiOS-ui/dashboard/start-host.sh`. It proxies to the Vue 3 Hermes Web UI running as a background service inside the sandbox container (port `8501`), and serves the custom File Browser SPA (at `/files`).
+- **Views & Capabilities (via Hermes subserver & BFF):**
+  - **BFF Dashboard** — Central entry point with quick access to Hermes, AgentMemory, and File Browser.
+  - **Hermes SPA** — Multi-agent chat workspace.
+  - **Dashboard** — Live CPU / RAM / GPU cards + 5-minute Chart.js history charts, container logs stream, rebuild button.
+  - **Terminal** — Package installer (uv / conda / dnf / npm), raw command executor with history, custom snippet bank.
+  - **PTY Shell** — Full interactive xterm.js shell session directly into the sandbox.
+  - **File Browser** — Browse, upload/download, chmod, rename/move, and configure AI permissions.
+  - **Processes & Ports** — Live `ps aux` with CPU/MEM bars + kill, listening ports.
+  - **Git** — Branch status, diff viewer, stage-all / commit / push inside the sandbox.
+  - **Config** — Dockerfile / README / environment.yml editors, volume mapper, `.env` Manager (multi-file CRUD).
 
 ---
 
@@ -133,7 +134,13 @@ Builds the image (if needed) with your current UID/GID, then starts the sandbox 
 
 ### Access the Web Control Panel
 
-Open `http://localhost:8501` in your browser.
+1. Start the FastAPI BFF Dashboard on your **host machine**:
+
+   ```bash
+   bash aiOS-ui/dashboard/start-host.sh
+   ```
+
+2. Open `http://localhost:8787` in your browser.
 
 ### Enter the Sandbox Terminal
 
@@ -225,7 +232,7 @@ git commit -m "chore: secure all private directories and workspaces"
 
 The Sidecar Web UI includes an **AI Permissions** system designed to restrict what AI agents running inside the Docker sandbox are allowed to see or edit.
 
-- **Storage**: Mappings are saved in a JSON file at `/tmp/aios-permissions.json` (configured via `FILE_BROWSER_PERMISSIONS_CONFIG` in FastAPI).
+- **Storage**: Mappings are saved in a JSON file at `/config-file/aios-permissions.json` (configured via `FILE_BROWSER_PERMISSIONS_CONFIG` in FastAPI).
 - **Permission Levels**:
   - `rw` (Read-Write): Normal access to files and directories.
   - `ro` (Read-Only): Forces files/directories to read-only filesystem modes (`444` for files, `555` for directories).
@@ -234,20 +241,30 @@ The Sidecar Web UI includes an **AI Permissions** system designed to restrict wh
 
 ---
 
-## 8. Automated Diagnostics & Recovery
+## 8. Automated Diagnostics, Recovery & Updates
 
-Two critical maintenance utilities are provided inside the container at `/config-file/system-config/`:
+Three critical maintenance utilities are provided inside the container and workspace:
 
 ### A. Async Health Checker (`service_health.py`)
 
-This tool runs concurrently via Python's `asyncio` (stdlib only, zero external dependencies) with a 2-second timeout per probe.
+Located inside the container at `/config-file/system-config/`, this tool runs concurrently via Python's `asyncio` (stdlib only, zero external dependencies) with a 2-second timeout per probe.
 
 - **Status Table**: It verifies the health of **7 services**: `iii engine`, `agentmemory`, `viewer-proxy`, `hermes dashboard`, `dashboard-proxy`, `fcc-server`, and `hermes gateway`.
 - **Interactive Shell Feedback**: Runs automatically on every new terminal login via `~/.zshrc` to show a clean color-coded status table, ensuring any degradation is noticed immediately.
 
-### B. One-Shot recovery (`recover.sh`)
+### B. One-Shot Recovery (`recover.sh`)
 
-When services go down (e.g., after the host computer wakes from sleep or Docker restarts), this script restores everything automatically.
+Located inside the container at `/config-file/system-config/`, when services go down (e.g., after the host computer wakes from sleep or Docker restarts), this script restores everything automatically.
 
 - **Conflict Resolution**: Scans `/proc` to kill any stale or conflicting background processes holding ports (`3113`, `9119`, `8082`).
 - **State Restorer**: Restores correct binaries (e.g., pinned `iii` engine), boots all services, registers a fresh watchdog loop, and outputs the final service health table.
+
+### C. Hermes Agent & WebUI Updater (`update-all.sh`)
+
+Located at `/config-file/update-all.sh` (or `config-file/update-all.sh` on the host), this script provides a unified update utility for the Hermes Agent and WebUI submodules.
+
+- **Context-Aware Execution**: Can be safely run either from the **host machine** or **inside the Docker container**. It automatically detects the environment and performs the appropriate actions (e.g., executing commands inside the container using `docker exec` if run from the host when the container is running).
+- **Safe Git Management**:
+  - Automatically checks for and clears stale Git index locks.
+  - Detects local uncommitted changes, stashes them, performs `git reset --hard` to synchronize with `origin/main` (for the Agent) or `upstream/master` (for the WebUI), and then pops/re-applies the stashed changes.
+  - Automatically pushes WebUI updates to the user's fork (`origin/master`).
