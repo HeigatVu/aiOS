@@ -28,7 +28,7 @@ fi
 if ! curl -s -o /dev/null -w '' http://localhost:3113/ 2>/dev/null; then
   echo "[recover] agentmemory down, starting..."
   if [ "$(id -u)" -eq 0 ]; then
-    cp /config-file/agentmemory/iii-config.yaml \
+    cp /config-file/aiOS-ui/agentmemory/iii-config.yaml \
       /usr/local/lib/node_modules/@agentmemory/agentmemory/dist/iii-config.yaml 2>/dev/null
   fi
   agentmemory start >> ~/.agentmemory/agentmemory.log 2>&1 || true
@@ -51,7 +51,7 @@ done
 
 if [ ! -f ~/.agentmemory/viewer-proxy.pid ] || ! kill -0 "$(cat ~/.agentmemory/viewer-proxy.pid 2>/dev/null)" 2>/dev/null; then
   echo "[recover] viewer-proxy down, starting..."
-  cp /config-file/agentmemory/viewer-proxy.mjs ~/.agentmemory/viewer-proxy.mjs
+  cp /config-file/aiOS-ui/agentmemory/viewer-proxy.mjs ~/.agentmemory/viewer-proxy.mjs
   nohup node ~/.agentmemory/viewer-proxy.mjs >> ~/.agentmemory/viewer-proxy.log 2>&1 &
   echo $! > ~/.agentmemory/viewer-proxy.pid
 fi

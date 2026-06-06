@@ -124,13 +124,13 @@ tail -5 ~/.agentmemory/agentmemory.log # agentmemory start log
 | Source | Destination | Notes |
 |--------|-------------|-------|
 | `~/.agentmemory/bin/iii` | `~/.local/bin/iii` | v0.11.2, persistent → ephemeral |
-| `agentmemory/iii-config.yaml` | agentmemory dist dir | Service bind config |
-| `agentmemory/viewer-proxy.mjs` | `~/.agentmemory/viewer-proxy.mjs` | HTTP reverse proxy (Host-header fix) |
+| `aiOS-ui/agentmemory/iii-config.yaml` | agentmemory dist dir | Service bind config |
+| `aiOS-ui/agentmemory/viewer-proxy.mjs` | `~/.agentmemory/viewer-proxy.mjs` | HTTP reverse proxy (Host-header fix) |
 | `/config-file/hermes/dashboard-proxy.mjs` | `—` (started from source) | HTTP reverse proxy (Host-header fix) |
 | `fcc/.env` *(optional)* | `~/.fcc/.env` | API keys (copied from backup) |
 
 **Config backups stored in `/config-file/`:**
-- `agentmemory/.env` — backed up to `/config-file/agentmemory/.env`
+- `aiOS-ui/agentmemory/.env` — backed up to `/config-file/aiOS-ui/agentmemory/.env`
 - `fcc/.env` — backed up to `/config-file/fcc/.env`
 - `claude/settings.json` — backed up to `/config-file/claude/settings.json`
 - `gemini/settings.json` — backed up to `/config-file/gemini/settings.json`
@@ -145,11 +145,11 @@ tail -5 ~/.agentmemory/agentmemory.log # agentmemory start log
 
 **agentmemory:**
 ```bash
-sudo cp /config-file/agentmemory/iii-config.yaml \
+sudo cp /config-file/aiOS-ui/agentmemory/iii-config.yaml \
   /usr/local/lib/node_modules/@agentmemory/agentmemory/dist/iii-config.yaml
 agentmemory start >> ~/.agentmemory/agentmemory.log 2>&1
 sleep 4
-cp /config-file/agentmemory/viewer-proxy.mjs ~/.agentmemory/viewer-proxy.mjs
+cp /config-file/aiOS-ui/agentmemory/viewer-proxy.mjs ~/.agentmemory/viewer-proxy.mjs
 nohup node ~/.agentmemory/viewer-proxy.mjs >> ~/.agentmemory/viewer-proxy.log 2>&1 &
 echo $! > ~/.agentmemory/viewer-proxy.pid
 ```

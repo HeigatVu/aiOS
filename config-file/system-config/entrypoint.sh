@@ -70,7 +70,7 @@ done
         pid=${f%/cmdline}; pid=${pid#/proc/}
         grep -q "viewer-proxy" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
       done
-      runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'cp /config-file/agentmemory/viewer-proxy.mjs ~/.agentmemory/viewer-proxy.mjs 2>/dev/null || true'
+      runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'cp /config-file/aiOS-ui/agentmemory/viewer-proxy.mjs ~/.agentmemory/viewer-proxy.mjs 2>/dev/null || true'
       runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup node ~/.agentmemory/viewer-proxy.mjs >> ~/.agentmemory/viewer-proxy.log 2>&1' &
       echo $! >/home/ai_user/.agentmemory/viewer-proxy.pid
       echo "[watchdog] $(date -Iseconds): viewer-proxy restarted" >>/tmp/hermes-watchdog.log
@@ -119,16 +119,16 @@ if [ -f "/home/ai_user/.agentmemory/bin/iii" ]; then
   echo "[entrypoint] iii v0.11.2 restored to ~/.local/bin"
 fi
 
-if [ -f /config-file/agentmemory/iii-config.yaml ]; then
-  cp /config-file/agentmemory/iii-config.yaml \
+if [ -f /config-file/aiOS-ui/agentmemory/iii-config.yaml ]; then
+  cp /config-file/aiOS-ui/agentmemory/iii-config.yaml \
     /usr/local/lib/node_modules/@agentmemory/agentmemory/dist/iii-config.yaml
   echo "[entrypoint] iii-config.yaml copied"
 fi
 runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'mkdir -p ~/.agentmemory/data'
 
 # Install the patched viewer-proxy (rewrites Host header for LAN access).
-if [ -f /config-file/agentmemory/viewer-proxy.mjs ]; then
-  runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'cp /config-file/agentmemory/viewer-proxy.mjs ~/.agentmemory/viewer-proxy.mjs'
+if [ -f /config-file/aiOS-ui/agentmemory/viewer-proxy.mjs ]; then
+  runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'cp /config-file/aiOS-ui/agentmemory/viewer-proxy.mjs ~/.agentmemory/viewer-proxy.mjs'
   echo "[entrypoint] viewer-proxy.mjs (patched) installed"
 fi
 

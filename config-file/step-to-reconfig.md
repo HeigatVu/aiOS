@@ -69,7 +69,7 @@ Run: agentmemory status
 Expected: Health: ✓ healthy, Provider: ✓ llm, four flags ticked
 
 If "Not running":
-  sudo cp /config-file/agentmemory/iii-config.yaml \
+  sudo cp /config-file/aiOS-ui/agentmemory/iii-config.yaml \
     /usr/local/lib/node_modules/@agentmemory/agentmemory/dist/iii-config.yaml
   agentmemory start >> ~/.agentmemory/agentmemory.log 2>&1
   sleep 5
@@ -82,7 +82,7 @@ Expected: contains "host-rewrite enabled"
 
 If stale or missing:
   kill $(cat ~/.agentmemory/viewer-proxy.pid 2>/dev/null) 2>/dev/null
-  cp /config-file/agentmemory/viewer-proxy.mjs ~/.agentmemory/viewer-proxy.mjs
+  cp /config-file/aiOS-ui/agentmemory/viewer-proxy.mjs ~/.agentmemory/viewer-proxy.mjs
   nohup node ~/.agentmemory/viewer-proxy.mjs >> ~/.agentmemory/viewer-proxy.log 2>&1 &
   echo $! > ~/.agentmemory/viewer-proxy.pid
   sleep 1 && tail -1 ~/.agentmemory/viewer-proxy.log
@@ -169,7 +169,7 @@ Run: `CONTAINER_IP=$(hostname -I | awk '{print $1}') && curl -s -o /dev/null -w 
 Expected: 200
 
 If 400, the proxy is using the old raw-TCP implementation. Fix:
-  cp /config-file/agentmemory/viewer-proxy.mjs ~/.agentmemory/viewer-proxy.mjs
+  cp /config-file/aiOS-ui/agentmemory/viewer-proxy.mjs ~/.agentmemory/viewer-proxy.mjs
   kill $(cat ~/.agentmemory/viewer-proxy.pid 2>/dev/null) 2>/dev/null
   nohup node ~/.agentmemory/viewer-proxy.mjs >> ~/.agentmemory/viewer-proxy.log 2>&1 &
   echo $! > ~/.agentmemory/viewer-proxy.pid

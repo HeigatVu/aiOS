@@ -68,7 +68,7 @@ my-assistance/
 │   └── outputs/                 # Mapped to /outputs (generated results — gitignored)
 │
 ├── config-file/                 # Persistent configs bind-mounted into the container
-│   ├── agentmemory/             # agentmemory iii-config.yaml, viewer-proxy.mjs
+│   ├── aiOS-ui/agentmemory/     # agentmemory iii-config.yaml, viewer-proxy.mjs
 │   ├── hermes/                  # hermes dashboard-proxy.mjs
 │   ├── system-config/           # Shell configs (.zshrc, .p10k.zsh), nvim config, entrypoint, & recovery tools
 │   │   ├── entrypoint.sh        # Runs on every container start: fixes permissions, starts background services
