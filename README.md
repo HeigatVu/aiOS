@@ -1,8 +1,24 @@
 # aiOS: Agent Intelligence Operating System for Workspace (v2.0)
 
+<div align="center">
+  <img src="./assets/dashboard.png" alt="aiOS Main Dashboard" width="800"/>
+</div>
+
 This repository houses a secure, GPU-accelerated workspace for AI agents.
 
 By leveraging the **Sidecar Pattern**, it isolates the heavy AI sandbox from your host machine while providing a web control panel in the background to manage installations, file permissions, and shared directories.
+
+## 🖼️ Features & Screenshots
+
+### Multi-pane Workspace Terminals
+Access multiple interactive shell environments seamlessly inside the AI sandbox.
+
+<img src="./assets/workspace-terminals.png" alt="Workspace Terminals" width="800"/>
+
+### Secure File Browser
+Browse, manage files, and configure AI read/write boundaries visually.
+
+<img src="assets/file-browser.png" alt="File Browser" width="800"/>
 
 ## Step to do
 

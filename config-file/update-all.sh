@@ -103,6 +103,14 @@ update_webui() {
     echo "→ Fetching Hermes WebUI updates..."
     cd "$HERMES_WEBUI_DIR"
     
+    # Fix potential permission issues caused by docker volume mapping (e.g. objects owned by 'nobody')
+    if [ "$IS_INSIDE_CONTAINER" = false ]; then
+        if find .git/objects -type d ! -user "$(whoami)" 2>/dev/null | grep -q .; then
+            echo "⚠️ Found git objects with incorrect ownership. Attempting to fix by moving them aside..."
+            find .git/objects -maxdepth 2 -type d ! -user "$(whoami)" ! -name "*.bak" -exec mv {} {}.bak \; 2>/dev/null || true
+        fi
+    fi
+    
     # Ensure git user is configured so git stash doesn't fail
     git config user.email "auto-updater@localhost" || true
     git config user.name "Auto Updater" || true

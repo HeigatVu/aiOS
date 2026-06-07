@@ -7,13 +7,13 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#242424;--sidebar-bg:#1e1e1e;--surface:#2e2e2e;--surface2:#383838;
-  --border:#4a4a4a;--border2:#3a3a3a;
-  --text:#ffffff;--muted:#9a9996;--muted2:#6b6b6b;
-  --accent:#3584e4;--accent-light:rgba(53,132,228,0.22);
-  --folder:#f4b843;--green:#57e389;--red:#ff7676;--yellow:#f4b843;
-  --radius:8px;--radius-sm:5px;--radius-md:10px;
-  font-family:-apple-system,'Cantarell','Helvetica Neue',system-ui,sans-serif;
+  --bg:#0F111A;--sidebar-bg:#0F111A;--surface:#151822;--surface2:#1C202E;
+  --border:#2D3139;--border2:#2D3139;
+  --text:#E0E2E8;--muted:#8B949E;--muted2:#8B949E;
+  --accent:#E8C12F;--accent-light:rgba(232, 193, 47, 0.1);
+  --folder:#E8C12F;--green:#E8C12F;--red:#ff7676;--yellow:#E8C12F;
+  --radius:16px;--radius-sm:12px;--radius-md:20px;
+  font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size:14px;line-height:1.5;
   background:var(--bg);color:var(--text);
 }
@@ -21,9 +21,9 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;user-select
 
 /* ── Header Bar ── */
 .headerbar{
-  display:flex;align-items:center;gap:6px;
-  padding:6px 10px;background:var(--sidebar-bg);
-  border-bottom:1px solid var(--border2);min-height:48px;flex-shrink:0;
+  display:flex;align-items:center;gap:8px;
+  padding:16px 24px;background:var(--bg);
+  min-height:64px;flex-shrink:0;
 }
 .hb-btn{
   background:var(--surface);border:none;color:var(--text);
@@ -51,13 +51,13 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;user-select
 .view-toggle .hb-btn.active{background:var(--accent);color:#fff}
 
 /* ── Main Layout ── */
-.main{display:flex;flex:1;overflow:hidden}
+.main{display:flex;flex:1;overflow:hidden; padding: 0 24px 24px 24px; gap: 16px;}
 
 /* ── Sidebar ── */
 .sidebar{
-  width:200px;background:var(--sidebar-bg);
-  border-right:1px solid var(--border2);overflow-y:auto;
-  padding:6px 0;flex-shrink:0;
+  width:220px;background:var(--bg);
+  border-right:none;overflow-y:auto;
+  padding:0;flex-shrink:0;
 }
 .sidebar::-webkit-scrollbar{width:6px}
 .sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
@@ -66,17 +66,19 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;user-select
   letter-spacing:.9px;color:var(--muted2);padding:10px 14px 3px;
 }
 .sidebar-item{
-  display:flex;align-items:center;gap:8px;
-  padding:6px 14px;cursor:pointer;font-size:13px;
+  display:flex;align-items:center;gap:12px;
+  padding:8px 16px;cursor:pointer;font-size:14px;
   color:var(--muted);transition:background .1s;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  border-radius: var(--radius-sm);
+  margin: 4px 8px;
 }
-.sidebar-item:hover{background:var(--surface);color:var(--text)}
-.sidebar-item.active{background:var(--accent-light);color:var(--accent)}
-.sidebar-item .si-icon{font-size:15px;flex-shrink:0;width:18px;text-align:center}
+.sidebar-item:hover{background:var(--surface2);color:var(--text)}
+.sidebar-item.active{background:var(--surface);color:var(--accent)}
+.sidebar-item .si-icon{font-size:16px;flex-shrink:0;width:20px;text-align:center}
 
 /* ── File Area ── */
-.filearea{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.filearea{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0; background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border2);}
 
 /* LIST VIEW */
 .list-view{flex:1;overflow-y:auto;padding:0}
@@ -84,19 +86,20 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;user-select
 .list-view::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
 .list-view table{width:100%;border-collapse:collapse}
 .list-view th{
-  text-align:left;padding:6px 12px;font-size:11px;font-weight:600;
+  text-align:left;padding:10px 16px;font-size:12px;font-weight:600;
   color:var(--muted);text-transform:uppercase;letter-spacing:.6px;
   border-bottom:1px solid var(--border2);
-  background:var(--sidebar-bg);position:sticky;top:0;z-index:2;cursor:pointer;
+  background:var(--surface);position:sticky;top:0;z-index:2;cursor:pointer;
 }
 .list-view th:hover{color:var(--text)}
-.list-view td{padding:5px 10px;border-bottom:1px solid var(--border2);font-size:13px}
+.list-view td{padding:8px 16px;border-bottom:1px solid var(--border2);font-size:14px}
 .list-view tr.file-row{cursor:pointer;transition:background .07s}
 .list-view tr.file-row:hover{background:var(--surface)}
-.list-view tr.file-row.selected{background:var(--accent-light)}
-.file-icon{font-size:17px;line-height:1;margin-right:7px;vertical-align:middle}
-.file-name{font-size:13px;vertical-align:middle}
-.file-name.is-dir{font-weight:500}
+.list-view tr.file-row:hover{background:var(--surface2)}
+.list-view tr.file-row.selected{background:var(--surface2); color:var(--accent)}
+.file-icon{font-size:16px;line-height:1;margin-right:12px;vertical-align:middle;display:inline-flex;}
+.file-name{font-size:14px;vertical-align:middle}
+.file-name.is-dir{font-weight:600}
 .col-size{color:var(--muted);text-align:right;font-size:12px}
 .col-date{color:var(--muted);font-size:12px}
 .perm-pill{
@@ -127,11 +130,13 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;user-select
 
 /* ── Right Panel ── */
 .right-panel{
-  width:0;background:var(--sidebar-bg);border-left:1px solid var(--border2);
+  width:0;background:var(--surface);border: 1px solid var(--border2); border-radius: var(--radius);
   display:flex;flex-direction:row;flex-shrink:0;overflow:hidden;
-  transition:width .18s ease;
+  transition:width .18s ease, margin-left .18s ease;
+  margin-left: 0;
+  opacity: 0;
 }
-.right-panel.open{width:40%}
+.right-panel.open{width:40%; margin-left: 16px; opacity: 1;}
 .panel-resize-handle{
   width:5px;flex-shrink:0;cursor:col-resize;background:transparent;
   transition:background .15s;z-index:10;
@@ -327,25 +332,25 @@ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;user-select
   <div class="sidebar" id="sidebar">
     <div class="sidebar-section">Places</div>
     <div class="sidebar-item" onclick="navigateTo('/workspace')" data-path="/workspace">
-      <span class="si-icon">&#128196;</span> workspace
+      <span class="si-icon"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.543l-1.6-1.6A1.75 1.75 0 0 0 4.707 1H1.75ZM1.5 2.75a.25.25 0 0 1 .25-.25h2.957a.25.25 0 0 1 .177.073l1.6 1.6A.25.25 0 0 0 6.661 4.5h7.589a.25.25 0 0 1 .25.25v8.5a.25.25 0 0 1-.25.25H1.75a.25.25 0 0 1-.25-.25V2.75Z"></path></svg></span> workspace
     </div>
     <div class="sidebar-item" onclick="navigateTo('/outputs')" data-path="/outputs">
-      <span class="si-icon">📤</span> outputs
+      <span class="si-icon"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.543l-1.6-1.6A1.75 1.75 0 0 0 4.707 1H1.75ZM1.5 2.75a.25.25 0 0 1 .25-.25h2.957a.25.25 0 0 1 .177.073l1.6 1.6A.25.25 0 0 0 6.661 4.5h7.589a.25.25 0 0 1 .25.25v8.5a.25.25 0 0 1-.25.25H1.75a.25.25 0 0 1-.25-.25V2.75Z"></path></svg></span> outputs
     </div>
     <div class="sidebar-item" onclick="navigateTo('/my-data')" data-path="/my-data">
-      <span class="si-icon">📊</span> my-data
+      <span class="si-icon"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.543l-1.6-1.6A1.75 1.75 0 0 0 4.707 1H1.75ZM1.5 2.75a.25.25 0 0 1 .25-.25h2.957a.25.25 0 0 1 .177.073l1.6 1.6A.25.25 0 0 0 6.661 4.5h7.589a.25.25 0 0 1 .25.25v8.5a.25.25 0 0 1-.25.25H1.75a.25.25 0 0 1-.25-.25V2.75Z"></path></svg></span> my-data
     </div>
     <div class="sidebar-item" onclick="navigateTo('/aiOS-ui')" data-path="/aiOS-ui">
-      <span class="si-icon">&#128187;</span> aiOS-ui
+      <span class="si-icon"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.543l-1.6-1.6A1.75 1.75 0 0 0 4.707 1H1.75ZM1.5 2.75a.25.25 0 0 1 .25-.25h2.957a.25.25 0 0 1 .177.073l1.6 1.6A.25.25 0 0 0 6.661 4.5h7.589a.25.25 0 0 1 .25.25v8.5a.25.25 0 0 1-.25.25H1.75a.25.25 0 0 1-.25-.25V2.75Z"></path></svg></span> aiOS-ui
     </div>
     <div class="sidebar-item" onclick="navigateTo('/home/ai_user')" data-path="/home/ai_user">
-      <span class="si-icon">&#127968;</span> Home
+      <span class="si-icon"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.543l-1.6-1.6A1.75 1.75 0 0 0 4.707 1H1.75ZM1.5 2.75a.25.25 0 0 1 .25-.25h2.957a.25.25 0 0 1 .177.073l1.6 1.6A.25.25 0 0 0 6.661 4.5h7.589a.25.25 0 0 1 .25.25v8.5a.25.25 0 0 1-.25.25H1.75a.25.25 0 0 1-.25-.25V2.75Z"></path></svg></span> Home
     </div>
     <div class="sidebar-item" onclick="navigateTo('/config-file')" data-path="/config-file">
-      <span class="si-icon">&#9881;</span> config-file
+      <span class="si-icon"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16H3.75A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"></path></svg></span> config-file
     </div>
     <div class="sidebar-item" onclick="navigateTo('/home/ai_user/.trash')" data-path="/home/ai_user/.trash">
-      <span class="si-icon">&#128465;</span> Trash
+      <span class="si-icon"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor"><path d="M11 1.75V3h2.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75ZM4.496 6.675l.66 6.6a.25.25 0 0 0 .249.225h5.19a.25.25 0 0 0 .249-.225l.66-6.6a.75.75 0 0 1 1.492.149l-.66 6.6A1.748 1.748 0 0 1 10.595 15h-5.19a1.75 1.75 0 0 1-1.741-1.575l-.66-6.6a.75.75 0 1 1 1.492-.15ZM6.5 1.75V3h3V1.75a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25Z"></path></svg></span> Trash
     </div>
     <div class="sidebar-section" style="margin-top:4px">Workspace</div>
     <div id="sidebar-quick"></div>
@@ -628,28 +633,12 @@ function activateEntry(e){
 }
 
 // ── File Icons ──
-var EXT_ICONS = {
-  py:'🐍',js:'🟨',ts:'🔷',jsx:'⚛️',tsx:'⚛️',
-  json:'{}',yaml:'📋',yml:'📋',toml:'📋',ini:'⚙️',cfg:'⚙️',conf:'⚙️',
-  md:'📝',txt:'📄',rst:'📄',log:'📜',
-  sh:'💲',bash:'💲',zsh:'💲',
-  html:'🌐',css:'🎨',scss:'🎨',
-  png:'🖼',jpg:'🖼',jpeg:'🖼',gif:'🖼',svg:'🖼',
-  mp4:'🎬',mov:'🎬',
-  mp3:'🎵',wav:'🎵',
-  zip:'📦',tar:'📦',gz:'📦',bz2:'📦',
-  pdf:'📕',csv:'📊',xlsx:'📊',
-  sql:'🗄',db:'🗄',sqlite:'🗄',
-  go:'🐹',rs:'🦀',c:'🔵',cpp:'🔵',
-  java:'☕',rb:'💎',php:'🐘',
-  env:'🔑',key:'🔑',pem:'🔑',
-  dockerfile:'🐳',
-};
+const SVG_FOLDER = `<svg width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.543l-1.6-1.6A1.75 1.75 0 0 0 4.707 1H1.75ZM1.5 2.75a.25.25 0 0 1 .25-.25h2.957a.25.25 0 0 1 .177.073l1.6 1.6A.25.25 0 0 0 6.661 4.5h7.589a.25.25 0 0 1 .25.25v8.5a.25.25 0 0 1-.25.25H1.75a.25.25 0 0 1-.25-.25V2.75Z"></path></svg>`;
+const SVG_FILE = `<svg width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16H3.75A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"></path></svg>`;
+
 function fileIcon(e){
-  if(e.type === 'dir') return '📁';
-  var ext = (e.name.split('.').pop() || '').toLowerCase();
-  if(e.name.toLowerCase() === 'dockerfile') return '🐳';
-  return EXT_ICONS[ext] || '📄';
+  if(e.type === 'dir') return `<span style="color:var(--muted)">${SVG_FOLDER}</span>`;
+  return `<span style="color:var(--muted)">${SVG_FILE}</span>`;
 }
 
 // ── Permission Pill ──
@@ -1105,7 +1094,7 @@ async function loadQuickAccess(){
       var div = document.createElement('div');
       div.className = 'sidebar-item';
       div.dataset.path = '/workspace/' + d.name;
-      div.innerHTML = '<span class="si-icon">📁</span> ' + esc(d.name);
+      div.innerHTML = '<span class="si-icon"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.543l-1.6-1.6A1.75 1.75 0 0 0 4.707 1H1.75ZM1.5 2.75a.25.25 0 0 1 .25-.25h2.957a.25.25 0 0 1 .177.073l1.6 1.6A.25.25 0 0 0 6.661 4.5h7.589a.25.25 0 0 1 .25.25v8.5a.25.25 0 0 1-.25.25H1.75a.25.25 0 0 1-.25-.25V2.75Z"></path></svg></span> ' + esc(d.name);
       div.onclick = function(){ navigateTo('/workspace/' + d.name); };
       container.appendChild(div);
     });
