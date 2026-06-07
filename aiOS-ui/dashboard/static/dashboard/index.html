@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>aiOS</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+    background: #0d1117;
+    color: #c9d1d9;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  /* Animated starfield background */
+  .stars {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 0;
+  }
+  .star {
+    position: absolute;
+    background: #c9d1d9;
+    border-radius: 50%;
+    animation: twinkle var(--dur) ease-in-out infinite;
+    animation-delay: var(--delay);
+    opacity: 0;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.1; }
+    50% { opacity: 0.8; }
+  }
+  /* Scan line effect */
+  .scanlines {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 1;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0.06) 0px,
+      rgba(0,0,0,0.06) 2px,
+      transparent 2px,
+      transparent 4px
+    );
+  }
+  /* Main content */
+  .main {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 2rem;
+  }
+  /* Title */
+  .title-wrap { text-align: center; }
+  .title-icon {
+    font-size: 80px;
+    line-height: 1;
+    animation: float 4s ease-in-out infinite;
+    text-shadow: 0 0 40px rgba(88,166,255,0.4), 0 0 80px rgba(88,166,255,0.2);
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  .title-text {
+    font-size: 72px;
+    font-weight: 900;
+    letter-spacing: 8px;
+    background: linear-gradient(135deg, #58a6ff 0%, #f0883e 50%, #3fb950 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+    filter: drop-shadow(0 0 30px rgba(88,166,255,0.3));
+  }
+  .subtitle {
+    font-size: 14px;
+    color: #484f58;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+  /* Launcher buttons */
+  .launcher {
+    display: flex; gap: 24px;
+    flex-wrap: wrap; justify-content: center;
+  }
+  .launch-card {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 12px;
+    padding: 28px 36px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    cursor: pointer;
+    text-decoration: none;
+    color: #c9d1d9;
+    transition: all 0.25s ease;
+    min-width: 200px;
+    position: relative;
+    overflow: hidden;
+  }
+  .launch-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+    background: var(--accent);
+    opacity: 0; transition: opacity 0.25s;
+  }
+  .launch-card:hover::before { opacity: 1; }
+  .launch-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+  }
+  .launch-card .icon { font-size: 36px; }
+  .launch-card .label { font-size: 16px; font-weight: 600; letter-spacing: 1px; }
+  .launch-card .desc { font-size: 11px; color: #8b949e; text-align: center; }
+  /* Card accent colors */
+  .card-spa    { --accent: #58a6ff; }
+  .card-memory { --accent: #3fb950; }
+  .card-files  { --accent: #f0883e; }
+  .card-update { --accent: #8957e5; }
+
+  /* Modal Overlay */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal {
+    background: #161b22; border-radius: 12px; border: 1px solid #30363d;
+    min-width: 450px; max-width: 800px; width: 90%;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.65);
+    display: flex; flex-direction: column; max-height: 80vh;
+  }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid #30363d; flex-shrink: 0;
+  }
+  .modal-header h3 { font-size: 16px; font-weight: 600; color: #f0f6fc; }
+  .modal-close { background: none; border: none; color: #8b949e; cursor: pointer; font-size: 24px; padding: 0 4px; }
+  .modal-close:hover { color: #f0f6fc; }
+  .modal-body { padding: 20px; overflow-y: auto; flex: 1; background: #0d1117; }
+  .modal-footer {
+    display: flex; justify-content: flex-end; gap: 12px;
+    padding: 16px 20px; border-top: 1px solid #30363d; flex-shrink: 0;
+  }
+  .mbtn {
+    padding: 8px 18px; border-radius: 6px;
+    font-size: 13px; font-weight: 500; cursor: pointer; border: none;
+    transition: background 0.2s;
+  }
+  .mbtn.secondary { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; }
+  .mbtn.secondary:hover:not(:disabled) { background: #30363d; }
+  .mbtn.secondary:disabled { opacity: 0.5; cursor: default; }
+  #update-output {
+    font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 12px; color: #c9d1d9; white-space: pre-wrap; word-break: break-all;
+    background: #0d1117; padding: 0; margin: 0; line-height: 1.5;
+  }
+  /* Footer */
+  .footer {
+    position: relative; z-index: 2;
+    margin-top: 3rem;
+    font-size: 11px; color: #30363d;
+    display: flex; gap: 16px;
+  }
+  .footer .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #3fb950; }
+  .footer .dot.dead { background: #f85149; }
+</style>
+</head>
+<body>
+<div class="stars" id="stars"></div>
+<div class="scanlines"></div>
+
+<div class="main">
+  <div class="title-wrap">
+    <div class="title-icon">&#9874;</div>
+    <div class="title-text">aiOS</div>
+    <div class="subtitle">Agent Intelligence Operating System</div>
+  </div>
+
+  <div class="launcher">
+    <a class="launch-card card-spa" id="lnk-hermes-webui" target="_blank">
+      <span class="icon">&#9874;</span>
+      <span class="label">Hermes</span>
+      <span class="desc">Multi-agent chat workspace</span>
+    </a>
+    <a class="launch-card card-memory" id="lnk-agentmemory" target="_blank">
+      <span class="icon">&#9883;</span>
+      <span class="label">AgentMemory</span>
+      <span class="desc">Persistent memory &amp; actions</span>
+    </a>
+    <a class="launch-card card-term" href="/terminals" target="_blank">
+      <span class="icon">🖥️</span>
+      <span class="label">Workspace Terminals</span>
+      <span class="desc">Multi-pane shell access</span>
+    </a>
+    <a class="launch-card card-spa" id="lnk-hermes-dashboard" target="_blank">
+      <span class="icon">📊</span>
+      <span class="label">Hermes Dashboard</span>
+      <span class="desc">System metrics & management</span>
+    </a>
+    <a class="launch-card card-files" id="lnk-files" target="_blank">
+      <span class="icon">&#128193;</span>
+      <span class="label">File Browser</span>
+      <span class="desc">Browse, chmod, watch &amp; edit</span>
+    </a>
+    <div class="launch-card card-update" id="btn-update">
+      <span class="icon">🔄</span>
+      <span class="label">Update System</span>
+      <span class="desc">Run update-all.sh script</span>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span class="dot" id="status-dot"></span>
+    <span id="status-text">checking...</span>
+  </div>
+</div>
+
+<!-- Update Progress Modal -->
+<div class="modal-overlay" id="update-modal" style="display:none;" onclick="closeModalOutside(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3>System Update Logs</h3>
+      <button class="modal-close" onclick="closeUpdateModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <pre id="update-output">Ready to update...</pre>
+    </div>
+    <div class="modal-footer">
+      <button class="mbtn secondary" id="btn-close-update" onclick="closeUpdateModal()" disabled>Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Starfield ──
+(function(){
+  var c = document.getElementById('stars');
+  if (!c) return;
+  for (var i = 0; i < 80; i++) {
+    var s = document.createElement('div');
+    s.className = 'star';
+    var size = Math.random() * 2 + 1;
+    s.style.cssText =
+      'left:' + (Math.random()*100) + '%;' +
+      'top:' + (Math.random()*100) + '%;' +
+      'width:' + size + 'px;' +
+      'height:' + size + 'px;' +
+      '--dur:' + (Math.random()*3+2) + 's;' +
+      '--delay:' + (Math.random()*3) + 's;';
+    c.appendChild(s);
+  }
+})();
+
+// ── Quick Access links ──
+(function(){
+  var host = window.location.hostname || '127.0.0.1';
+  
+  var hw = document.getElementById('lnk-hermes-webui');
+  if (hw) hw.href = 'http://' + host + ':8501/';
+  
+  var am = document.getElementById('lnk-agentmemory');
+  if (am) am.href = 'http://' + host + ':3113/';
+
+  var hd = document.getElementById('lnk-hermes-dashboard');
+  if (hd) hd.href = 'http://' + host + ':9119/';
+  
+  var fb = document.getElementById('lnk-files');
+  if (fb) fb.href = 'http://' + host + ':8787/files';
+})();
+
+// ── Health check ──
+async function checkHealth() {
+  var dot = document.getElementById('status-dot');
+  var txt = document.getElementById('status-text');
+  if (!dot || !txt) return;
+  try {
+    var r = await fetch('/health');
+    var d = await r.json();
+    if (d.subserver && d.subserver.healthy) {
+      dot.classList.remove('dead');
+      txt.textContent = 'subserver ok (pid ' + d.subserver.pid + ') | :' + d.subserver.port;
+    } else {
+      dot.classList.add('dead');
+      txt.textContent = 'subserver not ready';
+    }
+  } catch(e) {
+    dot.classList.add('dead');
+    txt.textContent = 'health check error';
+  }
+}
+checkHealth();
+setInterval(checkHealth, 10000);
+
+// ── Update System ──
+var btnUpdate = document.getElementById('btn-update');
+if (btnUpdate) {
+  btnUpdate.addEventListener('click', async function() {
+    var modal = document.getElementById('update-modal');
+    var output = document.getElementById('update-output');
+    var closeBtn = document.getElementById('btn-close-update');
+
+    modal.style.display = 'flex';
+    output.textContent = 'Starting system update... Please wait...\n';
+    closeBtn.disabled = true;
+
+    try {
+      var response = await fetch('/api/update', { method: 'POST' });
+      if (!response.ok) {
+        throw new Error('Server returned ' + response.status);
+      }
+      var reader = response.body.getReader();
+      var decoder = new TextDecoder('utf-8');
+      while (true) {
+        var { done, value } = await reader.read();
+        if (done) break;
+        output.textContent += decoder.decode(value, { stream: true });
+        output.scrollTop = output.scrollHeight;
+      }
+      output.textContent += '\n\nUpdate process finished.\n';
+    } catch (err) {
+      output.textContent += '\nError running update: ' + err.message;
+    } finally {
+      closeBtn.disabled = false;
+    }
+  });
+}
+
+function closeUpdateModal() {
+  document.getElementById('update-modal').style.display = 'none';
+}
+
+function closeModalOutside(event) {
+  var closeBtn = document.getElementById('btn-close-update');
+  if (!closeBtn.disabled && event.target === document.getElementById('update-modal')) {
+    closeUpdateModal();
+  }
+}
+</script>
+</body>
+</html>

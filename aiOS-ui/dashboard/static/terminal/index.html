@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Workspace Terminals</title>
+    <link rel="stylesheet" href="https://unpkg.com/xterm@5.3.0/css/xterm.css" />
+    <script src="https://unpkg.com/xterm@5.3.0/lib/xterm.js"></script>
+    <script src="https://unpkg.com/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+    <style>
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: #0f1015; color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        /* Custom subtle scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #333 transparent;
+        }
+        #top-bar {
+            background-color: #1a1b23;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+        }
+        #top-bar h1 {
+            margin: 0; font-size: 16px; font-weight: 600;
+        }
+        .btn-group button {
+            background-color: #2c2d3a;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 8px;
+            font-size: 13px;
+        }
+        .btn-group button:hover {
+            background-color: #3e3f52;
+        }
+        #grid-wrapper {
+            flex-grow: 1;
+            position: relative;
+            display: flex;
+            overflow: hidden;
+        }
+        #grid {
+            flex-grow: 1;
+            display: grid;
+            gap: 2px;
+            background-color: #333;
+            overflow: hidden;
+        }
+        .splitter-v {
+            cursor: col-resize;
+            width: 8px;
+            position: absolute;
+            top: 0; bottom: 0;
+            margin-left: -4px;
+            z-index: 10;
+            background: transparent;
+            display: none;
+        }
+        .splitter-v:hover, .splitter-v.active { background: rgba(88, 166, 255, 0.4); }
+        .splitter-h {
+            cursor: row-resize;
+            height: 8px;
+            position: absolute;
+            left: 0; right: 0;
+            margin-top: -4px;
+            z-index: 10;
+            background: transparent;
+            display: none;
+        }
+        .splitter-h:hover, .splitter-h.active { background: rgba(88, 166, 255, 0.4); }
+        .term-container {
+            background-color: #000;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-sizing: border-box;
+            min-width: 0;
+            min-height: 0;
+        }
+        .term-header {
+            background-color: #1a1b23;
+            font-size: 12px;
+            padding: 4px 10px;
+            display: flex;
+            justify-content: space-between;
+            color: #888;
+        }
+        .term-close {
+            cursor: pointer;
+        }
+        .term-close:hover { color: #fff; }
+        .term-body {
+            flex-grow: 1;
+            padding: 5px;
+            position: relative;
+            min-height: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div id="top-bar">
+        <h1>Workspace Terminals</h1>
+        <div class="btn-group">
+            <button onclick="toggleWorkspacePanel()">📁 Workspace</button>
+            <button onclick="addTerminal()">+ Add Terminal</button>
+            <button onclick="window.close()">Close Window</button>
+        </div>
+    </div>
+    <div id="main-content" style="flex-grow: 1; display: flex; overflow: hidden;">
+        <div id="grid-wrapper">
+            <div id="grid">
+                <!-- Terminals will be added here -->
+            </div>
+            <div id="v-splitter" class="splitter-v"></div>
+            <div id="h-splitter" class="splitter-h"></div>
+        </div>
+        <div id="workspace-panel" style="width: 250px; background-color: #1a1b23; border-left: 1px solid #333; display: none; flex-direction: column; overflow-y: auto;">
+            <div style="padding: 10px; font-weight: bold; border-bottom: 1px solid #333; display: flex; justify-content: space-between;">
+                <span>Workspace Files</span>
+                <span style="cursor:pointer;" onclick="toggleWorkspacePanel()">✖</span>
+            </div>
+            <div id="file-tree" style="padding: 10px; font-size: 13px;">
+                Loading...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const grid = document.getElementById('grid');
+        let termCount = 0;
+        let terms = {}; // Use object instead of array to prevent holes breaking index logic
+
+        const observer = new ResizeObserver(entries => {
+            for (let entry of entries) {
+                const id = entry.target.dataset.id;
+                if (id !== undefined && terms[id] && terms[id].fitAddon) {
+                    terms[id].fitAddon.fit();
+                }
+            }
+        });
+
+        let colPercent = 50;
+        let rowPercent = 50;
+        const vSplitter = document.getElementById('v-splitter');
+        const hSplitter = document.getElementById('h-splitter');
+        const gridWrapper = document.getElementById('grid-wrapper');
+
+        function setupSplitters() {
+            let isDraggingV = false;
+            let isDraggingH = false;
+
+            vSplitter.addEventListener('mousedown', (e) => {
+                isDraggingV = true;
+                vSplitter.classList.add('active');
+                document.body.style.cursor = 'col-resize';
+                e.preventDefault();
+            });
+
+            hSplitter.addEventListener('mousedown', (e) => {
+                isDraggingH = true;
+                hSplitter.classList.add('active');
+                document.body.style.cursor = 'row-resize';
+                e.preventDefault();
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isDraggingV && !isDraggingH) return;
+                const rect = gridWrapper.getBoundingClientRect();
+                if (isDraggingV) {
+                    let p = ((e.clientX - rect.left) / rect.width) * 100;
+                    colPercent = Math.max(10, Math.min(90, p));
+                    updateGridClass(false);
+                }
+                if (isDraggingH) {
+                    let p = ((e.clientY - rect.top) / rect.height) * 100;
+                    rowPercent = Math.max(10, Math.min(90, p));
+                    updateGridClass(false);
+                }
+            });
+
+            window.addEventListener('mouseup', () => {
+                if (isDraggingV || isDraggingH) {
+                    isDraggingV = false;
+                    isDraggingH = false;
+                    vSplitter.classList.remove('active');
+                    hSplitter.classList.remove('active');
+                    document.body.style.cursor = 'default';
+                    setTimeout(() => {
+                        Object.values(terms).forEach(t => {
+                            if (t && t.fitAddon) t.fitAddon.fit();
+                        });
+                    }, 50);
+                }
+            });
+        }
+        setupSplitters();
+
+        let lastCount = 0;
+        function updateGridClass(forceRefit = true) {
+            const activeWraps = Array.from(grid.children);
+            const count = activeWraps.length;
+            
+            if (count === 1) {
+                grid.style.gridTemplateColumns = '1fr';
+                grid.style.gridTemplateRows = '1fr';
+                vSplitter.style.display = 'none';
+                hSplitter.style.display = 'none';
+            } else if (count === 2) {
+                grid.style.gridTemplateColumns = `${colPercent}% 1fr`;
+                grid.style.gridTemplateRows = '1fr';
+                vSplitter.style.display = 'block';
+                vSplitter.style.left = `${colPercent}%`;
+                hSplitter.style.display = 'none';
+            } else if (count >= 3) {
+                grid.style.gridTemplateColumns = `${colPercent}% 1fr`;
+                grid.style.gridTemplateRows = `${rowPercent}% 1fr`;
+                vSplitter.style.display = 'block';
+                vSplitter.style.left = `${colPercent}%`;
+                hSplitter.style.display = 'block';
+                hSplitter.style.top = `${rowPercent}%`;
+            }
+
+            activeWraps.forEach((wrap, index) => {
+                wrap.style.width = '100%';
+                wrap.style.height = '100%';
+                if (count === 3 && index === 2) {
+                    wrap.style.gridColumn = '1 / span 2';
+                } else {
+                    wrap.style.gridColumn = 'auto';
+                }
+            });
+            
+            if (forceRefit || count !== lastCount) {
+                setTimeout(() => {
+                    Object.values(terms).forEach(t => {
+                        if (t && t.fitAddon) t.fitAddon.fit();
+                    });
+                }, 50);
+                lastCount = count;
+            }
+        }
+
+        function removeTerminal(id) {
+            const container = document.getElementById('term-wrap-' + id);
+            if (container) {
+                observer.unobserve(container);
+                container.remove();
+            }
+            
+            const termData = terms[id];
+            if (termData) {
+                delete terms[id];
+                setTimeout(() => {
+                    try { if (termData.ws) termData.ws.close(); } catch(e) { console.error(e); }
+                    try { termData.term.dispose(); } catch(e) { console.error(e); }
+                }, 10);
+            }
+            updateGridClass();
+        }
+
+        function addTerminal() {
+            const activeCount = Object.keys(terms).length;
+            if (activeCount >= 4) {
+                alert("Maximum 4 terminals allowed.");
+                return;
+            }
+
+            const id = termCount++;
+
+            const wrap = document.createElement('div');
+            wrap.className = 'term-container';
+            wrap.id = 'term-wrap-' + id;
+            wrap.dataset.id = id;
+            observer.observe(wrap);
+
+            const header = document.createElement('div');
+            header.className = 'term-header';
+            header.innerHTML = `<span>Terminal ${id + 1}</span><span class="term-close" onclick="removeTerminal(${id})" style="cursor:pointer; padding:0 5px; background:rgba(255,255,255,0.1); border-radius:3px;">✖</span>`;
+
+            const body = document.createElement('div');
+            body.className = 'term-body';
+
+            wrap.appendChild(header);
+            wrap.appendChild(body);
+            grid.appendChild(wrap);
+
+            const term = new Terminal({
+                cursorBlink: true,
+                fontFamily: '"FiraCode Nerd Font", "MesloLGS NF", "Hack Nerd Font", "JetBrainsMono Nerd Font", "UbuntuMono Nerd Font", "Cascadia Code PL", monospace',
+                fontSize: 14,
+                letterSpacing: 1,
+                theme: {
+                    background: '#0d1117',
+                    foreground: '#c9d1d9',
+                    cursor: '#58a6ff',
+                    cursorAccent: '#0d1117',
+                    selection: 'rgba(88, 166, 255, 0.3)',
+                    black: '#484f58',
+                    red: '#ff7b72',
+                    green: '#3fb950',
+                    yellow: '#d29922',
+                    blue: '#58a6ff',
+                    magenta: '#bc8cff',
+                    cyan: '#39c5cf',
+                    white: '#b1bac4',
+                    brightBlack: '#6e7681',
+                    brightRed: '#ffa198',
+                    brightGreen: '#56d364',
+                    brightYellow: '#e3b341',
+                    brightBlue: '#79c0ff',
+                    brightMagenta: '#d2a8ff',
+                    brightCyan: '#56d4dd',
+                    brightWhite: '#ffffff'
+                }
+            });
+            
+            const fitAddon = new FitAddon.FitAddon();
+            term.loadAddon(fitAddon);
+            term.open(body);
+            fitAddon.fit();
+
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/terminal`;
+            const ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                ws.send(JSON.stringify({
+                    type: 'resize',
+                    cols: term.cols,
+                    rows: term.rows
+                }));
+            };
+
+            ws.onmessage = async (evt) => {
+                let data = evt.data;
+                if (data instanceof Blob) {
+                    data = await data.text();
+                }
+                term.write(data);
+            };
+
+            term.onData(data => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'data', data: data }));
+                }
+            });
+
+            term.onResize(size => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'resize', cols: size.cols, rows: size.rows }));
+                }
+            });
+
+            wrap.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+            });
+            wrap.addEventListener('drop', (e) => {
+                const text = e.dataTransfer.getData('text/plain');
+                if (text) {
+                    e.preventDefault();
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'data', data: text }));
+                    }
+                }
+            });
+
+            terms[id] = { term, fitAddon, ws };
+            updateGridClass();
+        }
+
+        // Global resize listener for window
+        window.addEventListener('resize', () => {
+            Object.values(terms).forEach(t => {
+                if (t && t.fitAddon) {
+                    try { t.fitAddon.fit(); } catch(e) {}
+                }
+            });
+        });
+
+        // Initialize first terminal
+        addTerminal();
+
+        let workspacePanelOpen = false;
+        function toggleWorkspacePanel() {
+            workspacePanelOpen = !workspacePanelOpen;
+            const panel = document.getElementById('workspace-panel');
+            panel.style.display = workspacePanelOpen ? 'flex' : 'none';
+            if (workspacePanelOpen && document.getElementById('file-tree').innerHTML.includes('Loading')) {
+                loadFiles('/workspace', document.getElementById('file-tree'));
+            }
+            updateGridClass();
+        }
+
+        async function loadFiles(path, container) {
+            try {
+                if (path.endsWith('/') && path !== '/') {
+                    path = path.slice(0, -1);
+                }
+                const res = await fetch('/api/files/list?path=' + encodeURIComponent(path));
+                const data = await res.json();
+                
+                container.innerHTML = '';
+                
+                if (data.entries && data.entries.length > 0) {
+                    const ul = document.createElement('ul');
+                    ul.style.listStyleType = 'none';
+                    ul.style.paddingLeft = path === '/workspace' ? '0' : '15px';
+                    ul.style.margin = '0';
+                    
+                    data.entries.forEach(entry => {
+                        const li = document.createElement('li');
+                        li.style.padding = '3px 0';
+                        
+                        const fullPath = path === '/' ? '/' + entry.name : path + '/' + entry.name;
+                        
+                        if (entry.type === 'dir') {
+                            const dirHeader = document.createElement('div');
+                            dirHeader.style.cursor = 'pointer';
+                            dirHeader.style.userSelect = 'none';
+                            dirHeader.innerHTML = `<span>▶ 📁 ${entry.name}</span>`;
+                            const childrenContainer = document.createElement('div');
+                            childrenContainer.style.display = 'none';
+                            
+                            dirHeader.onclick = () => {
+                                const isOpen = childrenContainer.style.display === 'block';
+                                if (!isOpen) {
+                                    dirHeader.innerHTML = `<span>▼ 📂 ${entry.name}</span>`;
+                                    childrenContainer.style.display = 'block';
+                                    if (childrenContainer.innerHTML === '') {
+                                        childrenContainer.innerHTML = 'Loading...';
+                                        loadFiles(fullPath, childrenContainer);
+                                    }
+                                } else {
+                                    dirHeader.innerHTML = `<span>▶ 📁 ${entry.name}</span>`;
+                                    childrenContainer.style.display = 'none';
+                                }
+                            };
+                            
+                            li.appendChild(dirHeader);
+                            li.appendChild(childrenContainer);
+                        } else {
+                            const fileDiv = document.createElement('div');
+                            fileDiv.style.cursor = 'grab';
+                            fileDiv.style.whiteSpace = 'nowrap';
+                            fileDiv.style.overflow = 'hidden';
+                            fileDiv.style.textOverflow = 'ellipsis';
+                            fileDiv.title = entry.name;
+                            fileDiv.innerHTML = `📄 ${entry.name}`;
+                            fileDiv.draggable = true;
+                            
+                            fileDiv.ondragstart = (e) => {
+                                // User format: "@/workspace/Obsidian-llm-wiki/.env"
+                                const textToDrop = '@"' + fullPath + '" ';
+                                e.dataTransfer.setData('text/plain', textToDrop);
+                            };
+                            
+                            li.appendChild(fileDiv);
+                        }
+                        ul.appendChild(li);
+                    });
+                    container.appendChild(ul);
+                } else {
+                    container.innerHTML = '<div style="color: #888;">Empty directory</div>';
+                }
+            } catch (err) {
+                container.innerHTML = `<div style="color: red;">Error: ${err.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
