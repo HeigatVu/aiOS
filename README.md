@@ -20,6 +20,16 @@ Browse, manage files, and configure AI read/write boundaries visually.
 
 <img src="assets/file-browser.png" alt="File Browser" width="800"/>
 
+### Terminal Type Options (Normal / Root)
+Choose between a Normal Terminal (`ai_user` user) or a Root Terminal (`root` user) directly from the dropdown to run commands with administrative privileges inside the sandbox.
+
+<img src="assets/terminal-type.png" alt="Terminal Type Options" width="800"/>
+
+### File & Folder Context Menu Actions
+Right-click any file or directory in the workspace browser to run quick terminal operations. Includes natural-language actions like **Open Directory**, **Edit File**, and **View File**, which automatically determine the target terminal pane and run the corresponding commands. Features viewport collision detection to flip submenus to the left if opened near the screen's right edge.
+
+<img src="assets/file-folder-terminal-feature.png" alt="File & Folder Context Menu" width="800"/>
+
 ## Step to do
 
 ```bash
