@@ -366,6 +366,14 @@ async def dashboard():
         return HTMLResponse(dashboard_html_path.read_text())
     return HTMLResponse('Dashboard HTML not found')
 
+@app.get("/favicon.ico")
+async def favicon():
+    favicon_path = PROJECT_ROOT / 'aiOS-ui' / 'hermes-webui' / 'static' / 'favicon.svg'
+    if favicon_path.exists():
+        return Response(content=favicon_path.read_bytes(), media_type="image/svg+xml")
+    return Response(status_code=404)
+
+
 async def proxy_target(request: Request, path: str, target_base: str):
     client = await _ensure_client()
     if not client:
