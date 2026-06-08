@@ -13,9 +13,9 @@
             padding: 0;
             width: 100%;
             height: 100%;
-            background-color: #0F111A;
-            color: #E0E2E8;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -32,21 +32,21 @@
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #2D3139;
+            background: #30363d;
             border-radius: 4px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: #8B949E;
+            background: #8b949e;
         }
 
         * {
             scrollbar-width: thin;
-            scrollbar-color: #2D3139 transparent;
+            scrollbar-color: #30363d transparent;
         }
 
         #top-bar {
-            background-color: #0F111A;
+            background-color: #0d1117;
             padding: 16px 24px;
             display: flex;
             justify-content: space-between;
@@ -57,6 +57,13 @@
             margin: 0;
             font-size: 16px;
             font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #top-bar h1 svg {
+            flex-shrink: 0;
         }
 
         .btn-group {
@@ -65,26 +72,25 @@
         }
 
         .btn-group button {
-            background-color: #1C202E;
-            color: #E0E2E8;
-            border: 1px solid #2D3139;
+            background-color: #161b22;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
             padding: 6px 16px;
-            border-radius: 6px;
-            /* Match hermes-webui standard button radius */
+            border-radius: 8px;
             cursor: pointer;
             font-size: 13px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             font-family: inherit;
-            transition: all 0.15s ease;
+            transition: all 0.25s ease;
             width: 140px;
-            /* Make buttons equal size */
         }
 
         .btn-group button:hover {
-            background-color: #2D3139;
-            border-color: #4B5563;
+            background-color: #21262d;
+            border-color: #79c0ff;
+            box-shadow: 0 0 12px rgba(121,192,255,0.15);
         }
 
         .dropdown {
@@ -96,17 +102,17 @@
             position: absolute;
             top: 100%;
             left: 0;
-            background-color: #1C202E;
+            background-color: #161b22;
             min-width: 160px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
             z-index: 100;
-            border: 1px solid #2D3139;
-            border-radius: 6px;
+            border: 1px solid #30363d;
+            border-radius: 8px;
             margin-top: 4px;
             overflow: hidden;
         }
         .dropdown-content a {
-            color: #E0E2E8;
+            color: #c9d1d9;
             padding: 8px 16px;
             text-decoration: none;
             display: block;
@@ -114,7 +120,7 @@
             cursor: pointer;
         }
         .dropdown-content a:hover {
-            background-color: #2D3139;
+            background-color: #21262d;
         }
         .dropdown:hover .dropdown-content {
             display: block;
@@ -149,7 +155,7 @@
 
         .splitter-v:hover,
         .splitter-v.active {
-            background: rgba(232, 193, 47, 0.4);
+            background: rgba(121, 192, 255, 0.4);
         }
 
         .splitter-h {
@@ -166,11 +172,11 @@
 
         .splitter-h:hover,
         .splitter-h.active {
-            background: rgba(232, 193, 47, 0.4);
+            background: rgba(121, 192, 255, 0.4);
         }
 
         .term-container {
-            background-color: #151822;
+            background-color: #161b22;
             position: relative;
             display: flex;
             flex-direction: column;
@@ -178,19 +184,24 @@
             box-sizing: border-box;
             min-width: 0;
             min-height: 0;
-            border-radius: 16px;
-            border: 1px solid #2D3139;
+            border-radius: 14px;
+            border: 1px solid #30363d;
+            transition: border-color 0.2s;
+        }
+
+        .term-container:focus-within {
+            border-color: rgba(121,192,255,0.4);
         }
 
         .term-header {
-            background-color: #151822;
+            background-color: #161b22;
             font-size: 13px;
             font-weight: 500;
             padding: 8px 14px;
             display: flex;
             justify-content: space-between;
-            color: #8B949E;
-            border-bottom: 1px solid #2D3139;
+            color: #8b949e;
+            border-bottom: 1px solid #30363d;
         }
 
         .term-close {
@@ -198,7 +209,7 @@
         }
 
         .term-close:hover {
-            color: #E0E2E8;
+            color: #c9d1d9;
         }
 
         .term-body {
@@ -230,17 +241,17 @@
             padding: 6px 10px;
             border-radius: 6px;
             cursor: pointer;
-            color: #E0E2E8;
+            color: #c9d1d9;
             user-select: none;
             transition: background 0.1s;
         }
 
         .ft-row:hover {
-            background-color: #1C202E;
+            background-color: #21262d;
         }
 
         .ft-row.active {
-            background-color: #2D3139;
+            background-color: #30363d;
         }
 
         .ft-icon {
@@ -249,7 +260,7 @@
             justify-content: center;
             width: 20px;
             margin-right: 8px;
-            color: #8B949E;
+            color: #8b949e;
             font-size: 14px;
         }
 
@@ -262,7 +273,7 @@
 
         .ft-meta {
             font-size: 11px;
-            color: #8B949E;
+            color: #8b949e;
             margin-left: 8px;
         }
 
@@ -270,7 +281,7 @@
             display: inline-block;
             width: 14px;
             font-size: 10px;
-            color: #8B949E;
+            color: #8b949e;
             transition: transform 0.2s;
         }
 
@@ -280,7 +291,7 @@
 
         .ft-empty {
             padding: 6px 10px 6px 38px;
-            color: #586069;
+            color: #484f58;
             font-style: italic;
             font-size: 13px;
         }
@@ -288,12 +299,12 @@
         /* Context Menu Styles */
         .ctx-menu {
             position: absolute;
-            background: #1C202E;
-            border: 1px solid #2D3139;
-            border-radius: 6px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
             padding: 4px 0;
             min-width: 160px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
             z-index: 1000;
             display: none;
             font-size: 13px;
@@ -301,7 +312,7 @@
 
         .ctx-item {
             padding: 6px 12px;
-            color: #E0E2E8;
+            color: #c9d1d9;
             cursor: pointer;
             display: flex;
             justify-content: space-between;
@@ -310,25 +321,25 @@
         }
 
         .ctx-item:hover {
-            background: #2D3139;
+            background: #21262d;
         }
 
         .ctx-item.has-submenu::after {
             content: '▶';
             font-size: 10px;
-            color: #8B949E;
+            color: #8b949e;
         }
 
         .ctx-submenu {
             position: absolute;
             top: 0;
             left: 100%;
-            background: #1C202E;
-            border: 1px solid #2D3139;
-            border-radius: 6px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
             padding: 4px 0;
             min-width: 140px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
             display: none;
         }
 
@@ -343,7 +354,7 @@
 
         .ctx-divider {
             height: 1px;
-            background: #2D3139;
+            background: #30363d;
             margin: 4px 0;
         }
     </style>
@@ -351,10 +362,10 @@
 
 <body>
     <div id="top-bar">
-        <h1>Workspace Terminals</h1>
+        <h1><svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="8" width="36" height="32" rx="4" stroke="#79c0ff" stroke-width="2.5"/><path d="M14 20l6 5-6 5" stroke="#79c0ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 30h10" stroke="#79c0ff" stroke-width="2.5" stroke-linecap="round"/></svg>Terminals</h1>
         <div class="btn-group">
             <button onclick="toggleWorkspacePanel()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E8C12F" stroke-width="2"
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#79c0ff" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex-shrink:0;">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                 </svg>
@@ -385,11 +396,11 @@
             <div id="h-splitter" class="splitter-h"></div>
         </div>
         <div id="workspace-panel"
-            style="width: 280px; background-color: #151822; border: 1px solid #2D3139; border-radius: 16px; display: none; flex-direction: column; overflow-y: auto;">
+            style="width: 280px; background-color: #161b22; border: 1px solid #30363d; border-radius: 14px; display: none; flex-direction: column; overflow-y: auto;">
             <div
-                style="padding: 12px 16px; font-weight: bold; border-bottom: 1px solid #2D3139; display: flex; justify-content: space-between; color: #8B949E;">
+                style="padding: 12px 16px; font-weight: bold; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; color: #8b949e;">
                 <span style="font-size: 12px; letter-spacing: 0.5px;">WORKSPACE FILES</span>
-                <span style="cursor:pointer; color: #E0E2E8;" onclick="toggleWorkspacePanel()">✖</span>
+                <span style="cursor:pointer; color: #c9d1d9;" onclick="toggleWorkspacePanel()">✖</span>
             </div>
             <div id="file-tree" style="padding: 12px 16px; font-size: 14px;">
                 Loading...
@@ -562,27 +573,27 @@
                 fontSize: 14,
                 letterSpacing: 1,
                 theme: {
-                    background: '#151822',
-                    foreground: '#E0E2E8',
-                    cursor: '#E8C12F',
-                    cursorAccent: '#151822',
-                    selection: 'rgba(232, 193, 47, 0.3)',
-                    black: '#151822',
-                    red: '#E8C12F', /* mapped to accent for consistency */
-                    green: '#E8C12F',
-                    yellow: '#E8C12F',
-                    blue: '#8B949E',
-                    magenta: '#E8C12F',
-                    cyan: '#8B949E',
-                    white: '#E0E2E8',
-                    brightBlack: '#2D3139',
-                    brightRed: '#E8C12F',
-                    brightGreen: '#E8C12F',
-                    brightYellow: '#E8C12F',
-                    brightBlue: '#8B949E',
-                    brightMagenta: '#E8C12F',
-                    brightCyan: '#8B949E',
-                    brightWhite: '#ffffff'
+                    background: '#161b22',
+                    foreground: '#c9d1d9',
+                    cursor: '#79c0ff',
+                    cursorAccent: '#161b22',
+                    selection: 'rgba(121, 192, 255, 0.3)',
+                    black: '#161b22',
+                    red: '#ff7b72',
+                    green: '#3fb950',
+                    yellow: '#d29922',
+                    blue: '#58a6ff',
+                    magenta: '#bc8cff',
+                    cyan: '#79c0ff',
+                    white: '#c9d1d9',
+                    brightBlack: '#484f58',
+                    brightRed: '#ffa198',
+                    brightGreen: '#56d364',
+                    brightYellow: '#e3b341',
+                    brightBlue: '#79c0ff',
+                    brightMagenta: '#d2a8ff',
+                    brightCyan: '#a5d6ff',
+                    brightWhite: '#f0f6fc'
                 }
             });
 
