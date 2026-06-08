@@ -49,6 +49,11 @@ update_agent_inside_container() {
     cd "$agent_dir"
     echo "→ Fetching updates..."
     git fetch origin
+    
+    echo "→ Applying updates (stashing local changes first)..."
+    git stash
+    git pull origin main || git pull origin master || true
+    git stash pop || echo "⚠️ Could not pop stash"
 }
 
 update_agent() {
@@ -86,6 +91,11 @@ update_agent() {
             $cmd_prefix rm -f "${HERMES_AGENT_DIR}/.git/index.lock"
             echo "→ Fetching updates..."
             $cmd_prefix git -C "$HERMES_AGENT_DIR" fetch origin
+            
+            echo "→ Applying updates (stashing local changes first)..."
+            $cmd_prefix git -C "$HERMES_AGENT_DIR" stash || true
+            $cmd_prefix git -C "$HERMES_AGENT_DIR" pull origin main || $cmd_prefix git -C "$HERMES_AGENT_DIR" pull origin master || true
+            $cmd_prefix git -C "$HERMES_AGENT_DIR" stash pop || echo "⚠️ Could not pop stash"
         fi
     fi
     echo "✅ Hermes Agent update process completed."
