@@ -33,7 +33,8 @@ the image on every `docker compose build`. Changes to it take effect after rebui
 | 11 | Start fcc-server (kills stale processes via /proc scan) |
 | 12 | Start hermes gateway |
 | 13 | Start watchdog (auto-restarts dashboard, proxy, viewer-proxy, fcc-server, gateway on crash) |
-| 14 | `exec /bin/zsh` (hands off to interactive shell) |
+| 14 | Start Headroom proxy (`nohup headroom proxy &`) |
+| 15 | `exec /bin/zsh` (hands off to interactive shell) |
 
 ## Diagnostic & Recovery Tooling
 
@@ -77,6 +78,12 @@ delegate to it rather than duplicating checks.
 | No test coverage for health checks — timeout bugs, PID edge cases, JSON parse errors all silent | Created `test_service_health.py`: 16 mock-based tests, zero deps, runs <1s. |
 | `~/.zshrc` had dead alias `service-health` (never defined) + proxy guard missed PID-file race | Replaced with `python3 .../service_health.py` auto-on-login + hardened proxy guard (PID file check before pgrep) |
 | No one-shot recovery for post-sleep/wake service death (multiple services dead at once) | Created `recover.sh`: checks all 8 services, restarts dead ones, prints status table. |
+
+### Fixes applied 2026-06-08
+
+| Bug | Fix |
+|-----|-----|
+| Headroom optimization proxy wasn't starting automatically on boot | Injected `headroom proxy` as a background task into the `entrypoint.sh` right before the CMD handoff. |
 
 ### .zshrc (auto-status on login)
 
@@ -169,6 +176,12 @@ echo $! > /tmp/hermes-proxy.pid
 mkdir -p ~/.fcc/logs
 nohup fcc-server >> ~/.fcc/logs/fcc-server.log 2>&1 &
 echo $! > /tmp/fcc-server.pid
+```
+
+**Headroom proxy:**
+```bash
+nohup /home/ai_user/miniconda3/bin/headroom proxy >> /tmp/headroom.log 2>&1 &
+echo $! > /tmp/headroom.pid  # for watchdog tracking
 ```
 
 ---

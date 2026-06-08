@@ -164,6 +164,30 @@ if [ -z "$WEBUI_PID" ]; then
   sleep 2
 fi
 
+# ── headroom proxy ──
+HEADROOM_PID=""
+for f in /proc/[0-9]*/cmdline; do
+  p=${f%/cmdline}; p=${p#/proc/}
+  tr '\0' ' ' < "$f" 2>/dev/null | grep -q "headroom proxy" && { HEADROOM_PID=$p; break; }
+done
+if [ -n "$HEADROOM_PID" ]; then
+  write_pid "$HEADROOM_PID" /tmp/headroom.pid
+else
+  echo "[recover] headroom proxy down, starting..."
+  for f in /proc/[0-9]*/cmdline; do
+    pid=${f%/cmdline}; pid=${pid#/proc/}
+    tr '\0' ' ' < "$f" 2>/dev/null | grep -q "headroom proxy" && kill -9 "$pid" 2>/dev/null || true
+  done
+  if [ "$(id -u)" -eq 0 ]; then
+    runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup /home/ai_user/miniconda3/bin/headroom proxy >> /tmp/headroom.log 2>&1' &
+  else
+    nohup /home/ai_user/miniconda3/bin/headroom proxy >> /tmp/headroom.log 2>&1 &
+  fi
+  HEADROOM_PID=$!
+  write_pid "$HEADROOM_PID" /tmp/headroom.pid
+  sleep 1
+fi
+
 # ── watchdog ──
 if [ "$(id -u)" -eq 0 ]; then
   echo "[recover] ensuring watchdog is running..."
@@ -228,6 +252,16 @@ except Exception:
           echo "[watchdog] $(date -Iseconds): gateway restarted (state: $TG_STATE)" >>/tmp/hermes-watchdog.log
         fi
       fi
+      # Headroom proxy
+      if [ -f /tmp/headroom.pid ] && ! kill -0 "$(cat /tmp/headroom.pid 2>/dev/null)" 2>/dev/null; then
+        if [ "$(id -u)" -eq 0 ]; then
+          runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup /home/ai_user/miniconda3/bin/headroom proxy >> /tmp/headroom.log 2>&1' &
+        else
+          nohup /home/ai_user/miniconda3/bin/headroom proxy >> /tmp/headroom.log 2>&1 &
+        fi
+        echo $! >/tmp/headroom.pid
+        echo "[watchdog] $(date -Iseconds): headroom proxy restarted" >>/tmp/hermes-watchdog.log
+      fi
     done
   ) >>/tmp/hermes-watchdog.log 2>&1 &
   echo "[recover] watchdog PID=$!"
@@ -253,5 +287,8 @@ echo -n "gateway: " && hermes gateway status 2>&1 | head -1
 echo -n "hermes-webui: "
 _wp=""; for f in /proc/[0-9]*/cmdline; do p=${f%/cmdline}; p=${p#/proc/}; grep -q "server.py" "$f" 2>/dev/null && { _wp=$p; break; }; done
 [ -n "$_wp" ] && echo "PID $_wp OK (port 8501)" || echo "FAIL"
+echo -n "headroom: "
+_hp=""; for f in /proc/[0-9]*/cmdline; do p=${f%/cmdline}; p=${p#/proc/}; tr '\0' ' ' < "$f" 2>/dev/null | grep -q "headroom proxy" && { _hp=$p; break; }; done
+[ -n "$_hp" ] && echo "PID $_hp OK (port 8787)" || echo "FAIL"
 echo -n "watchdog: " && ls -la /tmp/hermes-watchdog.log 2>/dev/null | awk '{print "log size:", $5, "bytes"}'
-echo -n "ports: " && curl -s -o /dev/null -w '9119:%{http_code} ' http://localhost:9119/ && curl -s -o /dev/null -w '3113:%{http_code} ' http://localhost:3113/ && curl -s -o /dev/null -w '8082:%{http_code}' http://localhost:8082/health && echo
+echo -n "ports: " && curl -s -o /dev/null -w '9119:%{http_code} ' http://localhost:9119/ && curl -s -o /dev/null -w '3113:%{http_code} ' http://localhost:3113/ && curl -s -o /dev/null -w '8082:%{http_code}' http://localhost:8082/health && curl -s -o /dev/null -w ' 8787:%{http_code}' http://localhost:8787/health && echo

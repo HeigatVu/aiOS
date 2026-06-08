@@ -45,7 +45,7 @@ for py in "/home/ai_user/.hermes/hermes-agent/venv/bin/python" "/aiOS-ui/hermes-
 done
 
 # ── watchdog (starts FIRST so it survives even if later sections hang) ──────────
-# Covers: dashboard, proxy, viewer-proxy, fcc-server, gateway
+# Covers: dashboard, proxy, viewer-proxy, fcc-server, gateway, headroom
 # Runs in background. Uses set +e internally to never die from transient errors.
 # disown prevents PID 1 from waiting for this infinite-loop process.
 (
@@ -103,6 +103,12 @@ except Exception as e:
       runuser -u ai_user -- env HOME=/home/ai_user HERMES_WEBUI_HOST=0.0.0.0 HERMES_WEBUI_PORT=8501 HERMES_WEBUI_TRUST_FORWARDED_HOST=1 "$PYTHON_EXE" /aiOS-ui/hermes-webui/server.py >>/config-file/aiOS-ui.log 2>&1 &
       echo $! >/tmp/hermes-subserver.pid
       echo "[watchdog] $(date -Iseconds): hermes-webui restarted" >>/tmp/hermes-watchdog.log
+    fi
+    # headroom proxy (port 8787)
+    if [ -f /tmp/headroom.pid ] && ! kill -0 "$(cat /tmp/headroom.pid 2>/dev/null)" 2>/dev/null; then
+      runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup /home/ai_user/miniconda3/bin/headroom proxy >> /tmp/headroom.log 2>&1' &
+      echo $! >/tmp/headroom.pid
+      echo "[watchdog] $(date -Iseconds): headroom proxy restarted" >>/tmp/hermes-watchdog.log
     fi
   done
 ) >>/tmp/hermes-watchdog.log 2>&1 &
@@ -256,6 +262,10 @@ if [ ! -f "$HERMES_SUB_PID" ] || ! kill -0 "$(cat "$HERMES_SUB_PID" 2>/dev/null)
   echo "[entrypoint] hermes-webui started (PID $!) with $PYTHON_EXE"
   sleep 3
 fi
+
+# ── headroom proxy ────────────────────────────────────────────────────────────
+runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup /home/ai_user/miniconda3/bin/headroom proxy >> /tmp/headroom.log 2>&1 & echo $! >/tmp/headroom.pid'
+echo "[entrypoint] headroom proxy started"
 
 # ── hand off to CMD (/bin/zsh) ────────────────────────────────────────────────
 # disown all background jobs so PID 1 does not wait for them (prevents do_wait hang)
