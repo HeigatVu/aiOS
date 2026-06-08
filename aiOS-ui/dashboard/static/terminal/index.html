@@ -72,25 +72,37 @@
         }
 
         .btn-group button {
-            background-color: #161b22;
+            background: rgba(22,27,34,0.8);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             color: #c9d1d9;
             border: 1px solid #30363d;
-            padding: 6px 16px;
-            border-radius: 8px;
+            padding: 7px 14px;
+            border-radius: 10px;
             cursor: pointer;
             font-size: 13px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             font-family: inherit;
-            transition: all 0.25s ease;
-            width: 140px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            gap: 8px;
+            white-space: nowrap;
         }
 
         .btn-group button:hover {
-            background-color: #21262d;
+            background: #21262d;
             border-color: #79c0ff;
-            box-shadow: 0 0 12px rgba(121,192,255,0.15);
+            box-shadow: 0 0 16px rgba(121,192,255,0.2);
+            color: #f0f6fc;
+        }
+
+        .btn-group button:hover svg {
+            filter: drop-shadow(0 0 6px rgba(121,192,255,0.5));
+        }
+
+        .btn-group button svg {
+            transition: filter 0.3s;
         }
 
         .dropdown {
@@ -100,30 +112,48 @@
         .dropdown-content {
             display: none;
             position: absolute;
-            top: 100%;
-            left: 0;
-            background-color: #161b22;
-            min-width: 160px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+            top: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%) translateY(-4px);
+            background: #161b22;
+            min-width: 180px;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), 0 0 16px rgba(121,192,255,0.08);
             z-index: 100;
             border: 1px solid #30363d;
-            border-radius: 8px;
-            margin-top: 4px;
+            border-radius: 10px;
             overflow: hidden;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .dropdown-content.open {
+            display: block;
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+            pointer-events: auto;
         }
         .dropdown-content a {
             color: #c9d1d9;
-            padding: 8px 16px;
+            padding: 10px 16px;
             text-decoration: none;
-            display: block;
+            display: flex;
+            align-items: center;
+            gap: 10px;
             font-size: 13px;
             cursor: pointer;
+            transition: background 0.15s, color 0.15s;
         }
         .dropdown-content a:hover {
-            background-color: #21262d;
+            background: #21262d;
+            color: #79c0ff;
         }
-        .dropdown:hover .dropdown-content {
-            display: block;
+        .dropdown-content a svg {
+            flex-shrink: 0;
+        }
+        .dropdown-sep {
+            height: 1px;
+            background: #30363d;
+            margin: 2px 0;
         }
 
         #grid-wrapper {
@@ -365,24 +395,31 @@
         <h1><svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="8" width="36" height="32" rx="4" stroke="#79c0ff" stroke-width="2.5"/><path d="M14 20l6 5-6 5" stroke="#79c0ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 30h10" stroke="#79c0ff" stroke-width="2.5" stroke-linecap="round"/></svg>Terminals</h1>
         <div class="btn-group">
             <button onclick="toggleWorkspacePanel()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#79c0ff" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex-shrink:0;">
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                <svg width="16" height="16" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 14V38a2 2 0 002 2h28a2 2 0 002-2V18a2 2 0 00-2-2H24l-4-4H10a2 2 0 00-2 2z" stroke="#79c0ff" stroke-width="2.5" stroke-linejoin="round"/>
+                    <path d="M8 22h32" stroke="#79c0ff" stroke-width="2"/>
                 </svg>
                 Workspace
             </button>
-            <div class="dropdown">
-                <button>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex-shrink:0;">
-                        <line x1="12" y1="5" x2="12" y2="19" />
-                        <line x1="5" y1="12" x2="19" y2="12" />
+            <div class="dropdown" id="add-term-dropdown">
+                <button onclick="toggleAddTermMenu(event)">
+                    <svg width="16" height="16" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="6" y="8" width="36" height="32" rx="4" stroke="#79c0ff" stroke-width="2.5"/>
+                        <path d="M24 18v12M18 24h12" stroke="#79c0ff" stroke-width="2.5" stroke-linecap="round"/>
                     </svg>
-                    Add Terminal ▾
+                    Add Terminal
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="#8b949e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
-                <div class="dropdown-content">
-                    <a onclick="addTerminal()">Normal Terminal</a>
-                    <a onclick="addTerminal('root')">Root Terminal</a>
+                <div class="dropdown-content" id="add-term-menu">
+                    <a onclick="addTerminal(); closeAddTermMenu()">
+                        <svg width="14" height="14" viewBox="0 0 48 48" fill="none"><rect x="6" y="8" width="36" height="32" rx="4" stroke="#8b949e" stroke-width="2.5"/><path d="M14 20l6 5-6 5" stroke="#8b949e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 30h10" stroke="#8b949e" stroke-width="2.5" stroke-linecap="round"/></svg>
+                        Normal Terminal
+                    </a>
+                    <div class="dropdown-sep"></div>
+                    <a onclick="addTerminal('root'); closeAddTermMenu()">
+                        <svg width="14" height="14" viewBox="0 0 48 48" fill="none"><rect x="6" y="8" width="36" height="32" rx="4" stroke="#ff7b72" stroke-width="2.5"/><path d="M14 20l6 5-6 5" stroke="#ff7b72" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 30h10" stroke="#ff7b72" stroke-width="2.5" stroke-linecap="round"/></svg>
+                        Root Terminal
+                    </a>
                 </div>
             </div>
         </div>
@@ -409,6 +446,20 @@
     </div>
 
     <script>
+        // ── Add Terminal dropdown (click-based) ──
+        function toggleAddTermMenu(e) {
+            e.stopPropagation();
+            var menu = document.getElementById('add-term-menu');
+            menu.classList.toggle('open');
+        }
+        function closeAddTermMenu() {
+            document.getElementById('add-term-menu').classList.remove('open');
+        }
+        document.addEventListener('click', function(e) {
+            var dropdown = document.getElementById('add-term-dropdown');
+            if (dropdown && !dropdown.contains(e.target)) closeAddTermMenu();
+        });
+
         const grid = document.getElementById('grid');
         let termCount = 0;
         let terms = {}; // Use object instead of array to prevent holes breaking index logic
