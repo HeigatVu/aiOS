@@ -1,38 +1,50 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Workspace Terminals</title>
     <link rel="stylesheet" href="https://unpkg.com/xterm@5.3.0/css/xterm.css" />
     <script src="https://unpkg.com/xterm@5.3.0/lib/xterm.js"></script>
     <script src="https://unpkg.com/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
     <style>
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            background-color: #0F111A; color: #E0E2E8;
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #0F111A;
+            color: #E0E2E8;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             overflow: hidden;
             display: flex;
             flex-direction: column;
         }
+
         /* Custom subtle scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
         }
+
         ::-webkit-scrollbar-track {
             background: transparent;
         }
+
         ::-webkit-scrollbar-thumb {
             background: #2D3139;
             border-radius: 4px;
         }
+
         ::-webkit-scrollbar-thumb:hover {
             background: #8B949E;
         }
+
         * {
             scrollbar-width: thin;
             scrollbar-color: #2D3139 transparent;
         }
+
         #top-bar {
             background-color: #0F111A;
             padding: 16px 24px;
@@ -40,28 +52,81 @@
             justify-content: space-between;
             align-items: center;
         }
+
         #top-bar h1 {
-            margin: 0; font-size: 16px; font-weight: 600;
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
         }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
         .btn-group button {
             background-color: #1C202E;
             color: #E0E2E8;
             border: 1px solid #2D3139;
             padding: 6px 16px;
-            border-radius: 20px;
+            border-radius: 6px;
+            /* Match hermes-webui standard button radius */
             cursor: pointer;
-            margin-left: 8px;
             font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-family: inherit;
+            transition: all 0.15s ease;
+            width: 140px;
+            /* Make buttons equal size */
         }
+
         .btn-group button:hover {
-            background-color: #1E2230;
+            background-color: #2D3139;
+            border-color: #4B5563;
         }
+
+        .dropdown {
+            position: relative;
+            display: inline-flex;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: #1C202E;
+            min-width: 160px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            border: 1px solid #2D3139;
+            border-radius: 6px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+        .dropdown-content a {
+            color: #E0E2E8;
+            padding: 8px 16px;
+            text-decoration: none;
+            display: block;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .dropdown-content a:hover {
+            background-color: #2D3139;
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
         #grid-wrapper {
             flex-grow: 1;
             position: relative;
             display: flex;
             overflow: hidden;
         }
+
         #grid {
             flex-grow: 1;
             display: grid;
@@ -69,28 +134,41 @@
             background-color: transparent;
             overflow: hidden;
         }
+
         .splitter-v {
             cursor: col-resize;
             width: 8px;
             position: absolute;
-            top: 0; bottom: 0;
+            top: 0;
+            bottom: 0;
             margin-left: -4px;
             z-index: 10;
             background: transparent;
             display: none;
         }
-        .splitter-v:hover, .splitter-v.active { background: rgba(232, 193, 47, 0.4); }
+
+        .splitter-v:hover,
+        .splitter-v.active {
+            background: rgba(232, 193, 47, 0.4);
+        }
+
         .splitter-h {
             cursor: row-resize;
             height: 8px;
             position: absolute;
-            left: 0; right: 0;
+            left: 0;
+            right: 0;
             margin-top: -4px;
             z-index: 10;
             background: transparent;
             display: none;
         }
-        .splitter-h:hover, .splitter-h.active { background: rgba(232, 193, 47, 0.4); }
+
+        .splitter-h:hover,
+        .splitter-h.active {
+            background: rgba(232, 193, 47, 0.4);
+        }
+
         .term-container {
             background-color: #151822;
             position: relative;
@@ -103,6 +181,7 @@
             border-radius: 16px;
             border: 1px solid #2D3139;
         }
+
         .term-header {
             background-color: #151822;
             font-size: 13px;
@@ -113,10 +192,15 @@
             color: #8B949E;
             border-bottom: 1px solid #2D3139;
         }
+
         .term-close {
             cursor: pointer;
         }
-        .term-close:hover { color: #E0E2E8; }
+
+        .term-close:hover {
+            color: #E0E2E8;
+        }
+
         .term-body {
             flex-grow: 1;
             padding: 5px;
@@ -124,18 +208,22 @@
             min-height: 0;
             overflow: hidden;
         }
+
         /* File Tree Styles */
         .ft-list {
             list-style-type: none;
             margin: 0;
             padding-left: 16px;
         }
+
         .ft-list.root {
             padding-left: 0;
         }
+
         .ft-item {
             margin: 2px 0;
         }
+
         .ft-row {
             display: flex;
             align-items: center;
@@ -146,12 +234,15 @@
             user-select: none;
             transition: background 0.1s;
         }
+
         .ft-row:hover {
             background-color: #1C202E;
         }
+
         .ft-row.active {
             background-color: #2D3139;
         }
+
         .ft-icon {
             display: inline-flex;
             align-items: center;
@@ -161,17 +252,20 @@
             color: #8B949E;
             font-size: 14px;
         }
+
         .ft-name {
             flex-grow: 1;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
+
         .ft-meta {
             font-size: 11px;
             color: #8B949E;
             margin-left: 8px;
         }
+
         .ft-arrow {
             display: inline-block;
             width: 14px;
@@ -179,24 +273,107 @@
             color: #8B949E;
             transition: transform 0.2s;
         }
+
         .ft-arrow.open {
             transform: rotate(90deg);
         }
+
         .ft-empty {
             padding: 6px 10px 6px 38px;
             color: #586069;
             font-style: italic;
             font-size: 13px;
         }
+
+        /* Context Menu Styles */
+        .ctx-menu {
+            position: absolute;
+            background: #1C202E;
+            border: 1px solid #2D3139;
+            border-radius: 6px;
+            padding: 4px 0;
+            min-width: 160px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            font-size: 13px;
+        }
+
+        .ctx-item {
+            padding: 6px 12px;
+            color: #E0E2E8;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+
+        .ctx-item:hover {
+            background: #2D3139;
+        }
+
+        .ctx-item.has-submenu::after {
+            content: '▶';
+            font-size: 10px;
+            color: #8B949E;
+        }
+
+        .ctx-submenu {
+            position: absolute;
+            top: 0;
+            left: 100%;
+            background: #1C202E;
+            border: 1px solid #2D3139;
+            border-radius: 6px;
+            padding: 4px 0;
+            min-width: 140px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            display: none;
+        }
+
+        .ctx-menu.left-submenus .ctx-submenu {
+            left: auto;
+            right: 100%;
+        }
+
+        .ctx-item:hover>.ctx-submenu {
+            display: block;
+        }
+
+        .ctx-divider {
+            height: 1px;
+            background: #2D3139;
+            margin: 4px 0;
+        }
     </style>
 </head>
+
 <body>
     <div id="top-bar">
         <h1>Workspace Terminals</h1>
         <div class="btn-group">
-            <button onclick="toggleWorkspacePanel()">📁 Workspace</button>
-            <button onclick="addTerminal()">+ Add Terminal</button>
-            <button onclick="window.close()">Close Window</button>
+            <button onclick="toggleWorkspacePanel()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E8C12F" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex-shrink:0;">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                </svg>
+                Workspace
+            </button>
+            <div class="dropdown">
+                <button>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex-shrink:0;">
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    Add Terminal ▾
+                </button>
+                <div class="dropdown-content">
+                    <a onclick="addTerminal()">Normal Terminal</a>
+                    <a onclick="addTerminal('root')">Root Terminal</a>
+                </div>
+            </div>
         </div>
     </div>
     <div id="main-content" style="flex-grow: 1; display: flex; overflow: hidden; padding: 0 24px 24px 24px; gap: 16px;">
@@ -207,8 +384,10 @@
             <div id="v-splitter" class="splitter-v"></div>
             <div id="h-splitter" class="splitter-h"></div>
         </div>
-        <div id="workspace-panel" style="width: 280px; background-color: #151822; border: 1px solid #2D3139; border-radius: 16px; display: none; flex-direction: column; overflow-y: auto;">
-            <div style="padding: 12px 16px; font-weight: bold; border-bottom: 1px solid #2D3139; display: flex; justify-content: space-between; color: #8B949E;">
+        <div id="workspace-panel"
+            style="width: 280px; background-color: #151822; border: 1px solid #2D3139; border-radius: 16px; display: none; flex-direction: column; overflow-y: auto;">
+            <div
+                style="padding: 12px 16px; font-weight: bold; border-bottom: 1px solid #2D3139; display: flex; justify-content: space-between; color: #8B949E;">
                 <span style="font-size: 12px; letter-spacing: 0.5px;">WORKSPACE FILES</span>
                 <span style="cursor:pointer; color: #E0E2E8;" onclick="toggleWorkspacePanel()">✖</span>
             </div>
@@ -292,7 +471,7 @@
         function updateGridClass(forceRefit = true) {
             const activeWraps = Array.from(grid.children);
             const count = activeWraps.length;
-            
+
             if (count === 1) {
                 grid.style.gridTemplateColumns = '1fr';
                 grid.style.gridTemplateRows = '1fr';
@@ -322,7 +501,7 @@
                     wrap.style.gridColumn = 'auto';
                 }
             });
-            
+
             if (forceRefit || count !== lastCount) {
                 setTimeout(() => {
                     Object.values(terms).forEach(t => {
@@ -339,19 +518,19 @@
                 observer.unobserve(container);
                 container.remove();
             }
-            
+
             const termData = terms[id];
             if (termData) {
                 delete terms[id];
                 setTimeout(() => {
-                    try { if (termData.ws) termData.ws.close(); } catch(e) { console.error(e); }
-                    try { termData.term.dispose(); } catch(e) { console.error(e); }
+                    try { if (termData.ws) termData.ws.close(); } catch (e) { console.error(e); }
+                    try { termData.term.dispose(); } catch (e) { console.error(e); }
                 }, 10);
             }
             updateGridClass();
         }
 
-        function addTerminal() {
+        function addTerminal(user = 'ai_user') {
             const activeCount = Object.keys(terms).length;
             if (activeCount >= 4) {
                 alert("Maximum 4 terminals allowed.");
@@ -406,14 +585,14 @@
                     brightWhite: '#ffffff'
                 }
             });
-            
+
             const fitAddon = new FitAddon.FitAddon();
             term.loadAddon(fitAddon);
             term.open(body);
             fitAddon.fit();
 
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${protocol}//${window.location.host}/ws/terminal`;
+            const wsUrl = `${protocol}//${window.location.host}/ws/terminal?user=${user}`;
             const ws = new WebSocket(wsUrl);
 
             ws.onopen = () => {
@@ -466,7 +645,7 @@
         window.addEventListener('resize', () => {
             Object.values(terms).forEach(t => {
                 if (t && t.fitAddon) {
-                    try { t.fitAddon.fit(); } catch(e) {}
+                    try { t.fitAddon.fit(); } catch (e) { }
                 }
             });
         });
@@ -505,9 +684,9 @@
                 }
                 const res = await fetch('/api/files/list?path=' + encodeURIComponent(path));
                 const data = await res.json();
-                
+
                 container.innerHTML = '';
-                
+
                 if (data.entries && data.entries.length > 0) {
                     // Sort dirs first, then files
                     data.entries.sort((a, b) => {
@@ -517,36 +696,44 @@
 
                     const ul = document.createElement('ul');
                     ul.className = 'ft-list' + (path === '/workspace' ? ' root' : '');
-                    
+
                     data.entries.forEach(entry => {
                         const li = document.createElement('li');
                         li.className = 'ft-item';
-                        
+
                         const fullPath = path === '/' ? '/' + entry.name : path + '/' + entry.name;
-                        
+
                         if (entry.type === 'dir') {
                             const dirRow = document.createElement('div');
                             dirRow.className = 'ft-row';
-                            
+                            dirRow.draggable = true;
+                            dirRow.dataset.path = fullPath;
+                            dirRow.dataset.isdir = "true";
+
+                            dirRow.ondragstart = (e) => {
+                                const textToDrop = '@"' + fullPath + '/" ';
+                                e.dataTransfer.setData('text/plain', textToDrop);
+                            };
+
                             const arrow = document.createElement('span');
                             arrow.className = 'ft-arrow';
                             arrow.innerHTML = '▶';
-                            
+
                             const icon = document.createElement('span');
                             icon.className = 'ft-icon';
                             icon.innerHTML = SVG_FOLDER;
-                            
+
                             const name = document.createElement('span');
                             name.className = 'ft-name';
                             name.textContent = entry.name;
-                            
+
                             dirRow.appendChild(arrow);
                             dirRow.appendChild(icon);
                             dirRow.appendChild(name);
-                            
+
                             const childrenContainer = document.createElement('div');
                             childrenContainer.style.display = 'none';
-                            
+
                             dirRow.onclick = () => {
                                 const isOpen = childrenContainer.style.display === 'block';
                                 if (!isOpen) {
@@ -560,7 +747,7 @@
                                     childrenContainer.style.display = 'none';
                                 }
                             };
-                            
+
                             li.appendChild(dirRow);
                             li.appendChild(childrenContainer);
                         } else {
@@ -568,28 +755,30 @@
                             fileRow.className = 'ft-row';
                             fileRow.style.paddingLeft = '24px'; // align with folder text
                             fileRow.draggable = true;
-                            
+                            fileRow.dataset.path = fullPath;
+                            fileRow.dataset.isdir = "false";
+
                             const icon = document.createElement('span');
                             icon.className = 'ft-icon';
                             icon.innerHTML = SVG_FILE;
-                            
+
                             const name = document.createElement('span');
                             name.className = 'ft-name';
                             name.textContent = entry.name;
-                            
+
                             const size = document.createElement('span');
                             size.className = 'ft-meta';
                             size.textContent = entry.size !== null ? formatBytes(entry.size) : '';
-                            
+
                             fileRow.appendChild(icon);
                             fileRow.appendChild(name);
                             fileRow.appendChild(size);
-                            
+
                             fileRow.ondragstart = (e) => {
                                 const textToDrop = '@"' + fullPath + '" ';
                                 e.dataTransfer.setData('text/plain', textToDrop);
                             };
-                            
+
                             li.appendChild(fileRow);
                         }
                         ul.appendChild(li);
@@ -602,6 +791,141 @@
                 container.innerHTML = `<div style="color: #ff7b72; padding: 10px; font-size: 13px;">Error: ${err.message}</div>`;
             }
         }
+        // Context Menu Logic
+        const ctxMenu = document.createElement('div');
+        ctxMenu.className = 'ctx-menu';
+        document.body.appendChild(ctxMenu);
+
+        document.addEventListener('click', () => {
+            ctxMenu.style.display = 'none';
+        });
+
+        function sendToTerminal(termId, cmd) {
+            const t = terms[termId];
+            if (t && t.ws && t.ws.readyState === WebSocket.OPEN) {
+                t.ws.send(JSON.stringify({ type: 'data', data: cmd + '\r' }));
+            }
+        }
+
+        function sendToNewTerminal(cmd) {
+            addTerminal();
+            const newId = termCount - 1;
+            setTimeout(() => {
+                sendToTerminal(newId, cmd);
+            }, 500);
+        }
+
+        document.getElementById('workspace-panel').addEventListener('contextmenu', (e) => {
+            const row = e.target.closest('.ft-row');
+            if (!row) return;
+            e.preventDefault();
+
+            const fullPath = row.dataset.path;
+            const isDir = row.dataset.isdir === "true";
+
+            let html = '';
+
+            let termSubmenu = '<div class="ctx-submenu">';
+            Object.keys(terms).forEach(id => {
+                termSubmenu += `<div class="ctx-item" data-action="term" data-termid="${id}">Terminal ${parseInt(id) + 1}</div>`;
+            });
+            termSubmenu += '</div>';
+
+            if (isDir) {
+                html += `
+                    <div class="ctx-item has-submenu" data-type="cd">
+                        Open Directory
+                        ${termSubmenu}
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="ctx-item has-submenu" data-type="vim">
+                        Edit File
+                        ${termSubmenu}
+                    </div>
+                    <div class="ctx-item has-submenu" data-type="cat">
+                        View File
+                        ${termSubmenu}
+                    </div>
+                `;
+                if (fullPath.endsWith('.py')) {
+                    html += `
+                        <div class="ctx-item has-submenu" data-type="python">
+                            Run Python
+                            ${termSubmenu}
+                        </div>
+                    `;
+                } else if (fullPath.endsWith('.sh')) {
+                    html += `
+                        <div class="ctx-item has-submenu" data-type="sh">
+                            Run Script
+                            ${termSubmenu}
+                        </div>
+                    `;
+                }
+            }
+
+            html += '<div class="ctx-divider"></div>';
+            html += `<div class="ctx-item" data-action="newterm" data-type="${isDir ? 'cd' : 'vim'}">Open in New Terminal</div>`;
+
+            let relPath = fullPath;
+            if (fullPath.startsWith('/workspace/')) {
+                relPath = fullPath.substring(11);
+            }
+            html += `<div class="ctx-item" data-action="copy" data-val="${fullPath}">Copy Absolute Path</div>`;
+            html += `<div class="ctx-item" data-action="copy" data-val="${relPath}">Copy Relative Path</div>`;
+
+            ctxMenu.innerHTML = html;
+            ctxMenu.style.display = 'block';
+
+            let x = e.clientX;
+            let y = e.clientY;
+
+            // Render quickly to measure offsetHeight
+            const menuHeight = ctxMenu.offsetHeight;
+            if (x + 160 > window.innerWidth) x = window.innerWidth - 160;
+            if (y + menuHeight > window.innerHeight) y = window.innerHeight - menuHeight;
+            
+            // Check if submenus will go offscreen
+            if (x + 160 + 140 > window.innerWidth) {
+                ctxMenu.classList.add('left-submenus');
+            } else {
+                ctxMenu.classList.remove('left-submenus');
+            }
+
+            ctxMenu.style.left = x + 'px';
+            ctxMenu.style.top = y + 'px';
+
+            ctxMenu.querySelectorAll('.ctx-item').forEach(item => {
+                item.onclick = (ev) => {
+                    ev.stopPropagation();
+                    const action = item.dataset.action;
+
+                    let cmd = '';
+                    const type = item.dataset.type || (item.closest('.has-submenu') ? item.closest('.has-submenu').dataset.type : null);
+
+                    if (type === 'cd') cmd = `cd "${fullPath}"`;
+                    else if (type === 'vim') cmd = `vim "${fullPath}"`;
+                    else if (type === 'cat') cmd = `cat "${fullPath}"`;
+                    else if (type === 'python') cmd = `python "${fullPath}"`;
+                    else if (type === 'sh') cmd = `./"${fullPath.split('/').pop()}"`;
+
+                    if (action === 'term') {
+                        const termId = item.dataset.termid;
+                        sendToTerminal(termId, cmd);
+                        ctxMenu.style.display = 'none';
+                    } else if (action === 'newterm') {
+                        sendToNewTerminal(cmd);
+                        ctxMenu.style.display = 'none';
+                    } else if (action === 'copy') {
+                        navigator.clipboard.writeText(item.dataset.val);
+                        ctxMenu.style.display = 'none';
+                    }
+                };
+            });
+        });
     </script>
 </body>
+
 </html>

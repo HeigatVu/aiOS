@@ -20,13 +20,13 @@ async def get_terminals():
     return "Terminal HTML not found"
 
 @router.websocket("/ws/terminal")
-async def terminal_ws(websocket: WebSocket, cols: int = 80, rows: int = 24):
+async def terminal_ws(websocket: WebSocket, cols: int = 80, rows: int = 24, user: str = "ai_user"):
     await websocket.accept()
     
     pid, fd = pty.fork()
     if pid == 0:
         os.environ["TERM"] = "xterm-256color"
-        os.execvp("docker", ["docker", "exec", "-it", "-u", "ai_user", "-w", "/workspace", "ai_tui_sandbox", "/bin/zsh"])
+        os.execvp("docker", ["docker", "exec", "-it", "-u", user, "-w", "/workspace", "ai_tui_sandbox", "/bin/zsh"])
         
     wsz = struct.pack("HHHH", rows, cols, 0, 0)
     fcntl.ioctl(fd, termios.TIOCSWINSZ, wsz)

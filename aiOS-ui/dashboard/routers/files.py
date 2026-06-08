@@ -20,6 +20,11 @@ _FILE_BROWSER_DENY = [
     str(PROJECT_ROOT / "persistent" / ".ssh"),
 ]
 _PERMISSIONS_CONFIG = PROJECT_ROOT / "config-file" / "aios-permissions.json"
+_PERMISSION_MODES = {
+    "rw": {"file": "666", "dir": "777"},
+    "ro": {"file": "644", "dir": "755"},
+    "none": {"file": "600", "dir": "700"},
+}
 is_outside_docker = True
 logger = logging.getLogger("bff.files")
 

@@ -155,7 +155,7 @@ zinit for \
 
 # History
 HISTSIZE=10000
-SAVEHIST=10000
+SAVEHIST=10000change cat of linux into
 setopt HIST_IGNORE_ALL_DUPS
 setopt SHARE_HISTORY
 
@@ -172,9 +172,10 @@ setopt SHARE_HISTORY
 # done
 
 # Alias
-alias vim='nvim'
-alias ls='lsd'
-alias help='tldr'
+alias vim="nvim"
+alias ls="lsd"
+alias help="tldr"
+alias cat="bat"
 alias hermes-curator-evolver="~/.hermes/hermes-agent/venv/bin/hermes-curator-evolver"
 
 # Completion cache
