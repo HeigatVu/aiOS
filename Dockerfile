@@ -43,12 +43,12 @@ RUN mkdir -p \
   /home/${USERNAME}/.hermes \
   /home/${USERNAME}/.gemini \
   /home/${USERNAME}/.agents \
-  /home/${USERNAME}/.fcc \
   /home/${USERNAME}/.iii \
-  /home/${USERNAME}/.npm-global
+  /home/${USERNAME}/.npm-global \
+  /home/${USERNAME}/.reasonix
 
 # Install global NPM packages inside user-space
-RUN npm install -g @agentmemory/agentmemory
+RUN npm install -g @agentmemory/agentmemory reasonix
 
 # 7. Install Environment Managers (uv & Conda)
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -75,7 +75,6 @@ RUN curl -fsSL https://antigravity.google/cli/install.sh | bash
 RUN curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
 RUN curl -fsSL https://claude.ai/install.sh | bash
 RUN curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/read-once/install.sh | bash
-RUN curl -fsSL "https://github.com/Alishahryar1/free-claude-code/blob/main/scripts/install.sh?raw=1" | sh
 RUN curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
 RUN curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh
 RUN pip install "headroom-ai[all]"

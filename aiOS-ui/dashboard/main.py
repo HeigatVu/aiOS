@@ -110,7 +110,6 @@ CONTAINER_TO_HOST_MAPPING = {
     "/home/ai_user/.hermes": PROJECT_ROOT / "persistent" / "hermes",
     "/home/ai_user/.gemini": PROJECT_ROOT / "persistent" / "gemini",
     "/home/ai_user/.agents": PROJECT_ROOT / "persistent" / "agents",
-    "/home/ai_user/.fcc": PROJECT_ROOT / "persistent" / "fcc",
     "/home/ai_user/.iii": PROJECT_ROOT / "persistent" / "iii",
     "/home/ai_user": PROJECT_ROOT / "sandbox-data" / "home_ai_user",
 }

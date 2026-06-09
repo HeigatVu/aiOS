@@ -16,7 +16,7 @@ done
 echo "=== $(date -Iseconds): Recovery started ==="
 
 # Helper: write PID to file, silently ignoring permission errors (root-owned files)
-write_pid() { { printf '%s\n' "$1" > "$2"; } 2>/dev/null || true; }
+write_pid() { { printf '%s\n' "$1" >"$2"; } 2>/dev/null || true; }
 
 # ── iii engine ──
 if ! iii --version >/dev/null 2>&1; then
@@ -36,14 +36,15 @@ if ! curl -s -o /dev/null -w '' http://localhost:3113/ 2>/dev/null; then
     sed -i 's/^AGENTMEMORY_VIEWER_HOST=0.0.0.0/# AGENTMEMORY_VIEWER_HOST=0.0.0.0/g' ~/.agentmemory/.env
     sed -i 's/^VIEWER_ALLOWED_HOSTS=/# VIEWER_ALLOWED_HOSTS=/g' ~/.agentmemory/.env
   fi
-  agentmemory start >> ~/.agentmemory/agentmemory.log 2>&1 &
+  agentmemory start >>~/.agentmemory/agentmemory.log 2>&1 &
   sleep 4
 fi
 
 # ── viewer-proxy ──
 # Kill any stale viewer-proxy process holding port 3113.
 for f in /proc/[0-9]*/cmdline; do
-  pid=${f%/cmdline}; pid=${pid#/proc/}
+  pid=${f%/cmdline}
+  pid=${pid#/proc/}
   grep -q "viewer-proxy" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
 done
 # Wait until port 3113 is released (up to 3 seconds).
@@ -57,8 +58,8 @@ done
 if [ ! -f ~/.agentmemory/viewer-proxy.pid ] || ! kill -0 "$(cat ~/.agentmemory/viewer-proxy.pid 2>/dev/null)" 2>/dev/null; then
   echo "[recover] viewer-proxy down, starting..."
   cp /config-file/aiOS-ui/agentmemory/viewer-proxy.mjs ~/.agentmemory/viewer-proxy.mjs
-  nohup node ~/.agentmemory/viewer-proxy.mjs >> ~/.agentmemory/viewer-proxy.log 2>&1 &
-  echo $! > ~/.agentmemory/viewer-proxy.pid
+  nohup node ~/.agentmemory/viewer-proxy.mjs >>~/.agentmemory/viewer-proxy.log 2>&1 &
+  echo $! >~/.agentmemory/viewer-proxy.pid
 fi
 
 # ── hermes dashboard ──
@@ -66,65 +67,58 @@ fi
 # grep -q on raw cmdline won't work (null-byte separators); use tr '\0' '\n'.
 DASH_PID=""
 for f in /proc/[0-9]*/cmdline; do
-  p=${f%/cmdline}; p=${p#/proc/}
-  args=$(tr '\0' '\n' < "$f" 2>/dev/null)
-  echo "$args" | grep -q "^dashboard$" && echo "$args" | grep -q "hermes" && { DASH_PID=$p; break; }
+  p=${f%/cmdline}
+  p=${p#/proc/}
+  args=$(tr '\0' '\n' <"$f" 2>/dev/null)
+  echo "$args" | grep -q "^dashboard$" && echo "$args" | grep -q "hermes" && {
+    DASH_PID=$p
+    break
+  }
 done
 if [ -n "$DASH_PID" ]; then
   write_pid "$DASH_PID" /tmp/hermes-dashboard.pid
 else
   echo "[recover] dashboard down, starting..."
   mkdir -p ~/.hermes/logs
-  hermes dashboard --no-open >> ~/.hermes/logs/dashboard.log 2>&1 &
+  hermes dashboard --no-open >>~/.hermes/logs/dashboard.log 2>&1 &
   write_pid "$!" /tmp/hermes-dashboard.pid
   sleep 4
   for f in /proc/[0-9]*/cmdline; do
-    p=${f%/cmdline}; p=${p#/proc/}
-    args=$(tr '\0' '\n' < "$f" 2>/dev/null)
-    echo "$args" | grep -q "^dashboard$" && echo "$args" | grep -q "hermes" && { DASH_PID=$p; write_pid "$p" /tmp/hermes-dashboard.pid; break; }
+    p=${f%/cmdline}
+    p=${p#/proc/}
+    args=$(tr '\0' '\n' <"$f" 2>/dev/null)
+    echo "$args" | grep -q "^dashboard$" && echo "$args" | grep -q "hermes" && {
+      DASH_PID=$p
+      write_pid "$p" /tmp/hermes-dashboard.pid
+      break
+    }
   done
 fi
 
 # ── hermes dashboard-proxy ──
 PROXY_PID=""
 for f in /proc/[0-9]*/cmdline; do
-  p=${f%/cmdline}; p=${p#/proc/}
-  grep -q "dashboard-proxy" "$f" 2>/dev/null && { PROXY_PID=$p; break; }
+  p=${f%/cmdline}
+  p=${p#/proc/}
+  grep -q "dashboard-proxy" "$f" 2>/dev/null && {
+    PROXY_PID=$p
+    break
+  }
 done
 if [ -n "$PROXY_PID" ]; then
   write_pid "$PROXY_PID" /tmp/hermes-proxy.pid
 else
   echo "[recover] dashboard-proxy down, starting..."
   for f in /proc/[0-9]*/cmdline; do
-    pid=${f%/cmdline}; pid=${pid#/proc/}
+    pid=${f%/cmdline}
+    pid=${pid#/proc/}
     grep -q "dashboard-proxy" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
   done
   { touch /tmp/hermes-proxy.log; } 2>/dev/null || true
-  nohup node /config-file/hermes/dashboard-proxy.mjs >> /tmp/hermes-proxy.log 2>&1 &
+  nohup node /config-file/hermes/dashboard-proxy.mjs >>/tmp/hermes-proxy.log 2>&1 &
   PROXY_PID=$!
   write_pid "$PROXY_PID" /tmp/hermes-proxy.pid
   sleep 1
-fi
-
-# ── fcc-server ──
-FCC_PID=""
-for f in /proc/[0-9]*/cmdline; do
-  p=${f%/cmdline}; p=${p#/proc/}
-  grep -q "fcc-server" "$f" 2>/dev/null && { FCC_PID=$p; break; }
-done
-if [ -n "$FCC_PID" ]; then
-  write_pid "$FCC_PID" /tmp/fcc-server.pid
-else
-  echo "[recover] fcc-server down, starting..."
-  mkdir -p ~/.fcc/logs
-  for f in /proc/[0-9]*/cmdline; do
-    pid=${f%/cmdline}; pid=${pid#/proc/}
-    grep -q "fcc-server" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
-  done
-  nohup fcc-server >> ~/.fcc/logs/fcc-server.log 2>&1 &
-  FCC_PID=$!
-  write_pid "$FCC_PID" /tmp/fcc-server.pid
-  sleep 2
 fi
 
 # ── hermes gateway ──
@@ -138,20 +132,25 @@ if [ -f "$GATEWAY_STATE_FILE" ]; then
 fi
 if [ "$GATEWAY_RUNNING" = false ]; then
   echo "[recover] gateway down, starting..."
-  hermes gateway run >> ~/.hermes/logs/gateway.log 2>&1 &
+  hermes gateway run >>~/.hermes/logs/gateway.log 2>&1 &
   sleep 3
 fi
 
 # ── hermes-webui (server.py on port 8501) ──
 WEBUI_PID=""
 for f in /proc/[0-9]*/cmdline; do
-  p=${f%/cmdline}; p=${p#/proc/}
-  grep -q "server.py" "$f" 2>/dev/null && { WEBUI_PID=$p; break; }
+  p=${f%/cmdline}
+  p=${p#/proc/}
+  grep -q "server.py" "$f" 2>/dev/null && {
+    WEBUI_PID=$p
+    break
+  }
 done
 if [ -z "$WEBUI_PID" ]; then
   echo "[recover] hermes-webui down, starting..."
   for f in /proc/[0-9]*/cmdline; do
-    pid=${f%/cmdline}; pid=${pid#/proc/}
+    pid=${f%/cmdline}
+    pid=${pid#/proc/}
     grep -q "server.py" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
   done
   if [ "$(id -u)" -eq 0 ]; then
@@ -167,21 +166,26 @@ fi
 # ── headroom proxy ──
 HEADROOM_PID=""
 for f in /proc/[0-9]*/cmdline; do
-  p=${f%/cmdline}; p=${p#/proc/}
-  tr '\0' ' ' < "$f" 2>/dev/null | grep -q "headroom proxy" && { HEADROOM_PID=$p; break; }
+  p=${f%/cmdline}
+  p=${p#/proc/}
+  tr '\0' ' ' <"$f" 2>/dev/null | grep -q "headroom proxy" && {
+    HEADROOM_PID=$p
+    break
+  }
 done
 if [ -n "$HEADROOM_PID" ]; then
   write_pid "$HEADROOM_PID" /tmp/headroom.pid
 else
   echo "[recover] headroom proxy down, starting..."
   for f in /proc/[0-9]*/cmdline; do
-    pid=${f%/cmdline}; pid=${pid#/proc/}
-    tr '\0' ' ' < "$f" 2>/dev/null | grep -q "headroom proxy" && kill -9 "$pid" 2>/dev/null || true
+    pid=${f%/cmdline}
+    pid=${pid#/proc/}
+    tr '\0' ' ' <"$f" 2>/dev/null | grep -q "headroom proxy" && kill -9 "$pid" 2>/dev/null || true
   done
   if [ "$(id -u)" -eq 0 ]; then
     runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup /home/ai_user/miniconda3/bin/headroom proxy >> /tmp/headroom.log 2>&1' &
   else
-    nohup /home/ai_user/miniconda3/bin/headroom proxy >> /tmp/headroom.log 2>&1 &
+    nohup /home/ai_user/miniconda3/bin/headroom proxy >>/tmp/headroom.log 2>&1 &
   fi
   HEADROOM_PID=$!
   write_pid "$HEADROOM_PID" /tmp/headroom.pid
@@ -192,7 +196,8 @@ fi
 if [ "$(id -u)" -eq 0 ]; then
   echo "[recover] ensuring watchdog is running..."
   for f in /proc/[0-9]*/cmdline; do
-    pid=${f%/cmdline}; pid=${pid#/proc/}
+    pid=${f%/cmdline}
+    pid=${pid#/proc/}
     grep -q "while true.*hermes-dashboard" "$f" 2>/dev/null && kill "$pid" 2>/dev/null || true
   done
   (
@@ -219,12 +224,6 @@ if [ "$(id -u)" -eq 0 ]; then
         echo $! >"$HOME/.agentmemory/viewer-proxy.pid"
         echo "[watchdog] $(date -Iseconds): viewer-proxy restarted" >>/tmp/hermes-watchdog.log
       fi
-      # fcc-server
-      if [ -f /tmp/fcc-server.pid ] && ! kill -0 "$(cat /tmp/fcc-server.pid 2>/dev/null)" 2>/dev/null; then
-        nohup fcc-server >>"$HOME/.fcc/logs/fcc-server.log" 2>&1 &
-        echo $! >/tmp/fcc-server.pid
-        echo "[watchdog] $(date -Iseconds): fcc-server restarted" >>/tmp/hermes-watchdog.log
-      fi
       # hermes-webui
       if [ -f /tmp/hermes-subserver.pid ] && ! kill -0 "$(cat /tmp/hermes-subserver.pid 2>/dev/null)" 2>/dev/null; then
         if [ "$(id -u)" -eq 0 ]; then
@@ -232,7 +231,7 @@ if [ "$(id -u)" -eq 0 ]; then
         else
           env HOME=/home/ai_user HERMES_WEBUI_HOST=0.0.0.0 HERMES_WEBUI_PORT=8501 HERMES_WEBUI_TRUST_FORWARDED_HOST=1 "$PYTHON_EXE" /aiOS-ui/hermes-webui/server.py >>/config-file/aiOS-ui.log 2>&1 &
         fi
-        echo $! > /tmp/hermes-subserver.pid
+        echo $! >/tmp/hermes-subserver.pid
         echo "[watchdog] $(date -Iseconds): hermes-webui restarted" >>/tmp/hermes-watchdog.log
       fi
       # Gateway
@@ -257,7 +256,7 @@ except Exception:
         if [ "$(id -u)" -eq 0 ]; then
           runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup /home/ai_user/miniconda3/bin/headroom proxy >> /tmp/headroom.log 2>&1' &
         else
-          nohup /home/ai_user/miniconda3/bin/headroom proxy >> /tmp/headroom.log 2>&1 &
+          nohup /home/ai_user/miniconda3/bin/headroom proxy >>/tmp/headroom.log 2>&1 &
         fi
         echo $! >/tmp/headroom.pid
         echo "[watchdog] $(date -Iseconds): headroom proxy restarted" >>/tmp/hermes-watchdog.log
@@ -275,20 +274,50 @@ echo "=== Recovery complete. Status: ==="
 echo -n "iii: " && iii --version 2>&1 | head -1
 echo -n "agentmemory: " && curl -s -o /dev/null -w '%{http_code}' http://localhost:3113/ && echo " (port 3113)"
 echo -n "dashboard: "
-_dp=""; for f in /proc/[0-9]*/cmdline; do p=${f%/cmdline}; p=${p#/proc/}; _a=$(tr '\0' '\n' < "$f" 2>/dev/null); echo "$_a" | grep -q "^dashboard$" && echo "$_a" | grep -q "hermes" && { _dp=$p; break; }; done
+_dp=""
+for f in /proc/[0-9]*/cmdline; do
+  p=${f%/cmdline}
+  p=${p#/proc/}
+  _a=$(tr '\0' '\n' <"$f" 2>/dev/null)
+  echo "$_a" | grep -q "^dashboard$" && echo "$_a" | grep -q "hermes" && {
+    _dp=$p
+    break
+  }
+done
 [ -n "$_dp" ] && echo "PID $_dp OK" || echo "FAIL"
 echo -n "proxy: "
-_pp=""; for f in /proc/[0-9]*/cmdline; do p=${f%/cmdline}; p=${p#/proc/}; grep -q "dashboard-proxy" "$f" 2>/dev/null && { _pp=$p; break; }; done
+_pp=""
+for f in /proc/[0-9]*/cmdline; do
+  p=${f%/cmdline}
+  p=${p#/proc/}
+  grep -q "dashboard-proxy" "$f" 2>/dev/null && {
+    _pp=$p
+    break
+  }
+done
 [ -n "$_pp" ] && echo "PID $_pp OK" || echo "FAIL"
-echo -n "fcc-server: "
-_fp=""; for f in /proc/[0-9]*/cmdline; do p=${f%/cmdline}; p=${p#/proc/}; grep -q "fcc-server" "$f" 2>/dev/null && { _fp=$p; break; }; done
-[ -n "$_fp" ] && echo "PID $_fp OK" || echo "FAIL"
 echo -n "gateway: " && hermes gateway status 2>&1 | head -1
 echo -n "hermes-webui: "
-_wp=""; for f in /proc/[0-9]*/cmdline; do p=${f%/cmdline}; p=${p#/proc/}; grep -q "server.py" "$f" 2>/dev/null && { _wp=$p; break; }; done
+_wp=""
+for f in /proc/[0-9]*/cmdline; do
+  p=${f%/cmdline}
+  p=${p#/proc/}
+  grep -q "server.py" "$f" 2>/dev/null && {
+    _wp=$p
+    break
+  }
+done
 [ -n "$_wp" ] && echo "PID $_wp OK (port 8501)" || echo "FAIL"
 echo -n "headroom: "
-_hp=""; for f in /proc/[0-9]*/cmdline; do p=${f%/cmdline}; p=${p#/proc/}; tr '\0' ' ' < "$f" 2>/dev/null | grep -q "headroom proxy" && { _hp=$p; break; }; done
+_hp=""
+for f in /proc/[0-9]*/cmdline; do
+  p=${f%/cmdline}
+  p=${p#/proc/}
+  tr '\0' ' ' <"$f" 2>/dev/null | grep -q "headroom proxy" && {
+    _hp=$p
+    break
+  }
+done
 [ -n "$_hp" ] && echo "PID $_hp OK (port 8787)" || echo "FAIL"
 echo -n "watchdog: " && ls -la /tmp/hermes-watchdog.log 2>/dev/null | awk '{print "log size:", $5, "bytes"}'
-echo -n "ports: " && curl -s -o /dev/null -w '9119:%{http_code} ' http://localhost:9119/ && curl -s -o /dev/null -w '3113:%{http_code} ' http://localhost:3113/ && curl -s -o /dev/null -w '8082:%{http_code}' http://localhost:8082/health && curl -s -o /dev/null -w ' 8787:%{http_code}' http://localhost:8787/health && echo
+echo -n "ports: " && curl -s -o /dev/null -w '9119:%{http_code} ' http://localhost:9119/ && curl -s -o /dev/null -w '3113:%{http_code} ' http://localhost:3113/ && curl -s -o /dev/null -w '8787:%{http_code}' http://localhost:8787/health && echo

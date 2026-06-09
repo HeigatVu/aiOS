@@ -17,9 +17,8 @@ DIRS=(
   "$AI_HOME/.hermes"
   "$AI_HOME/.gemini"
   "$AI_HOME/.agents"
-  "$AI_HOME/.fcc"
-  "$AI_HOME/.iii"
   "$AI_HOME/.feynman"
+  "$AI_HOME/.reasonix"
 )
 for dir in "${DIRS[@]}"; do
   if [ -d "$dir" ]; then
@@ -45,7 +44,7 @@ for py in "/home/ai_user/.hermes/hermes-agent/venv/bin/python" "/aiOS-ui/hermes-
 done
 
 # ── watchdog (starts FIRST so it survives even if later sections hang) ──────────
-# Covers: dashboard, proxy, viewer-proxy, fcc-server, gateway, headroom
+# Covers: dashboard, proxy, viewer-proxy, gateway, headroom
 # Runs in background. Uses set +e internally to never die from transient errors.
 # disown prevents PID 1 from waiting for this infinite-loop process.
 (
@@ -67,19 +66,14 @@ done
     # agentmemory viewer-proxy (LAN access to agentmemory viewer)
     if [ -f /home/ai_user/.agentmemory/viewer-proxy.pid ] && ! kill -0 "$(cat /home/ai_user/.agentmemory/viewer-proxy.pid 2>/dev/null)" 2>/dev/null; then
       for f in /proc/[0-9]*/cmdline; do
-        pid=${f%/cmdline}; pid=${pid#/proc/}
+        pid=${f%/cmdline}
+        pid=${pid#/proc/}
         grep -q "viewer-proxy" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
       done
       runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'cp /config-file/aiOS-ui/agentmemory/viewer-proxy.mjs ~/.agentmemory/viewer-proxy.mjs 2>/dev/null || true'
       runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup node ~/.agentmemory/viewer-proxy.mjs >> ~/.agentmemory/viewer-proxy.log 2>&1' &
       echo $! >/home/ai_user/.agentmemory/viewer-proxy.pid
       echo "[watchdog] $(date -Iseconds): viewer-proxy restarted" >>/tmp/hermes-watchdog.log
-    fi
-    # fcc-server
-    if [ -f /tmp/fcc-server.pid ] && ! kill -0 "$(cat /tmp/fcc-server.pid 2>/dev/null)" 2>/dev/null; then
-      runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup fcc-server >> ~/.fcc/logs/fcc-server.log 2>&1' &
-      echo $! >/tmp/fcc-server.pid
-      echo "[watchdog] $(date -Iseconds): fcc-server restarted" >>/tmp/hermes-watchdog.log
     fi
     # Gateway (Telegram reconnect)
     if [ -f /home/ai_user/.hermes/gateway_state.json ]; then
@@ -156,7 +150,8 @@ PROXY_PID_FILE="/home/ai_user/.agentmemory/viewer-proxy.pid"
 if [ -f "$PROXY" ]; then
   # Kill any stale viewer-proxy process holding port 3113.
   for f in /proc/[0-9]*/cmdline; do
-    pid=${f%/cmdline}; pid=${pid#/proc/}
+    pid=${f%/cmdline}
+    pid=${pid#/proc/}
     grep -q "viewer-proxy" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
   done
   rm -f "$PROXY_PID_FILE"
@@ -190,7 +185,8 @@ if [ -f "$HERMES_PROXY" ]; then
   # Kill any process holding the LAN IP port 9119.
   # Use SIGKILL (not TERM) so the port is released immediately.
   for f in /proc/[0-9]*/cmdline; do
-    pid=${f%/cmdline}; pid=${pid#/proc/}
+    pid=${f%/cmdline}
+    pid=${pid#/proc/}
     grep -q "dashboard-proxy" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
   done
   rm -f "$HERMES_PROXY_PID"
@@ -204,36 +200,6 @@ if [ -f "$HERMES_PROXY" ]; then
   runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup node /config-file/hermes/dashboard-proxy.mjs >> /tmp/hermes-proxy.log 2>&1' &
   echo $! >"$HERMES_PROXY_PID"
   echo "[entrypoint] hermes dashboard-proxy started (PID $!)"
-fi
-
-# ── fcc-server ────────────────────────────────────────────────────────────────
-
-if [ -f /config-file/fcc/.env ]; then
-  runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'cp /config-file/fcc/.env ~/.fcc/.env'
-  echo "[entrypoint] fcc-server .env copied"
-fi
-runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'mkdir -p ~/.fcc/logs'
-
-FCC_PID_FILE=/tmp/fcc-server.pid
-if [ ! -f "$FCC_PID_FILE" ] || ! kill -0 "$(cat "$FCC_PID_FILE" 2>/dev/null)" 2>/dev/null; then
-  # Kill any stale fcc-server process holding port 8082.
-  # Use SIGKILL for immediate port release.
-  for f in /proc/[0-9]*/cmdline; do
-    pid=${f%/cmdline}; pid=${pid#/proc/}
-    grep -q "fcc-server" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
-  done
-  rm -f "$FCC_PID_FILE"
-  # Wait until port 8082 is released (up to 3 seconds).
-  for i in 1 2 3; do
-    if ! awk 'NR>1{split($2,a,":");p=strtonum("0x"a[2]);if(p==8082)print}' /proc/net/tcp 2>/dev/null | grep -q .; then
-      break
-    fi
-    sleep 1
-  done
-  runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup fcc-server >> ~/.fcc/logs/fcc-server.log 2>&1' &
-  echo $! >"$FCC_PID_FILE"
-  echo "[entrypoint] fcc-server started (PID $!)"
-  sleep 2
 fi
 
 # ── hermes gateway ────────────────────────────────────────────────────────────
@@ -253,12 +219,13 @@ fi
 HERMES_SUB_PID=/tmp/hermes-subserver.pid
 if [ ! -f "$HERMES_SUB_PID" ] || ! kill -0 "$(cat "$HERMES_SUB_PID" 2>/dev/null)" 2>/dev/null; then
   for f in /proc/[0-9]*/cmdline; do
-    pid=${f%/cmdline}; pid=${pid#/proc/}
+    pid=${f%/cmdline}
+    pid=${pid#/proc/}
     grep -q "server.py" "$f" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
   done
   rm -f "$HERMES_SUB_PID"
   runuser -u ai_user -- env HOME=/home/ai_user HERMES_WEBUI_HOST=0.0.0.0 HERMES_WEBUI_PORT=8501 HERMES_WEBUI_TRUST_FORWARDED_HOST=1 "$PYTHON_EXE" /aiOS-ui/hermes-webui/server.py >>/config-file/aiOS-ui.log 2>&1 &
-  echo $! > "$HERMES_SUB_PID"
+  echo $! >"$HERMES_SUB_PID"
   echo "[entrypoint] hermes-webui started (PID $!) with $PYTHON_EXE"
   sleep 3
 fi

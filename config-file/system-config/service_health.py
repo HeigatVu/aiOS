@@ -180,19 +180,6 @@ async def check_dashboard_proxy() -> tuple[bool, str]:
     return True, f"PID {pid} active, Port 9119 open"
 
 
-async def check_fcc_server() -> tuple[bool, str]:
-    """Check fcc-server PID and HTTP /health endpoint on port 8082."""
-    try:
-        pid = read_pid_file("/tmp/fcc-server.pid")
-    except Exception as exc:
-        return False, f"PID file error: {exc}"
-    if not is_pid_alive(pid):
-        return False, f"PID {pid} is not running"
-    ok_flag, http_detail = await probe_http("http://localhost:8082/health")
-    if not ok_flag:
-        return False, f"PID {pid} active, but {http_detail}"
-    return True, f"PID {pid} active, {http_detail}"
-
 
 async def check_hermes_gateway() -> tuple[bool, str]:
     """Parse gateway_state.json and verify PID + Telegram state."""
@@ -238,7 +225,6 @@ CHECKS["agentmemory"] = check_agentmemory
 CHECKS["viewer-proxy"] = check_viewer_proxy
 CHECKS["hermes dashboard"] = check_hermes_dashboard
 CHECKS["dashboard-proxy"] = check_dashboard_proxy
-CHECKS["fcc-server"] = check_fcc_server
 CHECKS["hermes gateway"] = check_hermes_gateway
 
 

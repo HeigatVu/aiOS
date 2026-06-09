@@ -8,17 +8,17 @@ CONTAINER_NAME="ai_tui_sandbox"
 
 # Detect if we are running inside the Docker container
 if [ -f /.dockerenv ] || [ "${USER:-}" = "ai_user" ]; then
-    IS_INSIDE_CONTAINER=true
-    HERMES_AGENT_DIR="/home/ai_user/.hermes/hermes-agent"
-    HERMES_WEBUI_DIR="/aiOS-ui/hermes-webui"
-    echo "🐳 Running INSIDE the Docker container."
+  IS_INSIDE_CONTAINER=true
+  HERMES_AGENT_DIR="/home/ai_user/.hermes/hermes-agent"
+  HERMES_WEBUI_DIR="/aiOS-ui/hermes-webui"
+  echo "🐳 Running INSIDE the Docker container."
 else
-    IS_INSIDE_CONTAINER=false
-    # WORKSPACE_DIR is the config-file directory, so we need to go up one level
-    ROOT_DIR="$(dirname "$WORKSPACE_DIR")"
-    HERMES_AGENT_DIR="${ROOT_DIR}/persistent/hermes/hermes-agent"
-    HERMES_WEBUI_DIR="${ROOT_DIR}/aiOS-ui/hermes-webui"
-    echo "💻 Running on the HOST machine."
+  IS_INSIDE_CONTAINER=false
+  # WORKSPACE_DIR is the config-file directory, so we need to go up one level
+  ROOT_DIR="$(dirname "$WORKSPACE_DIR")"
+  HERMES_AGENT_DIR="${ROOT_DIR}/persistent/hermes/hermes-agent"
+  HERMES_WEBUI_DIR="${ROOT_DIR}/aiOS-ui/hermes-webui"
+  echo "💻 Running on the HOST machine."
 fi
 
 # Fix git issues inside the container
@@ -29,114 +29,167 @@ git config --global url."https://github.com/".insteadOf "git@github.com:" || tru
 
 # Helper to remove stale lock file
 clear_lock() {
-    local repo_path="$1"
-    local lock_file="${repo_path}/.git/index.lock"
-    if [ -f "$lock_file" ]; then
-        echo "⚠️ Found stale Git lock file at: $lock_file"
-        echo "Removing lock file..."
-        rm -f "$lock_file"
+  local repo_path="$1"
+  local lock_file="${repo_path}/.git/index.lock"
+  if [ -f "$lock_file" ]; then
+    echo "⚠️ Found stale Git lock file at: $lock_file"
+    echo "Removing lock file..."
+    rm -f "$lock_file"
+  fi
+}
+
+safe_git_pull() {
+  local repo_dir="$1"
+  cd "$repo_dir"
+
+  # Ensure git user is configured so git stash doesn't fail
+  git config user.email "auto-updater@localhost" || true
+  git config user.name "Auto Updater" || true
+
+  # Reset conflicts if any
+  if [ -n "$(git diff --name-only --diff-filter=U)" ]; then
+    echo "⚠️ Unresolved merge conflicts detected in $(basename "$repo_dir"). Resetting to HEAD..."
+    git reset --hard HEAD
+  fi
+
+  # Check if there are local changes to stash
+  local has_changes=false
+  if ! git diff --quiet || ! git diff --cached --quiet; then
+    has_changes=true
+  fi
+
+  if [ "$has_changes" = true ]; then
+    echo "→ Stashing local changes..."
+    git stash
+  fi
+
+  echo "→ Pulling updates..."
+  # Try to pull main, then master
+  if git pull origin main 2>/dev/null || git pull origin master; then
+    if [ "$has_changes" = true ]; then
+      echo "→ Restoring stashed changes..."
+      git stash pop || echo "⚠️ Could not pop stash (conflict occurred, please resolve manually)"
     fi
+  else
+    echo "❌ Pull failed for $(basename "$repo_dir")."
+    if [ "$has_changes" = true ]; then
+      git stash pop || true
+    fi
+    return 1
+  fi
 }
 
 update_agent_inside_container() {
-    local agent_dir="/home/ai_user/.hermes/hermes-agent"
-    
-    # Fix dubious ownership since this function is run via docker exec
-    git config --global --add safe.directory "$agent_dir" || true
-    git config --global url."https://github.com/".insteadOf "git@github.com:" || true
-    
-    clear_lock "$agent_dir"
-    cd "$agent_dir"
-    echo "→ Fetching updates..."
-    git fetch origin
-    
-    echo "→ Applying updates (stashing local changes first)..."
-    git stash
-    git pull origin main || git pull origin master || true
-    git stash pop || echo "⚠️ Could not pop stash"
+  local agent_dir="/home/ai_user/.hermes/hermes-agent"
+
+  # Fix dubious ownership since this function is run via docker exec
+  git config --global --add safe.directory "$agent_dir" || true
+  git config --global url."https://github.com/".insteadOf "git@github.com:" || true
+
+  clear_lock "$agent_dir"
+  cd "$agent_dir"
+  echo "→ Fetching updates..."
+  git fetch origin
+
+  safe_git_pull "$agent_dir"
 }
 
 update_agent() {
-    echo "⚕ Updating Hermes Agent..."
-    
-    if [ "$IS_INSIDE_CONTAINER" = true ]; then
-        if [ ! -d "$HERMES_AGENT_DIR" ]; then
-            echo "❌ Hermes Agent directory not found at $HERMES_AGENT_DIR"
-            return 1
-        fi
-        update_agent_inside_container
-    else
-        # Running on the host
-        # Check if the Docker container is running
-        if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^${CONTAINER_NAME}$"; then
-            echo "→ Container '${CONTAINER_NAME}' is running. Updating Hermes Agent inside the container..."
-            # Execute the commands inside the container
-            docker exec -t "${CONTAINER_NAME}" bash -c "$(declare -f clear_lock update_agent_inside_container); update_agent_inside_container"
-        else
-            echo "⚠️ Container '${CONTAINER_NAME}' is NOT running."
-            echo "Updating Hermes Agent locally on host (may require sudo due to permission settings)..."
-            
-            # Determine if we need sudo to access or traverse the directory
-            local cmd_prefix=""
-            if [ ! -x "$(dirname "$HERMES_AGENT_DIR")" ] || [ ! -w "$HERMES_AGENT_DIR" ] 2>/dev/null; then
-                echo "🔒 Traversal/write access denied to $HERMES_AGENT_DIR. Using sudo..."
-                cmd_prefix="sudo"
-            fi
-            
-            if ! $cmd_prefix test -d "$HERMES_AGENT_DIR"; then
-                echo "❌ Hermes Agent directory not found at $HERMES_AGENT_DIR"
-                return 1
-            fi
-            
-            $cmd_prefix rm -f "${HERMES_AGENT_DIR}/.git/index.lock"
-            echo "→ Fetching updates..."
-            $cmd_prefix git -C "$HERMES_AGENT_DIR" fetch origin
-            
-            echo "→ Applying updates (stashing local changes first)..."
-            $cmd_prefix git -C "$HERMES_AGENT_DIR" stash || true
-            $cmd_prefix git -C "$HERMES_AGENT_DIR" pull origin main || $cmd_prefix git -C "$HERMES_AGENT_DIR" pull origin master || true
-            $cmd_prefix git -C "$HERMES_AGENT_DIR" stash pop || echo "⚠️ Could not pop stash"
-        fi
+  echo "⚕ Updating Hermes Agent..."
+
+  if [ "$IS_INSIDE_CONTAINER" = true ]; then
+    if [ ! -d "$HERMES_AGENT_DIR" ]; then
+      echo "❌ Hermes Agent directory not found at $HERMES_AGENT_DIR"
+      return 1
     fi
-    echo "✅ Hermes Agent update process completed."
+    update_agent_inside_container
+  else
+    # Running on the host
+    # Check if the Docker container is running
+    if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^${CONTAINER_NAME}$"; then
+      echo "→ Container '${CONTAINER_NAME}' is running. Updating Hermes Agent inside the container..."
+      # Execute the commands inside the container with set -e
+      if docker exec -t "${CONTAINER_NAME}" bash -c "set -euo pipefail; $(declare -f clear_lock safe_git_pull update_agent_inside_container); update_agent_inside_container"; then
+        echo "✅ Hermes Agent update process completed."
+      else
+        echo "❌ Hermes Agent update process failed."
+        return 1
+      fi
+    else
+      echo "⚠️ Container '${CONTAINER_NAME}' is NOT running."
+      echo "Updating Hermes Agent locally on host (may require sudo due to permission settings)..."
+
+      # Determine if we need sudo to access or traverse the directory
+      local cmd_prefix=""
+      if [ ! -x "$(dirname "$HERMES_AGENT_DIR")" ] || [ ! -w "$HERMES_AGENT_DIR" ] 2>/dev/null; then
+        echo "🔒 Traversal/write access denied to $HERMES_AGENT_DIR. Using sudo..."
+        cmd_prefix="sudo"
+      fi
+
+      if ! $cmd_prefix test -d "$HERMES_AGENT_DIR"; then
+        echo "❌ Hermes Agent directory not found at $HERMES_AGENT_DIR"
+        return 1
+      fi
+
+      $cmd_prefix rm -f "${HERMES_AGENT_DIR}/.git/index.lock"
+      echo "→ Fetching updates..."
+      $cmd_prefix git -C "$HERMES_AGENT_DIR" fetch origin
+
+      if [ -n "$cmd_prefix" ]; then
+        if sudo bash -c "set -euo pipefail; $(declare -f safe_git_pull); safe_git_pull \"$HERMES_AGENT_DIR\""; then
+          echo "✅ Hermes Agent update process completed."
+        else
+          echo "❌ Hermes Agent update process failed."
+          return 1
+        fi
+      else
+        if safe_git_pull "$HERMES_AGENT_DIR"; then
+          echo "✅ Hermes Agent update process completed."
+        else
+          echo "❌ Hermes Agent update process failed."
+          return 1
+        fi
+      fi
+    fi
+  fi
 }
 
 update_webui() {
-    echo "⚕ Updating Hermes WebUI..."
-    if [ ! -d "$HERMES_WEBUI_DIR" ]; then
-        echo "❌ Hermes WebUI directory not found at $HERMES_WEBUI_DIR"
-        return 1
-    fi
+  echo "⚕ Updating Hermes WebUI..."
+  if [ ! -d "$HERMES_WEBUI_DIR" ]; then
+    echo "❌ Hermes WebUI directory not found at $HERMES_WEBUI_DIR"
+    return 1
+  fi
 
-    clear_lock "$HERMES_WEBUI_DIR"
+  clear_lock "$HERMES_WEBUI_DIR"
 
-    echo "→ Fetching Hermes WebUI updates..."
-    cd "$HERMES_WEBUI_DIR"
-    
-    # Fix potential permission issues caused by docker volume mapping (e.g. objects owned by 'nobody')
-    if [ "$IS_INSIDE_CONTAINER" = false ]; then
-        if find .git/objects -type d ! -user "$(whoami)" 2>/dev/null | grep -q .; then
-            echo "⚠️ Found git objects with incorrect ownership. Attempting to fix by moving them aside..."
-            find .git/objects -maxdepth 2 -type d ! -user "$(whoami)" ! -name "*.bak" -exec mv {} {}.bak \; 2>/dev/null || true
-        fi
+  echo "→ Fetching Hermes WebUI updates..."
+  cd "$HERMES_WEBUI_DIR"
+
+  # Fix potential permission issues caused by docker volume mapping (e.g. objects owned by 'nobody')
+  if [ "$IS_INSIDE_CONTAINER" = false ]; then
+    if find .git/objects -type d ! -user "$(whoami)" 2>/dev/null | grep -q .; then
+      echo "⚠️ Found git objects with incorrect ownership. Attempting to fix by moving them aside..."
+      find .git/objects -maxdepth 2 -type d ! -user "$(whoami)" ! -name "*.bak" -exec mv {} {}.bak \; 2>/dev/null || true
     fi
-    
-    # Ensure git user is configured so git stash doesn't fail
-    git config user.email "auto-updater@localhost" || true
-    git config user.name "Auto Updater" || true
-    
-    git fetch origin
-    if git remote | grep -q "upstream"; then
-        echo "→ Fetching updates from upstream..."
-        git fetch upstream
-    fi
-    
-    echo "→ Applying updates (stashing local changes first)..."
-    git stash
-    git pull origin master || true
-    git stash pop || echo "⚠️ Could not pop stash (maybe nothing was stashed, or there's a merge conflict)"
-    
+  fi
+
+  # Ensure git user is configured so git stash doesn't fail
+  git config user.email "auto-updater@localhost" || true
+  git config user.name "Auto Updater" || true
+
+  git fetch origin
+  if git remote | grep -q "upstream"; then
+    echo "→ Fetching updates from upstream..."
+    git fetch upstream
+  fi
+
+  if safe_git_pull "$HERMES_WEBUI_DIR"; then
     echo "✅ Hermes WebUI update process completed."
+  else
+    echo "❌ Hermes WebUI update process failed."
+    return 1
+  fi
 }
 
 # Run updates

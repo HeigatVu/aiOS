@@ -221,7 +221,6 @@ class TestIntegration(unittest.IsolatedAsyncioTestCase):
             "viewer-proxy",
             "hermes dashboard",
             "dashboard-proxy",
-            "fcc-server",
             "hermes gateway",
         }
         assert set(service_health.CHECKS.keys()) == expected

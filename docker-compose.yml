@@ -17,8 +17,7 @@ services:
       # Do NOT add "127.0.0.1:" in front — that restricts access to localhost only.
       - "3113:3113" # agentmemory viewer (via viewer-proxy)
       - "8501:8501" # hermes-webui (upstream server.py)
-      - "8888:8888" # Jupyter Notebook
-      - "8082:8082" # free claude code
+      - "8888:8888"
       - "9119:9119" # Hermes dashboard (via dashboard-proxy)
       # General Development Ports (Left open for external testing)
       - "3000:3000"
@@ -30,7 +29,7 @@ services:
       - "8081:8081"
       - "8443:8443"
       - "9000:9000"
-      - "9001:9001" # Browser ai folder
+      - "9001:9001"
       - "9090:9090"
     volumes:
       # 1. Code & Data
@@ -50,8 +49,8 @@ services:
       - ./persistent/hermes:/home/ai_user/.hermes:rw,z
       - ./persistent/gemini:/home/ai_user/.gemini:rw,z
       - ./persistent/agents:/home/ai_user/.agents:rw,z
-      - ./persistent/fcc:/home/ai_user/.fcc:rw,z
       - ./persistent/iii:/home/ai_user/.iii:rw,z
+      - ./persistent/reasonix:/home/ai_user/.reasonix:rw,z
 
       # 4. Shell Configurations
       - ./config-file/system-config/.p10k.zsh:/home/ai_user/.p10k.zsh:rw,z
@@ -62,8 +61,6 @@ services:
       - ./config-file/system-config/nvim:/home/ai_user/.config/nvim:rw,z
 
       # 6. Docker configs
-      - ./Dockerfile:/config-file/Dockerfile:ro,z
-      - ./docker-compose.yml:/config-file/docker-compose.yml:ro,z
       - ./aiOS-ui:/aiOS-ui:rw,z
 
     deploy:

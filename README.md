@@ -85,7 +85,6 @@ my-assistance/
 │   ├── hermes/                  # hermes dashboard-proxy.mjs
 │   ├── claude/                  # Claude agent configurations (settings.json, CLAUDE.md, SKILLS_ROUTER.md)
 │   ├── gemini/                  # Gemini agent configurations (settings.json, mcp_config.json)
-│   ├── fcc/                     # Free Claude Code config template
 │   ├── system-config/           # Shell configs (.zshrc, .p10k.zsh), nvim config, entrypoint, & recovery tools
 │   │   ├── entrypoint.sh        # Runs on every container start: fixes permissions, starts background services
 │   │   ├── recover.sh           # One-shot recovery script for all services
@@ -269,14 +268,14 @@ Three critical maintenance utilities are provided inside the container and works
 
 Located inside the container at `/config-file/system-config/`, this tool runs concurrently via Python's `asyncio` (stdlib only, zero external dependencies) with a 2-second timeout per probe.
 
-- **Status Table**: It verifies the health of **7 services**: `iii engine`, `agentmemory`, `viewer-proxy`, `hermes dashboard`, `dashboard-proxy`, `fcc-server`, and `hermes gateway`.
+- **Status Table**: It verifies the health of **6 services**: `iii engine`, `agentmemory`, `viewer-proxy`, `hermes dashboard`, `dashboard-proxy`, and `hermes gateway`.
 - **Interactive Shell Feedback**: Runs automatically on every new terminal login via `~/.zshrc` to show a clean color-coded status table, ensuring any degradation is noticed immediately.
 
 ### B. One-Shot Recovery (`recover.sh`)
 
 Located inside the container at `/config-file/system-config/`, when services go down (e.g., after the host computer wakes from sleep or Docker restarts), this script restores everything automatically.
 
-- **Conflict Resolution**: Scans `/proc` to kill any stale or conflicting background processes holding ports (`3113`, `9119`, `8082`).
+- **Conflict Resolution**: Scans `/proc` to kill any stale or conflicting background processes holding ports (`3113`, `9119`).
 - **State Restorer**: Restores correct binaries (e.g., pinned `iii` engine), boots all services, registers a fresh watchdog loop, and outputs the final service health table.
 
 ### C. Hermes Agent & WebUI Updater (`update-all.sh`)
