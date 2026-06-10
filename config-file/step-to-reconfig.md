@@ -1,7 +1,7 @@
 # Post-Rebuild Verification Prompt
 
 After `docker compose build && docker compose up -d`, paste the block below
-into Claude Code. Claude will verify every service, fix anything broken, and
+into your agent. The agent will verify every service, fix anything broken, and
 report a final status table.
 
 ---
@@ -39,13 +39,9 @@ Fix anything that is not in the expected state before moving to the next step.
 
 Check the entrypoint logs:
   tail -5 ~/.agentmemory/agentmemory.log
-  cat /tmp/claude-auth-refresh.log
 
 If agentmemory.log shows "iii-engine on PATH is v0.16.1" errors:
   the iii binary needs restoring (Step 1 will fix this).
-If claude-auth-refresh.log is missing or empty:
-  the entrypoint may not have run — verify with:
-    grep "config-file/system-config" /usr/local/bin/entrypoint.sh
 
 ## Step 1 — iii engine
 
@@ -139,7 +135,6 @@ Run all checks and output a markdown table:
 
   iii --version
   agentmemory status 2>&1 | grep -E 'Health|Provider|Not running'
-  claude auth status 2>/dev/null
   kill -0 $(cat /tmp/hermes-dashboard.pid 2>/dev/null) 2>/dev/null && echo "hermes OK" || echo "hermes FAIL"
   tail -1 ~/.agentmemory/viewer-proxy.log
 
@@ -199,10 +194,10 @@ sudo systemctl enable docker
 # On host:
 docker compose build && docker compose up -d
 # Then inside container — just verify:
-agentmemory status && claude auth status
+agentmemory status
 ```
 
-The entrypoint handles iii, agentmemory, Claude auth, hermes, and
+The entrypoint handles iii, agentmemory, hermes, and
 gateway automatically. A watchdog (60s loop) auto-restarts dashboard, proxy,
 , and gateway if they crash. The steps above are only needed when
 something fails.
@@ -225,7 +220,6 @@ something fails.
 - Hermes proxy: stale processes killed via `/proc` scan before start (fixes EADDRINUSE)
 - Watchdog `$TG_STATE` variable expansion fixed (was escaped literal)
 - Watchdog now covers dashboard-proxy (not just dashboard + gateway)
-- `claude auth status --output json` → `claude auth status` (unknown flag removed)
 
 ### Bug fixes (2026-05-31, session 2)
 

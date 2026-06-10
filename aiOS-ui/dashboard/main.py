@@ -2,7 +2,7 @@
 FastAPI BFF (Backend-For-Frontend) wrapper around hermes-webui server.py.
 
 Starts server.py as a subprocess on 127.0.0.1:8787, reverse-proxies all requests
-through a health-gated httpx client, and exposes chat endpoints for Claude/agy.
+through a health-gated httpx client, and exposes chat endpoints for Codex/agy.
 
 Architecture: subprocess (NOT threading) — avoids GIL contention between the
 sync BaseHTTPRequestHandler and Uvicorn's async event loop.
@@ -106,7 +106,6 @@ CONTAINER_TO_HOST_MAPPING = {
     "/config-file": PROJECT_ROOT / "config-file",
     "/aiOS-ui": PROJECT_ROOT / "aiOS-ui",
     "/home/ai_user/.agentmemory": PROJECT_ROOT / "persistent" / "agentmemory",
-    "/home/ai_user/.claude": PROJECT_ROOT / "persistent" / "claude",
     "/home/ai_user/.hermes": PROJECT_ROOT / "persistent" / "hermes",
     "/home/ai_user/.gemini": PROJECT_ROOT / "persistent" / "gemini",
     "/home/ai_user/.agents": PROJECT_ROOT / "persistent" / "agents",

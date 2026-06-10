@@ -13,7 +13,6 @@ DIRS=(
   "$AI_HOME/miniconda3/envs/ai-baseline"
   "$AI_HOME/miniconda3/pkgs"
   "$AI_HOME/.agentmemory"
-  "$AI_HOME/.claude"
   "$AI_HOME/.hermes"
   "$AI_HOME/.gemini"
   "$AI_HOME/.agents"

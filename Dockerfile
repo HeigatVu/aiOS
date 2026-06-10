@@ -39,7 +39,6 @@ RUN mkdir -p \
   /home/${USERNAME}/.cache/uv \
   /home/${USERNAME}/miniconda3/pkgs \
   /home/${USERNAME}/.agentmemory \
-  /home/${USERNAME}/.claude \
   /home/${USERNAME}/.hermes \
   /home/${USERNAME}/.gemini \
   /home/${USERNAME}/.agents \
@@ -73,15 +72,12 @@ RUN mkdir -p /home/${USERNAME}/.local/share/zinit && \
 # 11. Install your requested AI Agents
 RUN curl -fsSL https://antigravity.google/cli/install.sh | bash
 RUN curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
-RUN curl -fsSL https://claude.ai/install.sh | bash
+RUN curl -fsSL https://chatgpt.com/codex/install.sh | sh
 RUN curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/read-once/install.sh | bash
 RUN curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
 RUN curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh
 RUN pip install "headroom-ai[all]"
 RUN uv tool install graphifyy
-
-# --- AI SIDECAR AUTO-INSTALLS ---
-# (Sidecar UI injects new RUN layers directly under this marker. Do not remove.)
 
 USER root
 

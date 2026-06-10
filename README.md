@@ -42,7 +42,7 @@ make shell
 bash /config-file/system-config/recover.sh
 ```
 
-Or paste into a new Claude Code session:
+Or paste into a new Codex session:
 
 ```text
 Read /config-file/step-to-reconfig.md and execute every step in order.
@@ -83,7 +83,6 @@ my-assistance/
 │   ├── aiOS-ui/                 # Configurations for the UI services
 │   │   └── agentmemory/         # agentmemory iii-config.yaml, viewer-proxy.mjs, .env, RESTORATION.md
 │   ├── hermes/                  # hermes dashboard-proxy.mjs
-│   ├── claude/                  # Claude agent configurations (settings.json, CLAUDE.md, SKILLS_ROUTER.md)
 │   ├── gemini/                  # Gemini agent configurations (settings.json, mcp_config.json)
 │   ├── system-config/           # Shell configs (.zshrc, .p10k.zsh), nvim config, entrypoint, & recovery tools
 │   │   ├── entrypoint.sh        # Runs on every container start: fixes permissions, starts background services
@@ -106,12 +105,12 @@ my-assistance/
     ├── ml-env/                  # Conda environment cache
     ├── uv-cache/                # Astral uv package installer cache
     ├── conda-pkgs/              # Conda package download cache
-    └── [agent directories]/     # Persistent settings for Claude, Gemini, Hermes, AgentMemory, etc.
+    └── [agent directories]/     # Persistent settings for Codex, Gemini, Hermes, AgentMemory, etc.
 ```
 
 ### The AI Sandbox (`ai_tui_sandbox`)
 
-- **Purpose:** Where AI agents (Gemini, Claude, Hermes, agentmemory, etc.) run in a secure, isolated workspace.
+- **Purpose:** Where AI agents (Gemini, Codex, Hermes, agentmemory, etc.) run in a secure, isolated workspace.
 - **Privileges:** Strictly isolated — no Docker socket access.
 - **User:** Runs as your host UID/GID (auto-detected by Makefile) so bind-mount files are always owned by you.
 - **Environments:** Pre-activated Conda `ai-baseline` env, plus `uv` for fast Python installs.

@@ -18,22 +18,20 @@ the image on every `docker compose build`. Changes to it take effect after rebui
 
 ## What the entrypoint does on every container start
 
-| Step | Action                                                                                 |
-| ---- | -------------------------------------------------------------------------------------- |
-| 1    | Fix ownership of bind-mounted dirs (if not writable)                                   |
-| 2    | Build Conda `ai-baseline` env if empty (first launch only)                             |
-| 3    | Restore iii v0.11.2 from `~/.agentmemory/bin/iii` → `~/.local/bin/iii`                 |
-| 4    | Copy `iii-config.yaml` to agentmemory dist dir                                         |
-| 5    | Install viewer-proxy.mjs (HTTP reverse proxy for agentmemory)                          |
-| 6    | Start agentmemory (if not running)                                                     |
-| 7    | Start viewer-proxy (if not running)                                                    |
-| 8    | Restore Claude Code credentials from backup (if `~/.claude/.credentials.json` missing) |
-| 9    | Refresh Claude Code OAuth token (`claude auth status`)                                 |
-| 10   | Start hermes dashboard + proxy (kills stale processes via /proc scan)                  |
-| 12   | Start hermes gateway                                                                   |
-| 13   | Start watchdog (auto-restarts dashboard, proxy, viewer-proxy, gateway on crash)        |
-| 14   | Start Headroom proxy (`nohup headroom proxy &`)                                        |
-| 15   | `exec /bin/zsh` (hands off to interactive shell)                                       |
+| Step | Action                                                                          |
+| ---- | ------------------------------------------------------------------------------- |
+| 1    | Fix ownership of bind-mounted dirs (if not writable)                            |
+| 2    | Build Conda `ai-baseline` env if empty (first launch only)                      |
+| 3    | Restore iii v0.11.2 from `~/.agentmemory/bin/iii` → `~/.local/bin/iii`          |
+| 4    | Copy `iii-config.yaml` to agentmemory dist dir                                  |
+| 5    | Install viewer-proxy.mjs (HTTP reverse proxy for agentmemory)                   |
+| 6    | Start agentmemory (if not running)                                              |
+| 7    | Start viewer-proxy (if not running)                                             |
+| 8    | Start hermes dashboard + proxy (kills stale processes via /proc scan)           |
+| 9    | Start hermes gateway                                                            |
+| 10   | Start watchdog (auto-restarts dashboard, proxy, viewer-proxy, gateway on crash) |
+| 11   | Start Headroom proxy (`nohup headroom proxy &`)                                 |
+| 12   | `exec /bin/zsh` (hands off to interactive shell)                                |
 
 ## Diagnostic & Recovery Tooling
 
@@ -57,7 +55,6 @@ delegate to it rather than duplicating checks.
 | Hermes proxy EADDRINUSE on restart: killed by stale PID, port not released | Scan `/proc/*/cmdline` for `dashboard-proxy` processes, kill all before starting |
 | Watchdog `$TG_STATE` never expanded (escaped as `\\$TG_STATE`)             | Fixed to `$TG_STATE` — gateway reconnect now actually works                      |
 | Watchdog only covered dashboard + gateway                                  | Now also covers proxy                                                            |
-| `claude auth status --output json` failed (unknown option)                 | Removed `--output json`                                                          |
 
 ### Fixes applied 2026-05-31 (session 2)
 
@@ -119,8 +116,6 @@ Check it worked:
 ```bash
 iii --version                          # expect: 0.11.2
 agentmemory status                     # expect: Health: ✓ healthy
-claude auth status                     # expect: "loggedIn": true
-cat /tmp/claude-auth-refresh.log       # OAuth refresh result
 tail -5 ~/.agentmemory/agentmemory.log # agentmemory start log
 ```
 
@@ -138,13 +133,11 @@ tail -5 ~/.agentmemory/agentmemory.log # agentmemory start log
 **Config backups stored in `/config-file/`:**
 
 - `aiOS-ui/agentmemory/.env` — backed up to `/config-file/aiOS-ui/agentmemory/.env`
-- `claude/settings.json` — backed up to `/config-file/claude/settings.json`
 - `gemini/settings.json` — backed up to `/config-file/gemini/settings.json`
 
 **Not in `/config-file/` (excluded via `.gitignore`):**
 
 - `agentmemory/bin/iii` — in `~/.agentmemory/bin/iii` (persistent mount, 32 MB binary)
-- `claude/.credentials.json` — in `~/.claude/.credentials.json` (persistent mount)
 
 ---
 

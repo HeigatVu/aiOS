@@ -45,7 +45,6 @@ services:
 
       # 3. Agent Configurations
       - ./persistent/agentmemory:/home/ai_user/.agentmemory:rw,z
-      - ./persistent/claude:/home/ai_user/.claude:rw,z
       - ./persistent/hermes:/home/ai_user/.hermes:rw,z
       - ./persistent/gemini:/home/ai_user/.gemini:rw,z
       - ./persistent/agents:/home/ai_user/.agents:rw,z
