@@ -389,6 +389,30 @@
             background: #30363d;
             margin: 4px 0;
         }
+
+        /* Workspace auto-refresh styles */
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.6; }
+            50% { transform: scale(1.15); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.6; }
+        }
+        .pulse-dot {
+            animation: pulse 2s infinite ease-in-out;
+        }
+        
+        #workspace-refresh-btn:hover {
+            color: #c9d1d9;
+            background-color: #21262d;
+        }
+        
+        #workspace-refresh-btn.spinning .refresh-icon {
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 
@@ -437,9 +461,24 @@
         <div id="workspace-panel"
             style="width: 280px; background-color: #161b22; border: 1px solid #30363d; border-radius: 14px; display: none; flex-direction: column; overflow-y: auto;">
             <div
-                style="padding: 12px 16px; font-weight: bold; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; color: #8b949e;">
+                style="padding: 12px 16px; font-weight: bold; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; color: #8b949e;">
                 <span style="font-size: 12px; letter-spacing: 0.5px;">WORKSPACE FILES</span>
-                <span style="cursor:pointer; color: #c9d1d9;" onclick="toggleWorkspacePanel()">✖</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <!-- Auto refresh status indicator + toggle -->
+                    <span id="auto-refresh-badge" onclick="toggleAutoRefresh(event)" style="font-size: 10px; color: #56d364; display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none;" title="Auto-refreshing every 5s. Click to pause.">
+                        <span class="pulse-dot" style="width: 6px; height: 6px; background-color: #56d364; border-radius: 50%; display: inline-block; box-shadow: 0 0 8px #56d364;"></span>
+                        Live
+                    </span>
+                    <!-- Manual refresh button -->
+                    <button id="workspace-refresh-btn" onclick="refreshWorkspace(event)" style="background: transparent; border: none; padding: 4px; color: #8b949e; cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: color 0.2s, background-color 0.2s;" title="Refresh workspace">
+                        <svg class="refresh-icon" width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                            <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+                        </svg>
+                    </button>
+                    <!-- Close button -->
+                    <span style="cursor:pointer; color: #c9d1d9; font-size: 14px; padding: 4px;" onclick="toggleWorkspacePanel()">✖</span>
+                </div>
             </div>
             <div id="file-tree" style="padding: 12px 16px; font-size: 14px;">
                 Loading...
@@ -718,12 +757,92 @@
         addTerminal();
 
         let workspacePanelOpen = false;
+        let autoRefreshInterval = null;
+        let autoRefreshEnabled = true;
+
+        function startAutoRefresh() {
+            stopAutoRefresh();
+            if (!autoRefreshEnabled || !workspacePanelOpen) return;
+            autoRefreshInterval = setInterval(async () => {
+                await refreshWorkspace();
+            }, 5000);
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+
+        function toggleAutoRefresh(e) {
+            if (e) e.stopPropagation();
+            autoRefreshEnabled = !autoRefreshEnabled;
+            const badge = document.getElementById('auto-refresh-badge');
+            const dot = badge.querySelector('.pulse-dot');
+            const textNode = badge.lastChild;
+            
+            if (autoRefreshEnabled) {
+                badge.style.color = '#56d364';
+                badge.title = "Auto-refreshing every 5s. Click to pause.";
+                dot.style.backgroundColor = '#56d364';
+                dot.style.boxShadow = '0 0 8px #56d364';
+                dot.style.animation = 'pulse 2s infinite ease-in-out';
+                textNode.textContent = ' Live';
+                startAutoRefresh();
+            } else {
+                badge.style.color = '#8b949e';
+                badge.title = "Auto-refresh paused. Click to resume.";
+                dot.style.backgroundColor = '#8b949e';
+                dot.style.boxShadow = 'none';
+                dot.style.animation = 'none';
+                textNode.textContent = ' Paused';
+                stopAutoRefresh();
+            }
+        }
+
+        async function refreshWorkspace(e) {
+            if (e) e.stopPropagation();
+            const btn = document.getElementById('workspace-refresh-btn');
+            if (btn) btn.classList.add('spinning');
+            
+            const fileTree = document.getElementById('file-tree');
+            if (fileTree) {
+                const expandedPaths = [];
+                document.querySelectorAll('#file-tree .ft-row').forEach(row => {
+                    if (row.dataset.isdir === "true") {
+                        const childrenContainer = row.nextElementSibling;
+                        if (childrenContainer && childrenContainer.style.display === 'block') {
+                            expandedPaths.push(row.dataset.path);
+                        }
+                    }
+                });
+                
+                try {
+                    await loadFiles('/workspace', fileTree, expandedPaths);
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+            
+            if (btn) {
+                setTimeout(() => {
+                    btn.classList.remove('spinning');
+                }, 500);
+            }
+        }
+
         function toggleWorkspacePanel() {
             workspacePanelOpen = !workspacePanelOpen;
             const panel = document.getElementById('workspace-panel');
             panel.style.display = workspacePanelOpen ? 'flex' : 'none';
-            if (workspacePanelOpen && document.getElementById('file-tree').innerHTML.includes('Loading')) {
-                loadFiles('/workspace', document.getElementById('file-tree'));
+            if (workspacePanelOpen) {
+                if (document.getElementById('file-tree').innerHTML.includes('Loading')) {
+                    loadFiles('/workspace', document.getElementById('file-tree'));
+                }
+                startAutoRefresh();
+            } else {
+                stopAutoRefresh();
             }
             updateGridClass();
         }
@@ -741,7 +860,7 @@
         const SVG_FOLDER = `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.543l-1.6-1.6A1.75 1.75 0 0 0 4.707 1H1.75ZM1.5 2.75a.25.25 0 0 1 .25-.25h2.957a.25.25 0 0 1 .177.073l1.6 1.6A.25.25 0 0 0 6.661 4.5h7.589a.25.25 0 0 1 .25.25v8.5a.25.25 0 0 1-.25.25H1.75a.25.25 0 0 1-.25-.25V2.75Z"></path></svg>`;
         const SVG_FILE = `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16H3.75A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"></path></svg>`;
 
-        async function loadFiles(path, container) {
+        async function loadFiles(path, container, expandedPaths = null) {
             try {
                 if (path.endsWith('/') && path !== '/') {
                     path = path.slice(0, -1);
@@ -797,6 +916,12 @@
 
                             const childrenContainer = document.createElement('div');
                             childrenContainer.style.display = 'none';
+
+                            if (expandedPaths && expandedPaths.includes(fullPath)) {
+                                arrow.classList.add('open');
+                                childrenContainer.style.display = 'block';
+                                loadFiles(fullPath, childrenContainer, expandedPaths);
+                            }
 
                             dirRow.onclick = () => {
                                 const isOpen = childrenContainer.style.display === 'block';
