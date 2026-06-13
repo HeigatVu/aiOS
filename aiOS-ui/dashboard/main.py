@@ -30,16 +30,35 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
-from routers import files, update, terminal
+from routers import files, update, terminal, notes
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
 
 import httpx
 
 # ── Configuration ────────────────────────────────────────────────────────────
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+
 HERMES_SUB_HOST = os.environ.get("HERMES_SUB_HOST", "127.0.0.1")
 HERMES_SUB_PORT = int(os.environ.get("HERMES_SUB_PORT", "8501"))
-HERMES_HOME = os.environ.get("HERMES_HOME", str(Path.home() / ".hermes"))
+
+def _get_writable_hermes_home() -> str:
+    h = os.environ.get("HERMES_HOME")
+    if h:
+        return h
+    default_home = Path.home() / ".hermes"
+    try:
+        default_home.mkdir(parents=True, exist_ok=True)
+        test_file = default_home / ".write_test"
+        test_file.touch()
+        test_file.unlink()
+        return str(default_home)
+    except Exception:
+        fallback = PROJECT_ROOT / "persistent" / ".hermes"
+        fallback.mkdir(parents=True, exist_ok=True)
+        return str(fallback)
+
+HERMES_HOME = _get_writable_hermes_home()
 SIDECAR_HOST = os.environ.get("SIDECAR_HOST", "127.0.0.1")
 SIDECAR_PORT = int(os.environ.get("SIDECAR_PORT", "8787"))
 MAX_PROMPT_LENGTH = int(os.environ.get("SIDECAR_MAX_PROMPT_LENGTH", "16384"))  # 16KB
@@ -83,7 +102,6 @@ _ALLOWED_WORKDIR_ROOTS = [
 ]
 
 # ── Path translation for host-level execution ─────────────────────────────────
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 def _check_outside_docker() -> bool:
     if Path("/.dockerenv").exists() or Path("/run/.containerenv").exists():
         return False
@@ -189,6 +207,8 @@ def _subprocess_start() -> subprocess.Popen:
         "HERMES_WEBUI_HOST": HERMES_SUB_HOST,
         "HERMES_WEBUI_PORT": str(HERMES_SUB_PORT),
         "HERMES_WEBUI_TRUST_FORWARDED_HOST": "1",
+        "HERMES_WEBUI_DEFAULT_WORKSPACE": str(PROJECT_ROOT / "sandbox-data" / "working-space"),
+        "HERMES_WEBUI_STATE_DIR": str(Path(HERMES_HOME) / "webui"),
     }
     log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
     return subprocess.Popen(
@@ -329,6 +349,7 @@ app = FastAPI(title="aiOS", lifespan=lifespan)
 app.include_router(files.router)
 app.include_router(update.router)
 app.include_router(terminal.router)
+app.include_router(notes.router)
 
 # CORS — allow browser access from LAN
 app.add_middleware(
@@ -364,6 +385,13 @@ async def dashboard():
         return HTMLResponse(dashboard_html_path.read_text())
     return HTMLResponse('Dashboard HTML not found')
 
+@app.get("/workspace")
+async def workspace_portal():
+    workspace_html_path = PROJECT_ROOT / 'aiOS-ui' / 'dashboard' / 'static' / 'workspace' / 'index.html'
+    if workspace_html_path.exists():
+        return HTMLResponse(workspace_html_path.read_text())
+    return HTMLResponse('Workspace HTML not found')
+
 @app.get("/favicon.ico")
 async def favicon():
     favicon_path = PROJECT_ROOT / 'aiOS-ui' / 'hermes-webui' / 'static' / 'favicon.svg'
@@ -372,14 +400,31 @@ async def favicon():
     return Response(status_code=404)
 
 
-async def proxy_target(request: Request, path: str, target_base: str):
-    client = await _ensure_client()
+_proxy_clients: dict[str, httpx.AsyncClient] = {}
+
+def _get_proxy_client(target_base: str) -> httpx.AsyncClient:
+    if target_base not in _proxy_clients:
+        _proxy_clients[target_base] = httpx.AsyncClient(
+            base_url=target_base,
+            timeout=httpx.Timeout(300.0, connect=5.0),
+            limits=httpx.Limits(max_keepalive_connections=50, max_connections=200),
+        )
+    return _proxy_clients[target_base]
+
+async def proxy_target(request: Request, path: str, target_base: str, client: httpx.AsyncClient | None = None):
     if not client:
-        raise HTTPException(status_code=503, detail="Proxy client not ready")
+        client = _get_proxy_client(target_base)
     url = f"{target_base}/{path}" if path else f"{target_base}/"
     if request.url.query:
         url = f"{url}?{request.url.query.decode() if isinstance(request.url.query, bytes) else request.url.query}"
     headers = {k: v for k, v in request.headers.items() if k.lower() not in ("host", "transfer-encoding")}
+    # Set the Host header to localhost to pass any host-allowlist checks
+    from urllib.parse import urlparse
+    parsed_target = urlparse(target_base)
+    if parsed_target.port:
+        headers["host"] = f"localhost:{parsed_target.port}"
+    else:
+        headers["host"] = "localhost"
     headers["X-Forwarded-Host"] = request.headers.get("host", "")
     body = await request.body()
     try:
@@ -394,6 +439,10 @@ async def proxy_target(request: Request, path: str, target_base: str):
     resp_headers = {k: v for k, v in resp.headers.items() if k.lower() not in ("transfer-encoding", "content-encoding")}
     resp_headers.pop("content-length", None)
     
+    # Strip X-Frame-Options and Content-Security-Policy to allow embedding in iframes
+    resp_headers.pop("x-frame-options", None)
+    resp_headers.pop("content-security-policy", None)
+    
     if request.method == "HEAD":
         return Response(status_code=resp.status_code, headers=resp_headers)
     
@@ -403,11 +452,61 @@ async def proxy_target(request: Request, path: str, target_base: str):
         media_type=resp.headers.get("content-type", ""), background=BackgroundTask(resp.aclose)
     )
 
+@app.api_route("/agentmemory/{path:path}", methods=PROXIED_METHODS)
+async def proxy_to_agentmemory(request: Request, path: str):
+    """Proxy AgentMemory requests to port 3113."""
+    target_base = "http://127.0.0.1:3113"
+    return await proxy_target(request, path, target_base)
+
+@app.api_route("/hermes-chat/{path:path}", methods=PROXIED_METHODS)
+async def proxy_to_hermes_chat(request: Request, path: str):
+    """Proxy Hermes Chat requests to port 8501."""
+    target_base = f"http://{HERMES_SUB_HOST}:{HERMES_SUB_PORT}"
+    client = await _ensure_client()
+    return await proxy_target(request, path, target_base, client=client)
+
+@app.api_route("/hermes-dashboard/{path:path}", methods=PROXIED_METHODS)
+async def proxy_to_hermes_dashboard(request: Request, path: str):
+    """Proxy Hermes Dashboard requests to port 9119."""
+    target_base = "http://127.0.0.1:9119"
+    return await proxy_target(request, path, target_base)
+
 @app.api_route("/{path:path}", methods=PROXIED_METHODS)
 async def proxy_to_hermes(request: Request, path: str):
-    """Forward all unmatched requests to the hermes-webui subserver."""
+    """Forward all unmatched requests to the hermes-webui subserver.
+    If the subserver returns 404, fallback to AgentMemory (3113) or Hermes Dashboard (9119)
+    to handle absolute path assets for other subsystems.
+    """
     target_base = f"http://{HERMES_SUB_HOST}:{HERMES_SUB_PORT}"
-    return await proxy_target(request, path, target_base)
+    
+    # Get standard client for hermes-webui if available
+    client = await _ensure_client()
+    try:
+        response = await proxy_target(request, path, target_base, client=client)
+        if response.status_code != 404:
+            return response
+    except Exception:
+        # Fall back to checking other services if the subserver fails or is not ready
+        pass
+
+    # If unmatched route is 404 on hermes-webui, check AgentMemory (3113)
+    try:
+        mem_resp = await proxy_target(request, path, "http://127.0.0.1:3113")
+        if mem_resp.status_code != 404:
+            return mem_resp
+    except Exception:
+        pass
+
+    # Next check Hermes Dashboard (9119)
+    try:
+        dash_resp = await proxy_target(request, path, "http://127.0.0.1:9119")
+        if dash_resp.status_code != 404:
+            return dash_resp
+    except Exception:
+        pass
+
+    # Fallback response: if nothing matches, return 404
+    raise HTTPException(status_code=404, detail="Not found on any subserver")
 
 if __name__ == "__main__":
     import uvicorn
