@@ -473,37 +473,71 @@ async def proxy_to_hermes_dashboard(request: Request, path: str):
 
 @app.api_route("/{path:path}", methods=PROXIED_METHODS)
 async def proxy_to_hermes(request: Request, path: str):
-    """Forward all unmatched requests to the hermes-webui subserver.
-    If the subserver returns 404, fallback to AgentMemory (3113) or Hermes Dashboard (9119)
-    to handle absolute path assets for other subsystems.
+    """Forward all unmatched requests to the appropriate subserver based on the Referer header
+    and path, with fallbacks to other subservers if a 404 is returned.
     """
-    target_base = f"http://{HERMES_SUB_HOST}:{HERMES_SUB_PORT}"
+    referer = request.headers.get("referer", "").lower()
     
-    # Get standard client for hermes-webui if available
-    client = await _ensure_client()
-    try:
-        response = await proxy_target(request, path, target_base, client=client)
-        if response.status_code != 404:
-            return response
-    except Exception:
-        # Fall back to checking other services if the subserver fails or is not ready
-        pass
+    # Parse referer path to identify SPA routes
+    referer_path = ""
+    if referer:
+        try:
+            from urllib.parse import urlparse
+            referer_path = urlparse(referer).path
+        except Exception:
+            pass
 
-    # If unmatched route is 404 on hermes-webui, check AgentMemory (3113)
-    try:
-        mem_resp = await proxy_target(request, path, "http://127.0.0.1:3113")
-        if mem_resp.status_code != 404:
-            return mem_resp
-    except Exception:
-        pass
+    # Dashboard routes in the Hermes Dashboard React/Vue router
+    dashboard_routes = {"/skills", "/settings", "/sessions", "/chat", "/logs", "/runs", "/agents"}
+    
+    is_from_dashboard = "hermes-dashboard" in referer
+    if referer_path:
+        for route in dashboard_routes:
+            if referer_path == route or referer_path.rstrip("/").startswith(route + "/"):
+                is_from_dashboard = True
+                break
 
-    # Next check Hermes Dashboard (9119)
-    try:
-        dash_resp = await proxy_target(request, path, "http://127.0.0.1:9119")
-        if dash_resp.status_code != 404:
-            return dash_resp
-    except Exception:
-        pass
+    # Also check if the requested API path itself is dashboard-specific
+    is_dashboard_api = False
+    normalized_path = "/" + path.lstrip("/")
+    dashboard_api_prefixes = {"/api/auth", "/api/ws", "/api/events", "/api/pty", "/api/tools/toolsets"}
+    for prefix in dashboard_api_prefixes:
+        if normalized_path == prefix or normalized_path.startswith(prefix + "/"):
+            is_dashboard_api = True
+            break
+            
+    # Determine the preferred target base based on referer
+    if is_from_dashboard or is_dashboard_api:
+        bases_order = [
+            ("dashboard", "http://127.0.0.1:9119"),
+            ("webui", f"http://{HERMES_SUB_HOST}:{HERMES_SUB_PORT}"),
+            ("agentmemory", "http://127.0.0.1:3113")
+        ]
+    elif "agentmemory" in referer:
+        bases_order = [
+            ("agentmemory", "http://127.0.0.1:3113"),
+            ("webui", f"http://{HERMES_SUB_HOST}:{HERMES_SUB_PORT}"),
+            ("dashboard", "http://127.0.0.1:9119")
+        ]
+    else:
+        bases_order = [
+            ("webui", f"http://{HERMES_SUB_HOST}:{HERMES_SUB_PORT}"),
+            ("agentmemory", "http://127.0.0.1:3113"),
+            ("dashboard", "http://127.0.0.1:9119")
+        ]
+
+    for name, target_base in bases_order:
+        try:
+            if name == "webui":
+                client = await _ensure_client()
+                response = await proxy_target(request, path, target_base, client=client)
+            else:
+                response = await proxy_target(request, path, target_base)
+                
+            if response.status_code != 404:
+                return response
+        except Exception:
+            pass
 
     # Fallback response: if nothing matches, return 404
     raise HTTPException(status_code=404, detail="Not found on any subserver")
