@@ -5,12 +5,28 @@ import pty
 import fcntl
 import struct
 import termios
+import subprocess
 from pathlib import Path
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 
 router = APIRouter()
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+
+def _check_outside_docker() -> bool:
+    if Path("/.dockerenv").exists() or Path("/run/.containerenv").exists():
+        return False
+    try:
+        import getpass
+        if getpass.getuser() == "ai_user":
+            return False
+    except Exception:
+        pass
+    if Path("/workspace").exists() and Path("/home/ai_user").exists():
+        return False
+    return True
+
+is_outside_docker = _check_outside_docker()
 
 @router.get("/terminals", response_class=HTMLResponse)
 async def get_terminals():
@@ -26,7 +42,72 @@ async def terminal_ws(websocket: WebSocket, cols: int = 80, rows: int = 24, user
     pid, fd = pty.fork()
     if pid == 0:
         os.environ["TERM"] = "xterm-256color"
-        os.execvp("docker", ["docker", "exec", "-it", "-u", user, "-w", "/workspace", "ai_tui_sandbox", "/bin/zsh"])
+        
+        if not is_outside_docker:
+            # We are already inside docker: run shell directly
+            for shell in ["zsh", "bash", "sh"]:
+                try:
+                    os.execvp(shell, [shell])
+                except FileNotFoundError:
+                    continue
+        else:
+            # Change directory to project root so docker compose find docker-compose.yml
+            try:
+                os.chdir(PROJECT_ROOT)
+            except Exception:
+                pass
+
+            # On the host: determine the container engine and execution command
+            cmd_prefix = None
+            
+            # 1. Try Docker Compose
+            try:
+                res = subprocess.run(["docker", "compose", "ps", "--status", "running", "--format", "json"], capture_output=True, text=True, timeout=2)
+                if res.returncode == 0 and "sandbox" in res.stdout:
+                    cmd_prefix = ["docker", "compose", "exec", "-it", "-u", user, "-w", "/workspace", "sandbox", "/bin/zsh"]
+            except Exception:
+                pass
+
+            # 2. Try Podman Compose
+            if not cmd_prefix:
+                try:
+                    res = subprocess.run(["podman", "compose", "ps", "--format", "json"], capture_output=True, text=True, timeout=2)
+                    if res.returncode == 0 and "sandbox" in res.stdout:
+                        cmd_prefix = ["podman", "compose", "exec", "-it", "-u", user, "-w", "/workspace", "sandbox", "/bin/zsh"]
+                except Exception:
+                    pass
+
+            # 3. Try raw Docker inspect
+            if not cmd_prefix:
+                try:
+                    res = subprocess.run(["docker", "inspect", "-f", "{{.State.Running}}", "ai_tui_sandbox"], capture_output=True, text=True, timeout=2)
+                    if res.returncode == 0 and "true" in res.stdout.lower():
+                        cmd_prefix = ["docker", "exec", "-it", "-u", user, "-w", "/workspace", "ai_tui_sandbox", "/bin/zsh"]
+                except Exception:
+                    pass
+
+            # 4. Try raw Podman inspect
+            if not cmd_prefix:
+                try:
+                    res = subprocess.run(["podman", "inspect", "-f", "{{.State.Running}}", "ai_tui_sandbox"], capture_output=True, text=True, timeout=2)
+                    if res.returncode == 0 and "true" in res.stdout.lower():
+                        cmd_prefix = ["podman", "exec", "-it", "-u", user, "-w", "/workspace", "ai_tui_sandbox", "/bin/zsh"]
+                except Exception:
+                    pass
+
+            # Try executing the determined container command
+            if cmd_prefix:
+                try:
+                    os.execvp(cmd_prefix[0], cmd_prefix)
+                except FileNotFoundError:
+                    pass
+            
+            # Fallback to local shell on host if container exec failed or wasn't found
+            for shell in ["zsh", "bash", "sh"]:
+                try:
+                    os.execvp(shell, [shell])
+                except FileNotFoundError:
+                    continue
         
     wsz = struct.pack("HHHH", rows, cols, 0, 0)
     fcntl.ioctl(fd, termios.TIOCSWINSZ, wsz)

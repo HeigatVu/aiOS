@@ -28,7 +28,20 @@ _PERMISSION_MODES = {
     "ro": {"file": "644", "dir": "755"},
     "none": {"file": "600", "dir": "700"},
 }
-is_outside_docker = not os.path.exists("/.dockerenv")
+def _check_outside_docker() -> bool:
+    if Path("/.dockerenv").exists() or Path("/run/.containerenv").exists():
+        return False
+    try:
+        import getpass
+        if getpass.getuser() == "ai_user":
+            return False
+    except Exception:
+        pass
+    if Path("/workspace").exists() and Path("/home/ai_user").exists():
+        return False
+    return True
+
+is_outside_docker = _check_outside_docker()
 logger = logging.getLogger("bff.files")
 
 CONTAINER_TO_HOST_MAPPING = {
