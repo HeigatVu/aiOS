@@ -35,6 +35,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
 
 import httpx
+import websockets
 
 # ── Configuration ────────────────────────────────────────────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -452,6 +453,49 @@ async def proxy_target(request: Request, path: str, target_base: str, client: ht
         media_type=resp.headers.get("content-type", ""), background=BackgroundTask(resp.aclose)
     )
 
+async def proxy_websocket(websocket: WebSocket, target_url: str):
+    await websocket.accept()
+    try:
+        async with websockets.connect(target_url) as target_ws:
+            async def forward_to_target():
+                try:
+                    while True:
+                        msg = await websocket.receive()
+                        if msg.get("type") == "websocket.disconnect":
+                            break
+                        if "text" in msg:
+                            await target_ws.send(msg["text"])
+                        elif "bytes" in msg:
+                            await target_ws.send(msg["bytes"])
+                except Exception:
+                    pass
+
+            async def forward_to_client():
+                try:
+                    async for message in target_ws:
+                        if isinstance(message, bytes):
+                            await websocket.send_bytes(message)
+                        else:
+                            await websocket.send_text(message)
+                except Exception:
+                    pass
+
+            await asyncio.gather(forward_to_target(), forward_to_client())
+    except Exception as e:
+        logger.error(f"WebSocket proxy error to {target_url}: {e}")
+    finally:
+        try:
+            await websocket.close()
+        except Exception:
+            pass
+
+@app.websocket("/api/{path:path}")
+async def ws_proxy_catchall(websocket: WebSocket, path: str):
+    query = websocket.query_params
+    target_base = "ws://127.0.0.1:9119"
+    target = f"{target_base}/api/{path}?{query}" if query else f"{target_base}/api/{path}"
+    await proxy_websocket(websocket, target)
+
 @app.api_route("/agentmemory/{path:path}", methods=PROXIED_METHODS)
 async def proxy_to_agentmemory(request: Request, path: str):
     """Proxy AgentMemory requests to port 3113."""
@@ -488,7 +532,10 @@ async def proxy_to_hermes(request: Request, path: str):
             pass
 
     # Dashboard routes in the Hermes Dashboard React/Vue router
-    dashboard_routes = {"/skills", "/settings", "/sessions", "/chat", "/logs", "/runs", "/agents"}
+    dashboard_routes = {
+        "/skills", "/settings", "/sessions", "/chat", "/logs", "/runs", "/agents",
+        "/system", "/status", "/cron"
+    }
     
     is_from_dashboard = "hermes-dashboard" in referer
     if referer_path:
@@ -500,7 +547,10 @@ async def proxy_to_hermes(request: Request, path: str):
     # Also check if the requested API path itself is dashboard-specific
     is_dashboard_api = False
     normalized_path = "/" + path.lstrip("/")
-    dashboard_api_prefixes = {"/api/auth", "/api/ws", "/api/events", "/api/pty", "/api/tools/toolsets"}
+    dashboard_api_prefixes = {
+        "/api/auth", "/api/ws", "/api/events", "/api/pty", "/api/tools/toolsets",
+        "/api/status", "/api/config", "/api/cron", "/api/analytics"
+    }
     for prefix in dashboard_api_prefixes:
         if normalized_path == prefix or normalized_path.startswith(prefix + "/"):
             is_dashboard_api = True
