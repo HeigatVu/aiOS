@@ -1,7 +1,7 @@
 """
 FastAPI BFF (Backend-For-Frontend) wrapper around hermes-webui server.py.
 
-Starts server.py as a subprocess on 127.0.0.1:8787, reverse-proxies all requests
+Starts server.py as a subprocess, reverse-proxies all requests on 127.0.0.1:8788
 through a health-gated httpx client, and exposes chat endpoints for Codex/agy.
 
 Architecture: subprocess (NOT threading) — avoids GIL contention between the
@@ -60,7 +60,7 @@ def _get_writable_hermes_home() -> str:
 
 HERMES_HOME = _get_writable_hermes_home()
 SIDECAR_HOST = os.environ.get("SIDECAR_HOST", "127.0.0.1")
-SIDECAR_PORT = int(os.environ.get("SIDECAR_PORT", "8787"))
+SIDECAR_PORT = int(os.environ.get("SIDECAR_PORT", "8788"))
 MAX_PROMPT_LENGTH = int(os.environ.get("SIDECAR_MAX_PROMPT_LENGTH", "16384"))  # 16KB
 
 SERVER_SCRIPT = Path(__file__).resolve().parent.parent / "hermes-webui" / "server.py"

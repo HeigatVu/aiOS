@@ -10,7 +10,7 @@ fi
 
 .venv-host/bin/pip install fastapi uvicorn httpx websockets
 
-echo "Starting FastAPI BFF Dashboard on host (port 8787)..."
+echo "Starting FastAPI BFF Dashboard on host (port 8788)..."
 export HERMES_SUB_HOST=127.0.0.1
 export HERMES_SUB_PORT=8501
 

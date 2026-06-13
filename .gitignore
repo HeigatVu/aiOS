@@ -59,6 +59,8 @@ sandbox-data/working-space/*
 .antigravitycli/
 .codegraph/
 .agents/
+.serena/
+AGENTS.md
 
 # Nested git config ignores
 config-file/.gitignore

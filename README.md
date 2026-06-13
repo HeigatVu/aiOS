@@ -94,7 +94,7 @@ my-assistance/
 │
 ├── aiOS-ui/                     # Web control panel directory
 │   ├── dashboard/               # BFF Dashboard (runs on host)
-│   │   ├── main.py              # FastAPI BFF backend (port 8787) — routes, permissions & file browser SPA
+│   │   ├── main.py              # FastAPI BFF backend (port 8788) — routes, permissions & file browser SPA
 │   │   ├── start-host.sh        # Host bootstrap script to run the BFF
 │   │   └── static/
 │   │       └── file-browser/    # Custom File Browser SPA
@@ -118,7 +118,7 @@ my-assistance/
 
 ### The Sidecar Web Control Panel (BFF Dashboard)
 
-- **Purpose:** Web dashboard running at `http://localhost:8787` on the host, launched via `aiOS-ui/dashboard/start-host.sh`. It proxies to the Vue 3 Hermes Web UI running as a background service inside the sandbox container (port `8501`), and serves the custom File Browser SPA (at `/files`).
+- **Purpose:** Web dashboard running at `http://localhost:8788` on the host, launched via `aiOS-ui/dashboard/start-host.sh`. It proxies to the Vue 3 Hermes Web UI running as a background service inside the sandbox container (port `8501`), and serves the custom File Browser SPA (at `/files`).
 - **Views & Capabilities (via Hermes subserver & BFF):**
   - **BFF Dashboard** — Central entry point with quick access to Hermes, AgentMemory, and File Browser.
   - **Hermes SPA** — Multi-agent chat workspace.
@@ -158,7 +158,7 @@ Builds the image (if needed) with your current UID/GID, then starts the sandbox 
    bash aiOS-ui/dashboard/start-host.sh
    ```
 
-2. Open `http://localhost:8787` in your browser.
+2. Open `http://localhost:8788` in your browser.
 
 ### Enter the Sandbox Terminal
 
