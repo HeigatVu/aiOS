@@ -5,6 +5,7 @@ import logging
 import os
 import shutil
 import stat as _stat
+import subprocess
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
@@ -13,8 +14,10 @@ router = APIRouter()
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 WORKSPACE_DIR = PROJECT_ROOT
 _FILE_BROWSER_HTML_PATH = PROJECT_ROOT / "aiOS-ui" / "dashboard" / "static" / "file-browser" / "index.html"
-_FILE_BROWSER_ROOT = str(PROJECT_ROOT)
+_FILE_BROWSER_ROOT = "/"
 _FILE_BROWSER_DENY = [
+    "/proc", "/sys", "/dev", "/run",
+    "/etc/shadow", "/etc/passwd",
     str(PROJECT_ROOT / ".git"),
     str(PROJECT_ROOT / ".ssh"),
     str(PROJECT_ROOT / "persistent" / ".ssh"),
@@ -25,39 +28,51 @@ _PERMISSION_MODES = {
     "ro": {"file": "644", "dir": "755"},
     "none": {"file": "600", "dir": "700"},
 }
-is_outside_docker = True
+is_outside_docker = not os.path.exists("/.dockerenv")
 logger = logging.getLogger("bff.files")
 
-def _to_container_path(host_path: Path | str) -> str:
-    path_str = str(host_path)
-    
-    # Check specific docker mappings first
-    ws_path = str(WORKSPACE_DIR / "sandbox-data" / "working-space")
-    if path_str.startswith(ws_path):
-        rel = Path(path_str).relative_to(ws_path)
-        return f"/workspace/{rel}" if str(rel) != "." else "/workspace"
-        
-    my_data_path = str(WORKSPACE_DIR / "sandbox-data" / "my-data")
-    if path_str.startswith(my_data_path):
-        rel = Path(path_str).relative_to(my_data_path)
-        return f"/my-data/{rel}" if str(rel) != "." else "/my-data"
-        
-    outputs_path = str(WORKSPACE_DIR / "sandbox-data" / "outputs")
-    if path_str.startswith(outputs_path):
-        rel = Path(path_str).relative_to(outputs_path)
-        return f"/outputs/{rel}" if str(rel) != "." else "/outputs"
-        
-    persistent_path = str(WORKSPACE_DIR / "persistent")
-    if path_str.startswith(persistent_path):
-        rel = Path(path_str).relative_to(persistent_path)
-        return f"/home/ai_user/{rel}" if str(rel) != "." else "/home/ai_user"
+CONTAINER_TO_HOST_MAPPING = {
+    "/workspace": PROJECT_ROOT / "sandbox-data" / "working-space",
+    "/outputs": PROJECT_ROOT / "sandbox-data" / "outputs",
+    "/my-data": PROJECT_ROOT / "sandbox-data" / "my-data",
+    "/config-file": PROJECT_ROOT / "config-file",
+    "/aiOS-ui": PROJECT_ROOT / "aiOS-ui",
+    "/home/ai_user/.agentmemory": PROJECT_ROOT / "persistent" / "agentmemory",
+    "/home/ai_user/.claude": PROJECT_ROOT / "persistent" / "claude",
+    "/home/ai_user/.hermes": PROJECT_ROOT / "persistent" / "hermes",
+    "/home/ai_user/.gemini": PROJECT_ROOT / "persistent" / "gemini",
+    "/home/ai_user/.agents": PROJECT_ROOT / "persistent" / "agents",
+    "/home/ai_user/.fcc": PROJECT_ROOT / "persistent" / "fcc",
+    "/home/ai_user/.iii": PROJECT_ROOT / "persistent" / "iii",
+    "/home/ai_user": PROJECT_ROOT / "sandbox-data" / "home_ai_user",
+}
 
-    # Fallback for other paths directly under WORKSPACE_DIR
-    if path_str.startswith(str(WORKSPACE_DIR)):
-        rel = Path(path_str).relative_to(WORKSPACE_DIR)
-        return f"/{rel}" if str(rel) != "." else "/"
-        
-    return path_str
+def _to_host_path(path_str: str) -> Path:
+    if not is_outside_docker:
+        return Path(path_str)
+    normalized = os.path.normpath(path_str)
+    for c_prefix, h_path in sorted(CONTAINER_TO_HOST_MAPPING.items(), key=lambda x: len(x[0]), reverse=True):
+        if normalized == c_prefix:
+            return h_path
+        if normalized.startswith(c_prefix.rstrip("/") + "/"):
+            rel = os.path.relpath(normalized, c_prefix)
+            return h_path / rel
+    return Path(normalized)
+
+def _to_container_path(host_path: Path | str) -> str:
+    if not is_outside_docker:
+        return str(host_path)
+    h_abs = Path(host_path).resolve()
+    for c_prefix, h_path in sorted(CONTAINER_TO_HOST_MAPPING.items(), key=lambda x: len(str(x[1])), reverse=True):
+        h_abs_prefix = h_path.resolve()
+        if h_abs == h_abs_prefix:
+            return c_prefix
+        try:
+            rel = h_abs.relative_to(h_abs_prefix)
+            return (Path(c_prefix) / rel).as_posix()
+        except ValueError:
+            continue
+    return h_abs.as_posix()
 
 def _load_file_browser_html() -> str:
     try:
@@ -114,26 +129,12 @@ def _resolve_safe_path(rel: str) -> Path:
     root = Path(_FILE_BROWSER_ROOT).resolve()
     rel = rel.replace("\\", "/")
     
-    # Handle Docker paths mapped to host
-    if rel == "/workspace" or rel.startswith("/workspace/"):
-        sub = rel[len("/workspace"):]
-        target = (root / "sandbox-data" / "working-space" / sub.lstrip("/")).resolve()
-    elif rel == "/my-data" or rel.startswith("/my-data/"):
-        sub = rel[len("/my-data"):]
-        target = (root / "sandbox-data" / "my-data" / sub.lstrip("/")).resolve()
-    elif rel == "/outputs" or rel.startswith("/outputs/"):
-        sub = rel[len("/outputs"):]
-        target = (root / "sandbox-data" / "outputs" / sub.lstrip("/")).resolve()
-    elif rel == "/home/ai_user" or rel.startswith("/home/ai_user/"):
-        sub = rel[len("/home/ai_user"):]
-        target = (root / "persistent" / sub.lstrip("/")).resolve()
-    else:
-        rel_path = rel.lstrip("/")
-        # If the client sends an absolute path under the root, strip the root prefix
-        root_str = str(root)
-        if rel_path.startswith(root_str.lstrip("/")):
-            rel_path = rel_path[len(root_str.lstrip("/")):].lstrip("/")
-        target = (root / rel_path).resolve()
+    rel_path = rel.lstrip("/")
+    # If the client sends an absolute path under the root, strip the root prefix
+    root_str = str(root)
+    if rel_path.startswith(root_str.lstrip("/")):
+        rel_path = rel_path[len(root_str.lstrip("/")):].lstrip("/")
+    target = (root / rel_path).resolve()
             
     try:
         target.relative_to(root)
@@ -145,7 +146,7 @@ def _resolve_safe_path(rel: str) -> Path:
         target_str.startswith(d + "/") for d in _FILE_BROWSER_DENY
     ):
         raise HTTPException(status_code=403, detail="Path is blocked")
-    return target
+    return _to_host_path(target_str)
 
 
 @router.get("/api/files/list")
