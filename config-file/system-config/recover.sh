@@ -80,7 +80,7 @@ if [ -n "$DASH_PID" ]; then
 else
   echo "[recover] dashboard down, starting..."
   mkdir -p ~/.hermes/logs
-  hermes dashboard --no-open >>~/.hermes/logs/dashboard.log 2>&1 &
+  HERMES_WEBUI_TRUST_FORWARDED_HOST=1 hermes dashboard --no-open >>~/.hermes/logs/dashboard.log 2>&1 &
   write_pid "$!" /tmp/hermes-dashboard.pid
   sleep 4
   for f in /proc/[0-9]*/cmdline; do
@@ -207,7 +207,7 @@ if [ "$(id -u)" -eq 0 ]; then
       # Dashboard
       if [ -f /tmp/hermes-dashboard.pid ] && ! kill -0 "$(cat /tmp/hermes-dashboard.pid 2>/dev/null)" 2>/dev/null; then
         mkdir -p "$HOME/.hermes/logs"
-        hermes dashboard --no-open >>"$HOME/.hermes/logs/dashboard.log" 2>&1 &
+        HERMES_WEBUI_TRUST_FORWARDED_HOST=1 hermes dashboard --no-open >>"$HOME/.hermes/logs/dashboard.log" 2>&1 &
         echo $! >/tmp/hermes-dashboard.pid
         echo "[watchdog] $(date -Iseconds): dashboard restarted" >>/tmp/hermes-watchdog.log
       fi

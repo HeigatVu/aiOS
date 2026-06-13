@@ -52,7 +52,7 @@ done
     sleep 60
     # Dashboard
     if [ -f /tmp/hermes-dashboard.pid ] && ! kill -0 "$(cat /tmp/hermes-dashboard.pid 2>/dev/null)" 2>/dev/null; then
-      runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'mkdir -p ~/.hermes/logs && hermes dashboard --no-open >> ~/.hermes/logs/dashboard.log 2>&1' &
+      runuser -u ai_user -- env HOME=/home/ai_user HERMES_WEBUI_TRUST_FORWARDED_HOST=1 zsh -c 'mkdir -p ~/.hermes/logs && hermes dashboard --no-open >> ~/.hermes/logs/dashboard.log 2>&1' &
       echo $! >/tmp/hermes-dashboard.pid
       echo "[watchdog] $(date -Iseconds): dashboard restarted" >>/tmp/hermes-watchdog.log
     fi
@@ -172,7 +172,7 @@ fi
 
 HERMES_DASH_PID=/tmp/hermes-dashboard.pid
 if [ ! -f "$HERMES_DASH_PID" ] || ! kill -0 "$(cat "$HERMES_DASH_PID" 2>/dev/null)" 2>/dev/null; then
-  runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'mkdir -p ~/.hermes/logs && hermes dashboard --no-open >> ~/.hermes/logs/dashboard.log 2>&1' &
+  runuser -u ai_user -- env HOME=/home/ai_user HERMES_WEBUI_TRUST_FORWARDED_HOST=1 zsh -c 'mkdir -p ~/.hermes/logs && hermes dashboard --no-open >> ~/.hermes/logs/dashboard.log 2>&1' &
   echo $! >"$HERMES_DASH_PID"
   echo "[entrypoint] hermes dashboard started (PID $!)"
   sleep 4
