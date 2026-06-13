@@ -37,7 +37,12 @@ if ! curl -s -o /dev/null -w '' http://localhost:3113/ 2>/dev/null; then
     sed -i 's/^VIEWER_ALLOWED_HOSTS=/# VIEWER_ALLOWED_HOSTS=/g' ~/.agentmemory/.env
   fi
   agentmemory start >>~/.agentmemory/agentmemory.log 2>&1 &
-  sleep 4
+  for i in {1..20}; do
+    if curl -s -o /dev/null -w '' http://localhost:3113/ 2>/dev/null; then
+      break
+    fi
+    sleep 0.2
+  done
 fi
 
 # ── viewer-proxy ──
@@ -82,7 +87,12 @@ else
   mkdir -p ~/.hermes/logs
   HERMES_WEBUI_TRUST_FORWARDED_HOST=1 hermes dashboard --no-open >>~/.hermes/logs/dashboard.log 2>&1 &
   write_pid "$!" /tmp/hermes-dashboard.pid
-  sleep 4
+  for i in {1..20}; do
+    if curl -s -o /dev/null -w '' http://localhost:9119/ 2>/dev/null; then
+      break
+    fi
+    sleep 0.2
+  done
   for f in /proc/[0-9]*/cmdline; do
     p=${f%/cmdline}
     p=${p#/proc/}
@@ -133,7 +143,12 @@ fi
 if [ "$GATEWAY_RUNNING" = false ]; then
   echo "[recover] gateway down, starting..."
   hermes gateway run >>~/.hermes/logs/gateway.log 2>&1 &
-  sleep 3
+  for i in {1..15}; do
+    if hermes gateway status 2>&1 | grep -q "running"; then
+      break
+    fi
+    sleep 0.2
+  done
 fi
 
 # ── hermes-webui (server.py on port 8501) ──
@@ -160,7 +175,12 @@ if [ -z "$WEBUI_PID" ]; then
   fi
   WEBUI_PID=$!
   write_pid "$WEBUI_PID" /tmp/hermes-subserver.pid
-  sleep 2
+  for i in {1..10}; do
+    if curl -s -o /dev/null -w '' http://localhost:8501/ 2>/dev/null; then
+      break
+    fi
+    sleep 0.2
+  done
 fi
 
 # ── headroom proxy ──
@@ -189,7 +209,12 @@ else
   fi
   HEADROOM_PID=$!
   write_pid "$HEADROOM_PID" /tmp/headroom.pid
-  sleep 1
+  for i in {1..5}; do
+    if curl -s -o /dev/null -w '' http://localhost:8787/health 2>/dev/null; then
+      break
+    fi
+    sleep 0.2
+  done
 fi
 
 # ── watchdog ──

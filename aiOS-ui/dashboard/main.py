@@ -545,4 +545,4 @@ async def proxy_to_hermes(request: Request, path: str):
 if __name__ == "__main__":
     import uvicorn
     # The hermes subprocess must not be spawned by multiple workers!
-    uvicorn.run(app, host="0.0.0.0", port=SIDECAR_PORT)
+    uvicorn.run(app, host="0.0.0.0", port=SIDECAR_PORT, timeout_graceful_shutdown=5)
