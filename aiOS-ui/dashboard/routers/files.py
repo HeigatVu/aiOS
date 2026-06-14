@@ -53,7 +53,7 @@ CONTAINER_TO_HOST_MAPPING = {
     "/home/ai_user/.agentmemory": PROJECT_ROOT / "persistent" / "agentmemory",
     "/home/ai_user/.claude": PROJECT_ROOT / "persistent" / "claude",
     "/home/ai_user/.hermes": PROJECT_ROOT / "persistent" / "hermes",
-    "/home/ai_user/.gemini": PROJECT_ROOT / "persistent" / "gemini",
+    "/home/ai_user/.mimocode": PROJECT_ROOT / "persistent" / "mimocode",
     "/home/ai_user/.agents": PROJECT_ROOT / "persistent" / "agents",
     "/home/ai_user/.fcc": PROJECT_ROOT / "persistent" / "fcc",
     "/home/ai_user/.iii": PROJECT_ROOT / "persistent" / "iii",

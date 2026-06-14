@@ -133,7 +133,7 @@ tail -5 ~/.agentmemory/agentmemory.log # agentmemory start log
 **Config backups stored in `/config-file/`:**
 
 - `aiOS-ui/agentmemory/.env` — backed up to `/config-file/aiOS-ui/agentmemory/.env`
-- `gemini/settings.json` — backed up to `/config-file/gemini/settings.json`
+- `mimocode/settings.json` — backed up to `/config-file/mimocode/settings.json`
 
 **Not in `/config-file/` (excluded via `.gitignore`):**
 

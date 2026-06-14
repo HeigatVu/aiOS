@@ -14,7 +14,7 @@ DIRS=(
   "$AI_HOME/miniconda3/pkgs"
   "$AI_HOME/.agentmemory"
   "$AI_HOME/.hermes"
-  "$AI_HOME/.gemini"
+  "$AI_HOME/.mimocode"
   "$AI_HOME/.agents"
   "$AI_HOME/.feynman"
   "$AI_HOME/.reasonix"
@@ -52,15 +52,17 @@ done
     sleep 60
     # Dashboard
     if [ -f /tmp/hermes-dashboard.pid ] && ! kill -0 "$(cat /tmp/hermes-dashboard.pid 2>/dev/null)" 2>/dev/null; then
-      runuser -u ai_user -- env HOME=/home/ai_user HERMES_WEBUI_TRUST_FORWARDED_HOST=1 zsh -c 'mkdir -p ~/.hermes/logs && hermes dashboard --no-open >> ~/.hermes/logs/dashboard.log 2>&1' &
+      runuser -u ai_user -- env HOME=/home/ai_user HERMES_WEBUI_TRUST_FORWARDED_HOST=1 zsh -c 'mkdir -p ~/.hermes/logs && hermes dashboard --no-open >> /config-file/dashboard.log 2>&1' &
       echo $! >/tmp/hermes-dashboard.pid
-      echo "[watchdog] $(date -Iseconds): dashboard restarted" >>/tmp/hermes-watchdog.log
+      chown ai_user:ai_user /tmp/hermes-dashboard.pid
+      echo "[watchdog] $(date -Iseconds): dashboard restarted" >>/config-file/hermes-watchdog.log
     fi
     # Dashboard-proxy
     if [ -f /tmp/hermes-proxy.pid ] && ! kill -0 "$(cat /tmp/hermes-proxy.pid 2>/dev/null)" 2>/dev/null; then
-      runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup node /config-file/hermes/dashboard-proxy.mjs >> /tmp/hermes-proxy.log 2>&1' &
+      runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup node /config-file/hermes/dashboard-proxy.mjs >> /config-file/hermes-proxy.log 2>&1' &
       echo $! >/tmp/hermes-proxy.pid
-      echo "[watchdog] $(date -Iseconds): dashboard-proxy restarted" >>/tmp/hermes-watchdog.log
+      chown ai_user:ai_user /tmp/hermes-proxy.pid
+      echo "[watchdog] $(date -Iseconds): dashboard-proxy restarted" >>/config-file/hermes-watchdog.log
     fi
     # agentmemory viewer-proxy (LAN access to agentmemory viewer)
     if [ -f /home/ai_user/.agentmemory/viewer-proxy.pid ] && ! kill -0 "$(cat /home/ai_user/.agentmemory/viewer-proxy.pid 2>/dev/null)" 2>/dev/null; then
@@ -72,7 +74,8 @@ done
       runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'cp /config-file/aiOS-ui/agentmemory/viewer-proxy.mjs ~/.agentmemory/viewer-proxy.mjs 2>/dev/null || true'
       runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup node ~/.agentmemory/viewer-proxy.mjs >> ~/.agentmemory/viewer-proxy.log 2>&1' &
       echo $! >/home/ai_user/.agentmemory/viewer-proxy.pid
-      echo "[watchdog] $(date -Iseconds): viewer-proxy restarted" >>/tmp/hermes-watchdog.log
+      chown ai_user:ai_user /home/ai_user/.agentmemory/viewer-proxy.pid
+      echo "[watchdog] $(date -Iseconds): viewer-proxy restarted" >>/config-file/hermes-watchdog.log
     fi
     # Gateway (Telegram reconnect)
     if [ -f /home/ai_user/.hermes/gateway_state.json ]; then
@@ -87,24 +90,26 @@ except Exception as e:
     print('error')
 " 2>/dev/null)
       if ! echo "$TG_STATE" | grep -q "running connected"; then
-        runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'hermes gateway restart >> ~/.hermes/logs/gateway.log 2>&1' || true
-        echo "[watchdog] $(date -Iseconds): gateway restarted (state: $TG_STATE)" >>/tmp/hermes-watchdog.log
+        runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'hermes gateway restart >> /config-file/gateway.log 2>&1' || true
+        echo "[watchdog] $(date -Iseconds): gateway restarted (state: $TG_STATE)" >>/config-file/hermes-watchdog.log
       fi
     fi
     # hermes-webui (server.py on port 8501)
     if [ -f /tmp/hermes-subserver.pid ] && ! kill -0 "$(cat /tmp/hermes-subserver.pid 2>/dev/null)" 2>/dev/null; then
       runuser -u ai_user -- env HOME=/home/ai_user HERMES_WEBUI_HOST=0.0.0.0 HERMES_WEBUI_PORT=8501 HERMES_WEBUI_TRUST_FORWARDED_HOST=1 "$PYTHON_EXE" /aiOS-ui/hermes-webui/server.py >>/config-file/aiOS-ui.log 2>&1 &
       echo $! >/tmp/hermes-subserver.pid
-      echo "[watchdog] $(date -Iseconds): hermes-webui restarted" >>/tmp/hermes-watchdog.log
+      chown ai_user:ai_user /tmp/hermes-subserver.pid
+      echo "[watchdog] $(date -Iseconds): hermes-webui restarted" >>/config-file/hermes-watchdog.log
     fi
     # headroom proxy (port 8787)
     if [ -f /tmp/headroom.pid ] && ! kill -0 "$(cat /tmp/headroom.pid 2>/dev/null)" 2>/dev/null; then
-      runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup /home/ai_user/miniconda3/bin/headroom proxy >> /tmp/headroom.log 2>&1' &
+      runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup /home/ai_user/miniconda3/bin/headroom proxy >> /config-file/headroom.log 2>&1' &
       echo $! >/tmp/headroom.pid
-      echo "[watchdog] $(date -Iseconds): headroom proxy restarted" >>/tmp/hermes-watchdog.log
+      chown ai_user:ai_user /tmp/headroom.pid
+      echo "[watchdog] $(date -Iseconds): headroom proxy restarted" >>/config-file/hermes-watchdog.log
     fi
   done
-) >>/tmp/hermes-watchdog.log 2>&1 &
+) >>/config-file/hermes-watchdog.log 2>&1 &
 disown %1 2>/dev/null || true
 echo "[entrypoint] watchdog started"
 
@@ -164,6 +169,7 @@ if [ -f "$PROXY" ]; then
   if [ ! -f "$PROXY_PID_FILE" ] || ! kill -0 "$(cat "$PROXY_PID_FILE" 2>/dev/null)" 2>/dev/null; then
     runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup node ~/.agentmemory/viewer-proxy.mjs >> ~/.agentmemory/viewer-proxy.log 2>&1' &
     echo $! >"$PROXY_PID_FILE"
+    chown ai_user:ai_user "$PROXY_PID_FILE"
     echo "[entrypoint] viewer-proxy started (PID $!)"
   fi
 fi
@@ -172,8 +178,9 @@ fi
 
 HERMES_DASH_PID=/tmp/hermes-dashboard.pid
 if [ ! -f "$HERMES_DASH_PID" ] || ! kill -0 "$(cat "$HERMES_DASH_PID" 2>/dev/null)" 2>/dev/null; then
-  runuser -u ai_user -- env HOME=/home/ai_user HERMES_WEBUI_TRUST_FORWARDED_HOST=1 zsh -c 'mkdir -p ~/.hermes/logs && hermes dashboard --no-open >> ~/.hermes/logs/dashboard.log 2>&1' &
+  runuser -u ai_user -- env HOME=/home/ai_user HERMES_WEBUI_TRUST_FORWARDED_HOST=1 zsh -c 'mkdir -p ~/.hermes/logs && hermes dashboard --no-open >> /config-file/dashboard.log 2>&1' &
   echo $! >"$HERMES_DASH_PID"
+  chown ai_user:ai_user "$HERMES_DASH_PID"
   echo "[entrypoint] hermes dashboard started (PID $!)"
   sleep 4
 fi
@@ -196,8 +203,9 @@ if [ -f "$HERMES_PROXY" ]; then
     fi
     sleep 1
   done
-  runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup node /config-file/hermes/dashboard-proxy.mjs >> /tmp/hermes-proxy.log 2>&1' &
+  runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup node /config-file/hermes/dashboard-proxy.mjs >> /config-file/hermes-proxy.log 2>&1' &
   echo $! >"$HERMES_PROXY_PID"
+  chown ai_user:ai_user "$HERMES_PROXY_PID"
   echo "[entrypoint] hermes dashboard-proxy started (PID $!)"
 fi
 
@@ -209,7 +217,7 @@ if [ -f "$GATEWAY_STATE_FILE" ]; then
   GATEWAY_PID=$(runuser -u ai_user -- env HOME=/home/ai_user python3 -c "import json; print(json.load(open('$GATEWAY_STATE_FILE')).get('pid',''))" 2>/dev/null)
 fi
 if [ -z "$GATEWAY_PID" ] || ! kill -0 "$GATEWAY_PID" 2>/dev/null; then
-  runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup hermes gateway run >> ~/.hermes/logs/gateway.log 2>&1' &
+  runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup hermes gateway run >> /config-file/gateway.log 2>&1' &
   echo "[entrypoint] hermes gateway started"
   sleep 3
 fi
@@ -225,12 +233,14 @@ if [ ! -f "$HERMES_SUB_PID" ] || ! kill -0 "$(cat "$HERMES_SUB_PID" 2>/dev/null)
   rm -f "$HERMES_SUB_PID"
   runuser -u ai_user -- env HOME=/home/ai_user HERMES_WEBUI_HOST=0.0.0.0 HERMES_WEBUI_PORT=8501 HERMES_WEBUI_TRUST_FORWARDED_HOST=1 "$PYTHON_EXE" /aiOS-ui/hermes-webui/server.py >>/config-file/aiOS-ui.log 2>&1 &
   echo $! >"$HERMES_SUB_PID"
+  chown ai_user:ai_user "$HERMES_SUB_PID"
   echo "[entrypoint] hermes-webui started (PID $!) with $PYTHON_EXE"
   sleep 3
 fi
 
 # ── headroom proxy ────────────────────────────────────────────────────────────
-runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup /home/ai_user/miniconda3/bin/headroom proxy >> /tmp/headroom.log 2>&1 & echo $! >/tmp/headroom.pid'
+runuser -u ai_user -- env HOME=/home/ai_user zsh -c 'nohup /home/ai_user/miniconda3/bin/headroom proxy >> /config-file/headroom.log 2>&1 & echo $! >/tmp/headroom.pid'
+chown ai_user:ai_user /tmp/headroom.pid
 echo "[entrypoint] headroom proxy started"
 
 # ── hand off to CMD (/bin/zsh) ────────────────────────────────────────────────
