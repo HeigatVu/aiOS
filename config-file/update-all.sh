@@ -94,6 +94,25 @@ update_agent_inside_container() {
   safe_git_pull "$agent_dir"
 }
 
+update_webui_inside_container() {
+  local webui_dir="/aiOS-ui/hermes-webui"
+
+  # Fix dubious ownership since this function is run via docker exec
+  git config --global --add safe.directory "$webui_dir" || true
+  git config --global url."https://github.com/".insteadOf "git@github.com:" || true
+
+  clear_lock "$webui_dir"
+  cd "$webui_dir"
+  echo "→ Fetching updates..."
+  git fetch origin
+  if git remote | grep -q "upstream"; then
+    echo "→ Fetching updates from upstream..."
+    git fetch upstream
+  fi
+
+  safe_git_pull "$webui_dir"
+}
+
 update_agent() {
   echo "⚕ Updating Hermes Agent..."
 
@@ -156,39 +175,72 @@ update_agent() {
 
 update_webui() {
   echo "⚕ Updating Hermes WebUI..."
-  if [ ! -d "$HERMES_WEBUI_DIR" ]; then
-    echo "❌ Hermes WebUI directory not found at $HERMES_WEBUI_DIR"
-    return 1
-  fi
 
-  clear_lock "$HERMES_WEBUI_DIR"
-
-  echo "→ Fetching Hermes WebUI updates..."
-  cd "$HERMES_WEBUI_DIR"
-
-  # Fix potential permission issues caused by docker volume mapping (e.g. objects owned by 'nobody')
-  if [ "$IS_INSIDE_CONTAINER" = false ]; then
-    if find .git/objects -type d ! -user "$(whoami)" 2>/dev/null | grep -q .; then
-      echo "⚠️ Found git objects with incorrect ownership. Attempting to fix by moving them aside..."
-      find .git/objects -maxdepth 2 -type d ! -user "$(whoami)" ! -name "*.bak" -exec mv {} {}.bak \; 2>/dev/null || true
+  if [ "$IS_INSIDE_CONTAINER" = true ]; then
+    if [ ! -d "$HERMES_WEBUI_DIR" ]; then
+      echo "❌ Hermes WebUI directory not found at $HERMES_WEBUI_DIR"
+      return 1
     fi
-  fi
-
-  # Ensure git user is configured so git stash doesn't fail
-  git config user.email "auto-updater@localhost" || true
-  git config user.name "Auto Updater" || true
-
-  git fetch origin
-  if git remote | grep -q "upstream"; then
-    echo "→ Fetching updates from upstream..."
-    git fetch upstream
-  fi
-
-  if safe_git_pull "$HERMES_WEBUI_DIR"; then
-    echo "✅ Hermes WebUI update process completed."
+    update_webui_inside_container
   else
-    echo "❌ Hermes WebUI update process failed."
-    return 1
+    # Running on the host
+    # Check if the Docker container is running
+    if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^${CONTAINER_NAME}$"; then
+      echo "→ Container '${CONTAINER_NAME}' is running. Updating Hermes WebUI inside the container..."
+      # Execute the commands inside the container with set -e
+      if docker exec -t "${CONTAINER_NAME}" bash -c "set -euo pipefail; $(declare -f clear_lock safe_git_pull update_webui_inside_container); update_webui_inside_container"; then
+        echo "✅ Hermes WebUI update process completed."
+      else
+        echo "❌ Hermes WebUI update process failed."
+        return 1
+      fi
+    else
+      echo "⚠️ Container '${CONTAINER_NAME}' is NOT running."
+      echo "Updating Hermes WebUI locally on host (may require sudo due to permission settings)..."
+
+      # Determine if we need sudo to access or traverse the directory
+      local cmd_prefix=""
+      if [ ! -x "$(dirname "$HERMES_WEBUI_DIR")" ] || [ ! -w "$HERMES_WEBUI_DIR" ] 2>/dev/null; then
+        echo "🔒 Traversal/write access denied to $HERMES_WEBUI_DIR. Using sudo..."
+        cmd_prefix="sudo"
+      fi
+
+      if [ -z "$cmd_prefix" ]; then
+        if [ -d "$HERMES_WEBUI_DIR/.git" ] && find "$HERMES_WEBUI_DIR/.git" ! -writable -print -quit 2>/dev/null | grep -q .; then
+          echo "🔒 Found files/directories in $HERMES_WEBUI_DIR with restricted write access. Using sudo..."
+          cmd_prefix="sudo"
+        fi
+      fi
+
+      if ! $cmd_prefix test -d "$HERMES_WEBUI_DIR"; then
+        echo "❌ Hermes WebUI directory not found at $HERMES_WEBUI_DIR"
+        return 1
+      fi
+
+      $cmd_prefix rm -f "${HERMES_WEBUI_DIR}/.git/index.lock"
+      echo "→ Fetching updates..."
+      $cmd_prefix git -C "$HERMES_WEBUI_DIR" fetch origin
+      if $cmd_prefix git -C "$HERMES_WEBUI_DIR" remote | grep -q "upstream"; then
+        echo "→ Fetching updates from upstream..."
+        $cmd_prefix git -C "$HERMES_WEBUI_DIR" fetch upstream
+      fi
+
+      if [ -n "$cmd_prefix" ]; then
+        if sudo bash -c "set -euo pipefail; $(declare -f safe_git_pull); safe_git_pull \"$HERMES_WEBUI_DIR\""; then
+          echo "✅ Hermes WebUI update process completed."
+        else
+          echo "❌ Hermes WebUI update process failed."
+          return 1
+        fi
+      else
+        if safe_git_pull "$HERMES_WEBUI_DIR"; then
+          echo "✅ Hermes WebUI update process completed."
+        else
+          echo "❌ Hermes WebUI update process failed."
+          return 1
+        fi
+      fi
+    fi
   fi
 }
 
