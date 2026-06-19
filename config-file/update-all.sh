@@ -65,7 +65,77 @@ safe_git_pull() {
 
   echo "→ Pulling updates..."
   # Try to pull main, then master
-  if git pull origin main 2>/dev/null || git pull origin master; then
+  local pull_failed=0
+  if ! (git pull origin main 2>/dev/null || git pull origin master); then
+    pull_failed=1
+  fi
+
+  if [ "$pull_failed" -eq 1 ]; then
+    # Check if there are unresolved merge conflicts
+    local conflicted_files
+    conflicted_files=$(git diff --name-only --diff-filter=U 2>/dev/null || true)
+    if [ -n "$conflicted_files" ]; then
+      echo "⚠️ Merge conflicts detected in: ${conflicted_files}"
+
+      # If Dockerfile is conflicted, try to resolve it automatically
+      if echo "$conflicted_files" | grep -q "Dockerfile"; then
+        echo "→ Attempting automatic conflict resolution for Dockerfile..."
+        if python3 -c '
+import re, sys
+path = "Dockerfile"
+try:
+    with open(path, "r") as f:
+        text = f.read()
+    pattern = r"<<<<<<< HEAD\n(.*?)\n=======\n(.*?)\n>>>>>>> [^\n]+\n"
+    def repl(m):
+        head = m.group(1)
+        resolved = head.replace("8787", "8788")
+        return resolved + "\n"
+    new_text, count = re.subn(pattern, repl, text, flags=re.DOTALL)
+    if count > 0:
+        with open(path, "w") as f:
+            f.write(new_text)
+        print(f"Successfully resolved {count} conflict(s) in Dockerfile.")
+        sys.exit(0)
+    else:
+        print("No conflict markers found in Dockerfile matching the pattern.")
+        sys.exit(1)
+except Exception as e:
+    print(f"Error resolving conflict: {e}")
+    sys.exit(2)
+'; then
+          echo "→ Staging resolved Dockerfile..."
+          git add Dockerfile
+
+          # Check if we should continue merge or rebase
+          if [ -d .git/rebase-merge ] || [ -d .git/rebase-apply ]; then
+            echo "→ Continuing git rebase..."
+            GIT_EDITOR=true git rebase --continue || echo "⚠️ git rebase --continue returned $?"
+          elif [ -f .git/MERGE_HEAD ]; then
+            echo "→ Continuing git merge..."
+            GIT_EDITOR=true git commit --no-edit || echo "⚠️ git commit returned $?"
+          else
+            echo "→ Committing resolved conflict..."
+            git commit -a -m "Resolve merge conflicts automatically" || true
+          fi
+
+          # Check if there are any remaining conflicts
+          local remaining_conflicts
+          remaining_conflicts=$(git diff --name-only --diff-filter=U 2>/dev/null || true)
+          if [ -z "$remaining_conflicts" ]; then
+            echo "✅ All conflicts successfully resolved."
+            pull_failed=0
+          else
+            echo "❌ Some conflicts remain unresolved: ${remaining_conflicts}"
+          fi
+        else
+          echo "❌ Automatic conflict resolution for Dockerfile failed."
+        fi
+      fi
+    fi
+  fi
+
+  if [ "$pull_failed" -eq 0 ]; then
     if [ "$has_changes" = true ]; then
       echo "→ Restoring stashed changes..."
       git stash pop || echo "⚠️ Could not pop stash (conflict occurred, please resolve manually)"
