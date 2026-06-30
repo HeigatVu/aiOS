@@ -14,7 +14,7 @@ function getContainerIP() {
       if (addr.family === "IPv4" && !addr.internal) return addr.address;
     }
   }
-  return "0.0.0.0";
+  return "127.0.0.1";
 }
 
 const LISTEN_HOST = getContainerIP();

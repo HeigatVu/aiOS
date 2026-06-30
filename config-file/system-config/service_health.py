@@ -68,6 +68,22 @@ async def probe_tcp(port: int, host: str = "127.0.0.1") -> bool:
         return False
 
 
+def get_container_ip() -> str:
+    """Return the container's primary IP address."""
+    import socket
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        try:
+            return socket.gethostbyname(socket.gethostname())
+        except Exception:
+            return "127.0.0.1"
+
+
 async def probe_http(url: str) -> tuple[bool, str]:
     """HTTP GET *url* and return (ok, detail). Runs in a thread via urllib."""
     import urllib.request
@@ -155,29 +171,30 @@ async def check_viewer_proxy() -> tuple[bool, str]:
 
 
 async def check_hermes_dashboard() -> tuple[bool, str]:
-    """Check hermes dashboard PID and TCP port 9119."""
+    """Check hermes dashboard PID and TCP port 9119 on localhost."""
     try:
         pid = read_pid_file("/tmp/hermes-dashboard.pid")
     except Exception as exc:
         return False, f"PID file error: {exc}"
     if not is_pid_alive(pid):
         return False, f"PID {pid} is not running"
-    if not await probe_tcp(9119):
-        return False, f"PID {pid} active, but TCP probe failed on port 9119"
-    return True, f"PID {pid} active, Port 9119 open"
+    if not await probe_tcp(9119, host="127.0.0.1"):
+        return False, f"PID {pid} active, but TCP probe failed on localhost port 9119"
+    return True, f"PID {pid} active, Port 9119 open on localhost"
 
 
 async def check_dashboard_proxy() -> tuple[bool, str]:
-    """Check dashboard-proxy PID and TCP port 9119."""
+    """Check dashboard-proxy PID and TCP port 9119 on container IP."""
     try:
         pid = read_pid_file("/tmp/hermes-proxy.pid")
     except Exception as exc:
         return False, f"PID file error: {exc}"
     if not is_pid_alive(pid):
         return False, f"PID {pid} is not running"
-    if not await probe_tcp(9119):
-        return False, f"PID {pid} active, but TCP probe failed on port 9119"
-    return True, f"PID {pid} active, Port 9119 open"
+    ip = get_container_ip()
+    if not await probe_tcp(9119, host=ip):
+        return False, f"PID {pid} active, but TCP probe failed on host {ip} port 9119"
+    return True, f"PID {pid} active, Port 9119 open on host {ip}"
 
 
 

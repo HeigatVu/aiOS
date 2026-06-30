@@ -7,10 +7,11 @@
   "/aiOS-ui/hermes-webui": "rw",
   "/aiOS-ui/dashboard": "rw",
   "/outputs/feynman": "rw",
-  "/workspace/lab-run/ADReSSo-feature-extraction-vi": "ro",
+  "/workspace/lab-run/ADReSSo-feature-extraction-vi": "rw",
   "/workspace/lab-run/ADReSSo-feature-extraction-en": "ro",
   "/workspace/lab-run/speech-analysis-for-you": "ro",
   "/my-data/Obsidian-llm-wiki": "ro",
-  "/workspace/lab-run/ADReSSo-feature-extraction-vi/src": "ro",
-  "/my-data/Obsidian-llm-wiki/my-knowledge": "rw"
+  "/workspace/lab-run/ADReSSo-feature-extraction-vi/src": "rw",
+  "/my-data/Obsidian-llm-wiki/my-knowledge": "rw",
+  "/config-file/credentials": "ro"
 }

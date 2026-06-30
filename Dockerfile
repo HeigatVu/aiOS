@@ -70,7 +70,7 @@ RUN mkdir -p /home/${USERNAME}/.local/share/zinit && \
   git clone https://github.com/zdharma-continuum/zinit.git /home/${USERNAME}/.local/share/zinit/zinit.git
 
 # 11. Install your requested AI Agents
-RUN curl -fsSL https://mimo.xiaomi.com/install | bash
+RUN npm install -g @mimo-ai/cli
 RUN curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
 RUN curl -fsSL https://chatgpt.com/codex/install.sh | sh
 RUN curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/read-once/install.sh | bash

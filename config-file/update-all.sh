@@ -40,7 +40,12 @@ clear_lock() {
 
 safe_git_pull() {
   local repo_dir="$1"
+  local remote="${2:-origin}"
   cd "$repo_dir"
+
+  # Prevent Git from prompting for credentials or hanging on SSH connections
+  export GIT_TERMINAL_PROMPT=0
+  export GIT_SSH_COMMAND="ssh -o BatchMode=yes -o ConnectTimeout=5"
 
   # Ensure git user is configured so git stash doesn't fail
   git config user.email "auto-updater@localhost" || true
@@ -63,10 +68,10 @@ safe_git_pull() {
     git stash
   fi
 
-  echo "→ Pulling updates..."
+  echo "→ Pulling updates from ${remote}..."
   # Try to pull main, then master
   local pull_failed=0
-  if ! (git pull origin main 2>/dev/null || git pull origin master); then
+  if ! (git pull "$remote" main 2>/dev/null || git pull "$remote" master); then
     pull_failed=1
   fi
 
@@ -136,6 +141,18 @@ except Exception as e:
   fi
 
   if [ "$pull_failed" -eq 0 ]; then
+    # Push to origin if we pulled from upstream to keep the fork in sync
+    if [ "$remote" = "upstream" ]; then
+      echo "→ Pushing merged updates to origin..."
+      local current_branch
+      current_branch=$(git branch --show-current 2>/dev/null || echo "master")
+      if ! git push origin "$current_branch" 2>/dev/null; then
+        echo "→ Normal push failed (possibly due to rebase history rewrite). Attempting force push..."
+        git push origin "$current_branch" --force-with-lease 2>/dev/null || \
+        echo "⚠️ Could not push to origin (this is expected if no credentials/keys are configured in this session)"
+      fi
+    fi
+
     if [ "$has_changes" = true ]; then
       echo "→ Restoring stashed changes..."
       git stash pop || echo "⚠️ Could not pop stash (conflict occurred, please resolve manually)"
@@ -175,12 +192,14 @@ update_webui_inside_container() {
   cd "$webui_dir"
   echo "→ Fetching updates..."
   git fetch origin
+  local remote="origin"
   if git remote | grep -q "upstream"; then
     echo "→ Fetching updates from upstream..."
     git fetch upstream
+    remote="upstream"
   fi
 
-  safe_git_pull "$webui_dir"
+  safe_git_pull "$webui_dir" "$remote"
 }
 
 update_agent() {
@@ -213,6 +232,15 @@ update_agent() {
       if [ ! -x "$(dirname "$HERMES_AGENT_DIR")" ] || [ ! -w "$HERMES_AGENT_DIR" ] 2>/dev/null; then
         echo "🔒 Traversal/write access denied to $HERMES_AGENT_DIR. Using sudo..."
         cmd_prefix="sudo"
+      fi
+
+      if [ -n "$cmd_prefix" ]; then
+        if ! sudo -n true 2>/dev/null; then
+          echo "⚠️ sudo requires password authentication, which is not supported in this environment."
+          echo "Please run: sudo chown -R \$(id -u):\$(id -g) \"$HERMES_AGENT_DIR\""
+          echo "to fix the permissions on the host first, then run this update script again."
+          return 1
+        fi
       fi
 
       if ! $cmd_prefix test -d "$HERMES_AGENT_DIR"; then
@@ -282,6 +310,15 @@ update_webui() {
         fi
       fi
 
+      if [ -n "$cmd_prefix" ]; then
+        if ! sudo -n true 2>/dev/null; then
+          echo "⚠️ sudo requires password authentication, which is not supported in this environment."
+          echo "Please run: sudo chown -R \$(id -u):\$(id -g) \"$HERMES_WEBUI_DIR\""
+          echo "to fix the permissions on the host first, then run this update script again."
+          return 1
+        fi
+      fi
+
       if ! $cmd_prefix test -d "$HERMES_WEBUI_DIR"; then
         echo "❌ Hermes WebUI directory not found at $HERMES_WEBUI_DIR"
         return 1
@@ -290,20 +327,22 @@ update_webui() {
       $cmd_prefix rm -f "${HERMES_WEBUI_DIR}/.git/index.lock"
       echo "→ Fetching updates..."
       $cmd_prefix git -C "$HERMES_WEBUI_DIR" fetch origin
+      local remote="origin"google calendar
       if $cmd_prefix git -C "$HERMES_WEBUI_DIR" remote | grep -q "upstream"; then
         echo "→ Fetching updates from upstream..."
         $cmd_prefix git -C "$HERMES_WEBUI_DIR" fetch upstream
+        remote="upstream"
       fi
 
       if [ -n "$cmd_prefix" ]; then
-        if sudo bash -c "set -euo pipefail; $(declare -f safe_git_pull); safe_git_pull \"$HERMES_WEBUI_DIR\""; then
+        if sudo bash -c "set -euo pipefail; $(declare -f safe_git_pull); safe_git_pull \"$HERMES_WEBUI_DIR\" \"$remote\""; then
           echo "✅ Hermes WebUI update process completed."
         else
           echo "❌ Hermes WebUI update process failed."
           return 1
         fi
       else
-        if safe_git_pull "$HERMES_WEBUI_DIR"; then
+        if safe_git_pull "$HERMES_WEBUI_DIR" "$remote"; then
           echo "✅ Hermes WebUI update process completed."
         else
           echo "❌ Hermes WebUI update process failed."
