@@ -67,11 +67,6 @@ services:
         limits:
           cpus: '8'
           memory: 16G
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
 
     # Auto-start the container when Docker daemon starts (e.g. on laptop boot).
     # Requires: sudo systemctl enable docker

@@ -28,11 +28,20 @@ def _check_outside_docker() -> bool:
 
 is_outside_docker = _check_outside_docker()
 
+DASHBOARD_DIR = Path(__file__).resolve().parent.parent
+
 @router.get("/terminals", response_class=HTMLResponse)
 async def get_terminals():
-    terminal_html_path = PROJECT_ROOT / "features" / "dashboard" / "static" / "terminal" / "index.html"
-    if terminal_html_path.exists():
-        return terminal_html_path.read_text()
+    candidates = [
+        Path("/aiOS-ui/features/dashboard/static/terminal/index.html"),
+        DASHBOARD_DIR / "static" / "terminal" / "index.html",
+        PROJECT_ROOT / "features" / "dashboard" / "static" / "terminal" / "index.html",
+        PROJECT_ROOT / "aiOS-ui" / "features" / "dashboard" / "static" / "terminal" / "index.html",
+        Path("/home/HeigatWorkspace/My-file/my-project/my-assistance/aiOS-ui/features/dashboard/static/terminal/index.html"),
+    ]
+    for path in candidates:
+        if path.exists():
+            return path.read_text()
     return "Terminal HTML not found"
 
 @router.websocket("/ws/terminal")

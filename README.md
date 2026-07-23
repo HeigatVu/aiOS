@@ -8,6 +8,79 @@ This repository houses a secure, GPU-accelerated workspace for AI agents.
 
 By leveraging the **Sidecar Pattern**, it isolates the heavy AI sandbox from your host machine while providing a web control panel in the background to manage installations, file permissions, and shared directories.
 
+---
+
+## 💻 Cross-Platform Support
+
+`aiOS-ui` is fully containerized and engineered to run seamlessly across all desktop operating systems:
+- **macOS** (Apple Silicon M1/M2/M3/M4 & Intel via Docker Desktop / OrbStack)
+- **Windows** (Windows 10/11 via Docker Desktop with WSL2 or PowerShell)
+- **Linux** (Ubuntu, Fedora, Debian, Arch via Docker Engine)
+
+---
+
+## ⚡ Quick Start: 1-Command Auto-Installer
+
+Run the automated installer to set up all bind-mount directories, environment files, and boot the containers:
+
+### macOS / Linux / WSL2:
+```bash
+cd aiOS-ui && make install
+# Or run directly:
+cd aiOS-ui && bash install.sh
+```
+
+### Windows (PowerShell):
+```powershell
+cd aiOS-ui
+.\install.ps1
+```
+
+---
+
+## 🐧 Linux Systemd Auto-Start on Boot
+
+To automatically start `aiOS-ui` on every Linux system boot without needing to open a terminal:
+
+```bash
+# 1. Install the user systemd unit file
+mkdir -p ~/.config/systemd/user
+cp aiOS-ui/config-file/system-config/aios-ui.service ~/.config/systemd/user/aios-dashboard.service
+
+# 2. Enable systemd user lingering & Docker daemon autostart
+loginctl enable-linger $USER
+sudo systemctl enable docker
+
+# 3. Enable and start the systemd user service
+systemctl --user daemon-reload
+systemctl --user enable aios-dashboard.service
+systemctl --user start aios-dashboard.service
+```
+
+### Systemd Management Commands:
+- **Check Status**: `systemctl --user status aios-dashboard.service`
+- **Restart Service**: `systemctl --user restart aios-dashboard.service`
+- **Stop Service**: `systemctl --user stop aios-dashboard.service`
+
+---
+
+## 🛠️ Management Commands (`Makefile`)
+
+All container operations are managed via cross-platform `make` commands inside the `aiOS-ui` directory:
+
+| Command | Description |
+| :--- | :--- |
+| **`make install`** | Auto-installer (creates directories, `.env`, builds & boots container) |
+| **`make up`** | Build and start container in Universal CPU/Metal mode |
+| **`make up-gpu`** | Build and start container with NVIDIA GPU passthrough |
+| **`make down`** | Stop container services |
+| **`make build`** | Rebuild container image |
+| **`make shell`** | Attach interactive `zsh` shell inside sandbox user workspace |
+| **`make root-shell`** | Attach interactive `zsh` shell as `root` |
+| **`make logs`** | Tail container execution logs |
+
+---
+
 ## 🖼️ Features & Screenshots
 
 ### Multi-pane Workspace Terminals
@@ -24,48 +97,9 @@ Right-click any file or directory in the workspace browser to run quick terminal
 
 <img src="./aiOS-ui/assets/file-folder-terminal-feature.png" alt="File & Folder Context Menu" width="800"/>
 
-## Step to do
-
-Navigate to `aiOS-ui` and run:
-
-```bash
-cd aiOS-ui && make down && make build && make up
-```
-
-- Then attach to the container and verify:
-
-```bash
-cd aiOS-ui && make shell
-```
-
-- If all three pass, everything works. If anything fails, run the automated recovery script inside the container:
-
-```bash
-bash /config-file/system-config/recover.sh
-```
-
-Or paste into a new Codex session:
-
-```text
-Read /config-file/step-to-reconfig.md and execute every step in order.
-```
-
 ---
 
-## 📖 Table of Contents
-
-1. [What is Contained in the Project](#1-what-is-contained-in-the-project)
-2. [How to Run and Use](#2-how-to-run-and-use)
-3. [The Dual-Terminal Workflow](#3-the-dual-terminal-workflow)
-4. [How to Configure in the Dockerfile](#4-how-to-configure-in-the-dockerfile)
-5. [Git Security & Push Safety](#5-git-security--push-safety)
-6. [Troubleshooting & Edge Cases](#6-troubleshooting--edge-cases)
-7. [Secure AI Permissions Boundary](#7-secure-ai-permissions-boundary)
-8. [Automated Diagnostics & Recovery](#8-automated-diagnostics--recovery)
-
----
-
-## 1. What is Contained in the Project
+## 📖 Project Structure
 
 ```text
 my-assistance/
@@ -79,19 +113,28 @@ my-assistance/
 │
 └── aiOS-ui/                     # Main Web control panel & Docker project root
     ├── Dockerfile               # Software blueprint for the AI sandbox & tools
-    ├── docker-compose.yml       # Core wiring (ports, GPU passthrough, volume mounts)
-    ├── Makefile                 # Build/run shortcuts — auto-detects your UID/GID
+    ├── docker-compose.yml       # Universal cross-platform wiring (ports, volumes)
+    ├── docker-compose.gpu.yml   # NVIDIA GPU passthrough override
+    ├── Makefile                 # Cross-platform build/run shortcuts
+    ├── install.sh               # POSIX auto-installer (Linux / macOS / WSL2)
+    ├── install.ps1              # Windows PowerShell auto-installer
     ├── environment.yml          # Deep ML & signal processing conda baseline
     │
-    ├── config-file/             # Persistent configs bind-mounted into the container
-    │   ├── aiOS-ui/             # Configurations for the UI services
-    │   ├── hermes/              # hermes dashboard-proxy.mjs
-    │   ├── system-config/       # Shell configs, nvim config, entrypoint, & recovery tools
-    │   └── update-all.sh        # Hermes Agent & WebUI update utility
-    │
+    ├── config-file/             # Persistent configs bind-mounted into container
     ├── persistent/              # Persistent runtime storage & user settings
     │
     └── features/                # Application feature services
-        ├── dashboard/           # FastAPI BFF Dashboard (runs on host/container port 8788)
+        ├── dashboard/           # FastAPI BFF Dashboard (port 8788 / 9119)
         └── hermes-webui/        # Hermes WebUI application (server.py on port 8501)
+```
+
+---
+
+## 🔧 Recovery & Diagnostics
+
+If background services stop responding after system sleep or container restarts, run the automated recovery script inside the container shell:
+
+```bash
+cd aiOS-ui && make shell
+bash /config-file/system-config/recover.sh
 ```

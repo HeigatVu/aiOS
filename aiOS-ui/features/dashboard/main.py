@@ -395,18 +395,34 @@ PROXIED_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"]
 
 
 # ── aiOS Launcher (root) ─────────────────────────────────────────────────────
+DASHBOARD_DIR = Path(__file__).resolve().parent
+
 @app.get("/")
 async def dashboard():
-    dashboard_html_path = PROJECT_ROOT / 'features' / 'dashboard' / 'static' / 'dashboard' / 'index.html'
-    if dashboard_html_path.exists():
-        return HTMLResponse(dashboard_html_path.read_text())
+    candidates = [
+        Path("/aiOS-ui/features/dashboard/static/dashboard/index.html"),
+        DASHBOARD_DIR / 'static' / 'dashboard' / 'index.html',
+        PROJECT_ROOT / 'features' / 'dashboard' / 'static' / 'dashboard' / 'index.html',
+        PROJECT_ROOT / 'aiOS-ui' / 'features' / 'dashboard' / 'static' / 'dashboard' / 'index.html',
+        Path("/home/HeigatWorkspace/My-file/my-project/my-assistance/aiOS-ui/features/dashboard/static/dashboard/index.html"),
+    ]
+    for path in candidates:
+        if path.exists():
+            return HTMLResponse(path.read_text())
     return HTMLResponse('Dashboard HTML not found')
 
 @app.get("/workspace")
 async def workspace_portal():
-    workspace_html_path = PROJECT_ROOT / 'features' / 'dashboard' / 'static' / 'workspace' / 'index.html'
-    if workspace_html_path.exists():
-        return HTMLResponse(workspace_html_path.read_text())
+    candidates = [
+        Path("/aiOS-ui/features/dashboard/static/workspace/index.html"),
+        DASHBOARD_DIR / 'static' / 'workspace' / 'index.html',
+        PROJECT_ROOT / 'features' / 'dashboard' / 'static' / 'workspace' / 'index.html',
+        PROJECT_ROOT / 'aiOS-ui' / 'features' / 'dashboard' / 'static' / 'workspace' / 'index.html',
+        Path("/home/HeigatWorkspace/My-file/my-project/my-assistance/aiOS-ui/features/dashboard/static/workspace/index.html"),
+    ]
+    for path in candidates:
+        if path.exists():
+            return HTMLResponse(path.read_text())
     return HTMLResponse('Workspace HTML not found')
 
 @app.get("/favicon.ico")

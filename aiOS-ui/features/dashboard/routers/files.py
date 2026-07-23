@@ -488,15 +488,24 @@ async def files_permissions_remove(request: Request):
 
 
 # ── File Browser SPA ─────────────────────────────────────────────────────────
-_FILE_BROWSER_HTML_PATH = PROJECT_ROOT / "aiOS-ui" / "dashboard" / "static" / "file-browser" / "index.html"
-
+DASHBOARD_DIR = Path(__file__).resolve().parent.parent
 
 def _load_file_browser_html() -> str:
-    """Load the file browser SPA HTML, with a fallback for missing file."""
-    try:
-        return _FILE_BROWSER_HTML_PATH.read_text()
-    except Exception:
-        return "<html><body><h1>File browser not found</h1></body></html>"
+    """Load the file browser SPA HTML, searching multiple candidate paths."""
+    candidates = [
+        Path("/aiOS-ui/features/dashboard/static/file-browser/index.html"),
+        DASHBOARD_DIR / "static" / "file-browser" / "index.html",
+        PROJECT_ROOT / "features" / "dashboard" / "static" / "file-browser" / "index.html",
+        PROJECT_ROOT / "aiOS-ui" / "features" / "dashboard" / "static" / "file-browser" / "index.html",
+        Path("/home/HeigatWorkspace/My-file/my-project/my-assistance/aiOS-ui/features/dashboard/static/file-browser/index.html"),
+    ]
+    for path in candidates:
+        if path.exists():
+            try:
+                return path.read_text()
+            except Exception:
+                pass
+    return "<html><body><h1>File browser not found</h1></body></html>"
 
 
 @router.get("/files")

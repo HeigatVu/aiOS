@@ -1,0 +1,11 @@
+# GPU Passthrough Override for systems with NVIDIA GPUs (Linux / Windows WSL2)
+# Usage: docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+services:
+  sandbox:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
