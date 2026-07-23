@@ -119,21 +119,21 @@ def _check_outside_docker() -> bool:
 is_outside_docker = _check_outside_docker()
 
 CONTAINER_TO_HOST_MAPPING = {
-    "/workspace": PROJECT_ROOT / "sandbox-data" / "working-space",
-    "/outputs": PROJECT_ROOT / "sandbox-data" / "outputs",
-    "/my-data": PROJECT_ROOT / "sandbox-data" / "my-data",
+    "/workspace": PROJECT_ROOT.parent / "sandbox-data" / "working-space",
+    "/outputs": PROJECT_ROOT.parent / "sandbox-data" / "outputs",
+    "/my-data": PROJECT_ROOT.parent / "sandbox-data" / "my-data",
     "/config-file": PROJECT_ROOT / "config-file",
-    "/aiOS-ui": PROJECT_ROOT / "aiOS-ui",
+    "/aiOS-ui": PROJECT_ROOT,
     "/home/ai_user/.agentmemory": PROJECT_ROOT / "persistent" / "agentmemory",
     "/home/ai_user/.hermes": PROJECT_ROOT / "persistent" / "hermes",
     "/home/ai_user/.mimocode": PROJECT_ROOT / "persistent" / "mimocode",
     "/home/ai_user/.agents": PROJECT_ROOT / "persistent" / "agents",
     "/home/ai_user/.iii": PROJECT_ROOT / "persistent" / "iii",
-    "/home/ai_user": PROJECT_ROOT / "sandbox-data" / "home_ai_user",
+    "/home/ai_user": PROJECT_ROOT.parent / "sandbox-data" / "home_ai_user",
 }
 
 if is_outside_docker:
-    (PROJECT_ROOT / "sandbox-data" / "home_ai_user").mkdir(parents=True, exist_ok=True)
+    (PROJECT_ROOT.parent / "sandbox-data" / "home_ai_user").mkdir(parents=True, exist_ok=True)
 
 def _to_host_path(path_str: str) -> Path:
     if not is_outside_docker:
@@ -208,7 +208,7 @@ def _subprocess_start() -> subprocess.Popen:
         "HERMES_WEBUI_HOST": HERMES_SUB_HOST,
         "HERMES_WEBUI_PORT": str(HERMES_SUB_PORT),
         "HERMES_WEBUI_TRUST_FORWARDED_HOST": "1",
-        "HERMES_WEBUI_DEFAULT_WORKSPACE": str(PROJECT_ROOT / "sandbox-data" / "working-space"),
+        "HERMES_WEBUI_DEFAULT_WORKSPACE": str(PROJECT_ROOT.parent / "sandbox-data" / "working-space") if is_outside_docker else "/workspace",
         "HERMES_WEBUI_STATE_DIR": str(Path(HERMES_HOME) / "webui"),
     }
     log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
@@ -315,6 +315,22 @@ async def _ensure_client() -> httpx.AsyncClient | None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _proc, _healthy, _client
+    if os.environ.get("HERMES_AUTO_UPDATE", "1") == "1":
+        logger.info("Auto-updating Hermes Agent & WebUI on dashboard startup...")
+        try:
+            update_script = PROJECT_ROOT / "config-file" / "update-all.sh"
+            if update_script.exists():
+                proc = await asyncio.create_subprocess_exec(
+                    "bash", str(update_script),
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.STDOUT,
+                    cwd=str(PROJECT_ROOT)
+                )
+                stdout, _ = await proc.communicate()
+                logger.info(f"Auto-update completed with code {proc.returncode}:\n{stdout.decode('utf-8', errors='replace')[-500:]}")
+        except Exception as e:
+            logger.warning(f"Auto-update on startup encountered error: {e}")
+
     if os.environ.get("HERMES_SKIP_SUBPROCESS") == "1":
         logger.info(f"Skipping subprocess startup. Connecting to existing subserver at {HERMES_SUB_HOST}:{HERMES_SUB_PORT}")
         _proc = None
@@ -381,21 +397,21 @@ PROXIED_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"]
 # ── aiOS Launcher (root) ─────────────────────────────────────────────────────
 @app.get("/")
 async def dashboard():
-    dashboard_html_path = PROJECT_ROOT / 'aiOS-ui' / 'dashboard' / 'static' / 'dashboard' / 'index.html'
+    dashboard_html_path = PROJECT_ROOT / 'features' / 'dashboard' / 'static' / 'dashboard' / 'index.html'
     if dashboard_html_path.exists():
         return HTMLResponse(dashboard_html_path.read_text())
     return HTMLResponse('Dashboard HTML not found')
 
 @app.get("/workspace")
 async def workspace_portal():
-    workspace_html_path = PROJECT_ROOT / 'aiOS-ui' / 'dashboard' / 'static' / 'workspace' / 'index.html'
+    workspace_html_path = PROJECT_ROOT / 'features' / 'dashboard' / 'static' / 'workspace' / 'index.html'
     if workspace_html_path.exists():
         return HTMLResponse(workspace_html_path.read_text())
     return HTMLResponse('Workspace HTML not found')
 
 @app.get("/favicon.ico")
 async def favicon():
-    favicon_path = PROJECT_ROOT / 'aiOS-ui' / 'hermes-webui' / 'static' / 'favicon.svg'
+    favicon_path = PROJECT_ROOT / 'features' / 'hermes-webui' / 'static' / 'favicon.svg'
     if favicon_path.exists():
         return Response(content=favicon_path.read_bytes(), media_type="image/svg+xml")
     return Response(status_code=404)

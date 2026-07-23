@@ -13,7 +13,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingRes
 router = APIRouter()
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 WORKSPACE_DIR = PROJECT_ROOT
-_FILE_BROWSER_HTML_PATH = PROJECT_ROOT / "aiOS-ui" / "dashboard" / "static" / "file-browser" / "index.html"
+_FILE_BROWSER_HTML_PATH = PROJECT_ROOT / "features" / "dashboard" / "static" / "file-browser" / "index.html"
 _FILE_BROWSER_ROOT = "/"
 _FILE_BROWSER_DENY = [
     "/proc", "/sys", "/dev", "/run",
@@ -45,11 +45,11 @@ is_outside_docker = _check_outside_docker()
 logger = logging.getLogger("bff.files")
 
 CONTAINER_TO_HOST_MAPPING = {
-    "/workspace": PROJECT_ROOT / "sandbox-data" / "working-space",
-    "/outputs": PROJECT_ROOT / "sandbox-data" / "outputs",
-    "/my-data": PROJECT_ROOT / "sandbox-data" / "my-data",
+    "/workspace": PROJECT_ROOT.parent / "sandbox-data" / "working-space",
+    "/outputs": PROJECT_ROOT.parent / "sandbox-data" / "outputs",
+    "/my-data": PROJECT_ROOT.parent / "sandbox-data" / "my-data",
     "/config-file": PROJECT_ROOT / "config-file",
-    "/aiOS-ui": PROJECT_ROOT / "aiOS-ui",
+    "/aiOS-ui": PROJECT_ROOT,
     "/home/ai_user/.agentmemory": PROJECT_ROOT / "persistent" / "agentmemory",
     "/home/ai_user/.claude": PROJECT_ROOT / "persistent" / "claude",
     "/home/ai_user/.hermes": PROJECT_ROOT / "persistent" / "hermes",
@@ -57,7 +57,7 @@ CONTAINER_TO_HOST_MAPPING = {
     "/home/ai_user/.agents": PROJECT_ROOT / "persistent" / "agents",
     "/home/ai_user/.fcc": PROJECT_ROOT / "persistent" / "fcc",
     "/home/ai_user/.iii": PROJECT_ROOT / "persistent" / "iii",
-    "/home/ai_user": PROJECT_ROOT / "sandbox-data" / "home_ai_user",
+    "/home/ai_user": PROJECT_ROOT.parent / "sandbox-data" / "home_ai_user",
 }
 
 def _to_host_path(path_str: str) -> Path:

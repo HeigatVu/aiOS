@@ -30,7 +30,7 @@ is_outside_docker = _check_outside_docker()
 
 @router.get("/terminals", response_class=HTMLResponse)
 async def get_terminals():
-    terminal_html_path = PROJECT_ROOT / "aiOS-ui" / "dashboard" / "static" / "terminal" / "index.html"
+    terminal_html_path = PROJECT_ROOT / "features" / "dashboard" / "static" / "terminal" / "index.html"
     if terminal_html_path.exists():
         return terminal_html_path.read_text()
     return "Terminal HTML not found"
