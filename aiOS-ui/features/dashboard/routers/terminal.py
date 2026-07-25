@@ -72,8 +72,8 @@ async def terminal_ws(websocket: WebSocket, cols: int = 80, rows: int = 24, user
             # 1. Try Docker Compose
             try:
                 res = subprocess.run(["docker", "compose", "ps", "--status", "running", "--format", "json"], capture_output=True, text=True, timeout=2)
-                if res.returncode == 0 and "sandbox" in res.stdout:
-                    cmd_prefix = ["docker", "compose", "exec", "-it", "-u", user, "-w", "/workspace", "sandbox", "/bin/zsh"]
+                if res.returncode == 0 and "agent-runtime" in res.stdout:
+                    cmd_prefix = ["docker", "compose", "exec", "-it", "-w", "/workspace", "agent-runtime", "/bin/zsh"]
             except Exception:
                 pass
 
@@ -81,8 +81,8 @@ async def terminal_ws(websocket: WebSocket, cols: int = 80, rows: int = 24, user
             if not cmd_prefix:
                 try:
                     res = subprocess.run(["podman", "compose", "ps", "--format", "json"], capture_output=True, text=True, timeout=2)
-                    if res.returncode == 0 and "sandbox" in res.stdout:
-                        cmd_prefix = ["podman", "compose", "exec", "-it", "-u", user, "-w", "/workspace", "sandbox", "/bin/zsh"]
+                    if res.returncode == 0 and "agent-runtime" in res.stdout:
+                        cmd_prefix = ["podman", "compose", "exec", "-it", "-w", "/workspace", "agent-runtime", "/bin/zsh"]
                 except Exception:
                     pass
 

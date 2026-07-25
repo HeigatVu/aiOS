@@ -30,18 +30,27 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
-from routers import files, update, terminal, notes
+from routers import files, management, migrations, notes, terminal, update
+from services.paths import RuntimePaths
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 
 import httpx
 import websockets
 
 # ── Configuration ────────────────────────────────────────────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+RUNTIME_PATHS = RuntimePaths.from_project_root(
+    Path(os.environ.get("AIOS_PROJECT_ROOT", PROJECT_ROOT.parent))
+)
 
 HERMES_SUB_HOST = os.environ.get("HERMES_SUB_HOST", "127.0.0.1")
 HERMES_SUB_PORT = int(os.environ.get("HERMES_SUB_PORT", "8501"))
+AGENTMEMORY_BASE_URL = os.environ.get("AGENTMEMORY_BASE_URL", "http://127.0.0.1:3113").rstrip("/")
+AGENTMEMORY_SECRET_FILE = Path(
+    os.environ.get("AGENTMEMORY_SECRET_FILE", str(RUNTIME_PATHS.state / "credentials" / "agentmemory-viewer-secret"))
+)
 
 def _get_writable_hermes_home() -> str:
     h = os.environ.get("HERMES_HOME")
@@ -55,7 +64,7 @@ def _get_writable_hermes_home() -> str:
         test_file.unlink()
         return str(default_home)
     except Exception:
-        fallback = PROJECT_ROOT / "persistent" / ".hermes"
+        fallback = RUNTIME_PATHS.state / "hermes"
         fallback.mkdir(parents=True, exist_ok=True)
         return str(fallback)
 
@@ -119,21 +128,21 @@ def _check_outside_docker() -> bool:
 is_outside_docker = _check_outside_docker()
 
 CONTAINER_TO_HOST_MAPPING = {
-    "/workspace": PROJECT_ROOT.parent / "sandbox-data" / "working-space",
-    "/outputs": PROJECT_ROOT.parent / "sandbox-data" / "outputs",
-    "/my-data": PROJECT_ROOT.parent / "sandbox-data" / "my-data",
+    "/workspace": RUNTIME_PATHS.workspace,
+    "/outputs": RUNTIME_PATHS.outputs,
+    "/my-data": RUNTIME_PATHS.data / "my-data",
     "/config-file": PROJECT_ROOT / "config-file",
     "/aiOS-ui": PROJECT_ROOT,
-    "/home/ai_user/.agentmemory": PROJECT_ROOT / "persistent" / "agentmemory",
-    "/home/ai_user/.hermes": PROJECT_ROOT / "persistent" / "hermes",
-    "/home/ai_user/.mimocode": PROJECT_ROOT / "persistent" / "mimocode",
-    "/home/ai_user/.agents": PROJECT_ROOT / "persistent" / "agents",
-    "/home/ai_user/.iii": PROJECT_ROOT / "persistent" / "iii",
-    "/home/ai_user": PROJECT_ROOT.parent / "sandbox-data" / "home_ai_user",
+    "/home/ai_user/.agentmemory": RUNTIME_PATHS.state / "agentmemory",
+    "/home/ai_user/.hermes": RUNTIME_PATHS.state / "hermes",
+    "/home/ai_user/.mimocode": RUNTIME_PATHS.state / "mimocode",
+    "/home/ai_user/.agents": RUNTIME_PATHS.state / "agents",
+    "/home/ai_user/.iii": RUNTIME_PATHS.state / "iii",
+    "/home/ai_user": RUNTIME_PATHS.data / "home_ai_user",
 }
 
 if is_outside_docker:
-    (PROJECT_ROOT.parent / "sandbox-data" / "home_ai_user").mkdir(parents=True, exist_ok=True)
+    (RUNTIME_PATHS.data / "home_ai_user").mkdir(parents=True, exist_ok=True)
 
 def _to_host_path(path_str: str) -> Path:
     if not is_outside_docker:
@@ -208,7 +217,7 @@ def _subprocess_start() -> subprocess.Popen:
         "HERMES_WEBUI_HOST": HERMES_SUB_HOST,
         "HERMES_WEBUI_PORT": str(HERMES_SUB_PORT),
         "HERMES_WEBUI_TRUST_FORWARDED_HOST": "1",
-        "HERMES_WEBUI_DEFAULT_WORKSPACE": str(PROJECT_ROOT.parent / "sandbox-data" / "working-space") if is_outside_docker else "/workspace",
+        "HERMES_WEBUI_DEFAULT_WORKSPACE": str(RUNTIME_PATHS.workspace) if is_outside_docker else "/workspace",
         "HERMES_WEBUI_STATE_DIR": str(Path(HERMES_HOME) / "webui"),
     }
     log_fh = open(SUBSERVER_LOG, "ab", buffering=0)
@@ -367,6 +376,13 @@ app.include_router(files.router)
 app.include_router(update.router)
 app.include_router(terminal.router)
 app.include_router(notes.router)
+app.include_router(
+    management.build_router(
+        paths=RUNTIME_PATHS,
+        catalog_path=RUNTIME_PATHS.app / "config" / "agent-catalog.json",
+    )
+)
+app.include_router(migrations.build_router(paths=RUNTIME_PATHS))
 
 # CORS — allow browser access from LAN
 app.add_middleware(
@@ -396,10 +412,24 @@ PROXIED_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"]
 
 # ── aiOS Launcher (root) ─────────────────────────────────────────────────────
 DASHBOARD_DIR = Path(__file__).resolve().parent
+CONTROL_STATIC_DIR = next(
+    (
+        path
+        for path in (
+            DASHBOARD_DIR / "static" / "control",
+            RUNTIME_PATHS.app / "apps" / "control-web" / "dist",
+        )
+        if path.exists()
+    ),
+    DASHBOARD_DIR / "static" / "control",
+)
+if (CONTROL_STATIC_DIR / "assets").exists():
+    app.mount("/assets", StaticFiles(directory=CONTROL_STATIC_DIR / "assets"), name="control-assets")
 
 @app.get("/")
 async def dashboard():
     candidates = [
+        CONTROL_STATIC_DIR / "index.html",
         Path("/aiOS-ui/features/dashboard/static/dashboard/index.html"),
         DASHBOARD_DIR / 'static' / 'dashboard' / 'index.html',
         PROJECT_ROOT / 'features' / 'dashboard' / 'static' / 'dashboard' / 'index.html',
@@ -410,6 +440,20 @@ async def dashboard():
         if path.exists():
             return HTMLResponse(path.read_text())
     return HTMLResponse('Dashboard HTML not found')
+
+
+@app.get("/legacy")
+async def legacy_dashboard():
+    candidates = [
+        Path("/aiOS-ui/features/dashboard/static/dashboard/index.html"),
+        DASHBOARD_DIR / "static" / "dashboard" / "index.html",
+        PROJECT_ROOT / "features" / "dashboard" / "static" / "dashboard" / "index.html",
+        PROJECT_ROOT / "aiOS-ui" / "features" / "dashboard" / "static" / "dashboard" / "index.html",
+    ]
+    for path in candidates:
+        if path.exists():
+            return HTMLResponse(path.read_text())
+    return HTMLResponse("Legacy dashboard HTML not found", status_code=404)
 
 @app.get("/workspace")
 async def workspace_portal():
@@ -435,6 +479,14 @@ async def favicon():
 
 _proxy_clients: dict[str, httpx.AsyncClient] = {}
 
+
+def agentmemory_proxy_headers(secret_file: Path) -> dict[str, str]:
+    secret = secret_file.read_text(encoding="utf-8").strip()
+    if not secret:
+        raise ValueError("AgentMemory viewer secret is empty")
+    return {"authorization": f"Bearer {secret}"}
+
+
 def _get_proxy_client(target_base: str) -> httpx.AsyncClient:
     if target_base not in _proxy_clients:
         _proxy_clients[target_base] = httpx.AsyncClient(
@@ -444,7 +496,13 @@ def _get_proxy_client(target_base: str) -> httpx.AsyncClient:
         )
     return _proxy_clients[target_base]
 
-async def proxy_target(request: Request, path: str, target_base: str, client: httpx.AsyncClient | None = None):
+async def proxy_target(
+    request: Request,
+    path: str,
+    target_base: str,
+    client: httpx.AsyncClient | None = None,
+    extra_headers: dict[str, str] | None = None,
+):
     if not client:
         client = _get_proxy_client(target_base)
     url = f"{target_base}/{path}" if path else f"{target_base}/"
@@ -459,6 +517,8 @@ async def proxy_target(request: Request, path: str, target_base: str, client: ht
     else:
         headers["host"] = "localhost"
     headers["X-Forwarded-Host"] = request.headers.get("host", "")
+    if extra_headers:
+        headers.update(extra_headers)
     body = await request.body()
     try:
         req = client.build_request(
@@ -531,8 +591,12 @@ async def ws_proxy_catchall(websocket: WebSocket, path: str):
 @app.api_route("/agentmemory/{path:path}", methods=PROXIED_METHODS)
 async def proxy_to_agentmemory(request: Request, path: str):
     """Proxy AgentMemory requests to port 3113."""
-    target_base = "http://127.0.0.1:3113"
-    return await proxy_target(request, path, target_base)
+    target_base = AGENTMEMORY_BASE_URL
+    try:
+        headers = agentmemory_proxy_headers(AGENTMEMORY_SECRET_FILE)
+    except (OSError, ValueError):
+        raise HTTPException(status_code=503, detail="AgentMemory proxy is not initialized")
+    return await proxy_target(request, path, target_base, extra_headers=headers)
 
 @app.api_route("/hermes-chat/{path:path}", methods=PROXIED_METHODS)
 async def proxy_to_hermes_chat(request: Request, path: str):
@@ -593,18 +657,18 @@ async def proxy_to_hermes(request: Request, path: str):
         bases_order = [
             ("dashboard", "http://127.0.0.1:9119"),
             ("webui", f"http://{HERMES_SUB_HOST}:{HERMES_SUB_PORT}"),
-            ("agentmemory", "http://127.0.0.1:3113")
+            ("agentmemory", AGENTMEMORY_BASE_URL)
         ]
     elif "agentmemory" in referer:
         bases_order = [
-            ("agentmemory", "http://127.0.0.1:3113"),
+            ("agentmemory", AGENTMEMORY_BASE_URL),
             ("webui", f"http://{HERMES_SUB_HOST}:{HERMES_SUB_PORT}"),
             ("dashboard", "http://127.0.0.1:9119")
         ]
     else:
         bases_order = [
             ("webui", f"http://{HERMES_SUB_HOST}:{HERMES_SUB_PORT}"),
-            ("agentmemory", "http://127.0.0.1:3113"),
+            ("agentmemory", AGENTMEMORY_BASE_URL),
             ("dashboard", "http://127.0.0.1:9119")
         ]
 

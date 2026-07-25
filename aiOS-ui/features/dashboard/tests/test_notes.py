@@ -1,7 +1,8 @@
+import asyncio
 import pytest
 from pathlib import Path
 import shutil
-from fastapi.testclient import TestClient
+import httpx
 
 # Mock path setting
 import os
@@ -13,7 +14,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from main import app
 
-client = TestClient(app)
+
+async def _request_async(method, path, **kwargs):
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+        return await client.request(method, path, **kwargs)
+
+
+def request(method, path, **kwargs):
+    return asyncio.run(_request_async(method, path, **kwargs))
 
 @pytest.fixture(autouse=True)
 def setup_teardown():
@@ -35,21 +43,21 @@ def test_notes_crud():
         "tags": ["test", "video"],
         "content": "This is test content"
     }
-    resp = client.post("/api/notes", json=payload)
+    resp = request("POST", "/api/notes", json=payload)
     assert resp.status_code == 200
     data = resp.json()
     assert data["title"] == "Test YouTube Idea"
     assert data["filename"] == "test-youtube-idea.md"
 
     # 2. Get list of notes
-    resp = client.get("/api/notes")
+    resp = request("GET", "/api/notes")
     assert resp.status_code == 200
     notes = resp.json()
     assert len(notes) == 1
     assert notes[0]["category"] == "YouTube"
 
     # 3. Get specific note
-    resp = client.get("/api/notes/test-youtube-idea.md")
+    resp = request("GET", "/api/notes/test-youtube-idea.md")
     assert resp.status_code == 200
     note = resp.json()
     assert note["content"] == "This is test content"
@@ -57,13 +65,13 @@ def test_notes_crud():
     # 4. Update note
     payload["status"] = "Active"
     payload["content"] = "Updated content"
-    resp = client.put("/api/notes/test-youtube-idea.md", json=payload)
+    resp = request("PUT", "/api/notes/test-youtube-idea.md", json=payload)
     assert resp.status_code == 200
     updated = resp.json()
     assert updated["status"] == "Active"
 
     # 5. Delete note
-    resp = client.delete("/api/notes/test-youtube-idea.md")
+    resp = request("DELETE", "/api/notes/test-youtube-idea.md")
     assert resp.status_code == 200
-    resp = client.get("/api/notes")
+    resp = request("GET", "/api/notes")
     assert len(resp.json()) == 0

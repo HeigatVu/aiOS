@@ -18,10 +18,11 @@ DIRS=(
   "$AI_HOME/.agents"
   "$AI_HOME/.feynman"
   "$AI_HOME/.reasonix"
+  "/config-file"
 )
 for dir in "${DIRS[@]}"; do
   if [ -d "$dir" ]; then
-    chown -R ai_user:ai_user "$dir"
+    chown -R ai_user:ai_user "$dir" 2>/dev/null || true
   fi
 done
 

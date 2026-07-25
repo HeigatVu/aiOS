@@ -9,9 +9,13 @@ import subprocess
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
+from services.paths import RuntimePaths
 
 router = APIRouter()
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+RUNTIME_PATHS = RuntimePaths.from_project_root(
+    Path(os.environ.get("AIOS_PROJECT_ROOT", PROJECT_ROOT.parent))
+)
 WORKSPACE_DIR = PROJECT_ROOT
 _FILE_BROWSER_HTML_PATH = PROJECT_ROOT / "features" / "dashboard" / "static" / "file-browser" / "index.html"
 _FILE_BROWSER_ROOT = "/"
@@ -20,9 +24,9 @@ _FILE_BROWSER_DENY = [
     "/etc/shadow", "/etc/passwd",
     str(PROJECT_ROOT / ".git"),
     str(PROJECT_ROOT / ".ssh"),
-    str(PROJECT_ROOT / "persistent" / ".ssh"),
+    str(RUNTIME_PATHS.state / ".ssh"),
 ]
-_PERMISSIONS_CONFIG = PROJECT_ROOT / "config-file" / "aios-permissions.json"
+_PERMISSIONS_CONFIG = RUNTIME_PATHS.state / "aios-permissions.json"
 _PERMISSION_MODES = {
     "rw": {"file": "666", "dir": "777"},
     "ro": {"file": "644", "dir": "755"},
@@ -45,19 +49,19 @@ is_outside_docker = _check_outside_docker()
 logger = logging.getLogger("bff.files")
 
 CONTAINER_TO_HOST_MAPPING = {
-    "/workspace": PROJECT_ROOT.parent / "sandbox-data" / "working-space",
-    "/outputs": PROJECT_ROOT.parent / "sandbox-data" / "outputs",
-    "/my-data": PROJECT_ROOT.parent / "sandbox-data" / "my-data",
+    "/workspace": RUNTIME_PATHS.workspace,
+    "/outputs": RUNTIME_PATHS.outputs,
+    "/my-data": RUNTIME_PATHS.data / "my-data",
     "/config-file": PROJECT_ROOT / "config-file",
     "/aiOS-ui": PROJECT_ROOT,
-    "/home/ai_user/.agentmemory": PROJECT_ROOT / "persistent" / "agentmemory",
-    "/home/ai_user/.claude": PROJECT_ROOT / "persistent" / "claude",
-    "/home/ai_user/.hermes": PROJECT_ROOT / "persistent" / "hermes",
-    "/home/ai_user/.mimocode": PROJECT_ROOT / "persistent" / "mimocode",
-    "/home/ai_user/.agents": PROJECT_ROOT / "persistent" / "agents",
-    "/home/ai_user/.fcc": PROJECT_ROOT / "persistent" / "fcc",
-    "/home/ai_user/.iii": PROJECT_ROOT / "persistent" / "iii",
-    "/home/ai_user": PROJECT_ROOT.parent / "sandbox-data" / "home_ai_user",
+    "/home/ai_user/.agentmemory": RUNTIME_PATHS.state / "agentmemory",
+    "/home/ai_user/.claude": RUNTIME_PATHS.state / "claude",
+    "/home/ai_user/.hermes": RUNTIME_PATHS.state / "hermes",
+    "/home/ai_user/.mimocode": RUNTIME_PATHS.state / "mimocode",
+    "/home/ai_user/.agents": RUNTIME_PATHS.state / "agents",
+    "/home/ai_user/.fcc": RUNTIME_PATHS.state / "fcc",
+    "/home/ai_user/.iii": RUNTIME_PATHS.state / "iii",
+    "/home/ai_user": RUNTIME_PATHS.data / "home_ai_user",
 }
 
 def _to_host_path(path_str: str) -> Path:
@@ -444,13 +448,13 @@ async def files_permissions_set(request: Request):
             if is_outside_docker:
                 try:
                     # Try docker first
-                    cmd = ["docker", "exec", "-u", "root", "ai_tui_sandbox", "chmod", mode_octal, container_path]
+                    cmd = ["docker", "compose", "exec", "-T", "agent-runtime", "chmod", mode_octal, container_path]
                     res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
                     if res.returncode == 0:
                         chmod_applied = True
                     else:
                         # Try podman as fallback
-                        cmd_pm = ["podman", "exec", "-u", "root", "ai_tui_sandbox", "chmod", mode_octal, container_path]
+                        cmd_pm = ["podman", "compose", "exec", "-T", "agent-runtime", "chmod", mode_octal, container_path]
                         res_pm = subprocess.run(cmd_pm, capture_output=True, text=True, timeout=5)
                         if res_pm.returncode == 0:
                             chmod_applied = True
@@ -515,4 +519,3 @@ async def file_browser_spa():
         content=_load_file_browser_html(),
         headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
     )
-

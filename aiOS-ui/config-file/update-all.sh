@@ -186,7 +186,7 @@ update_agent_inside_container() {
 }
 
 update_webui_inside_container() {
-  local webui_dir="/aiOS-ui/hermes-webui"
+  local webui_dir="/aiOS-ui/features/hermes-webui"
 
   # Fix dubious ownership since this function is run via docker exec
   git config --global --add safe.directory "$webui_dir" || true

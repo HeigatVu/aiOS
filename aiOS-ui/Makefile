@@ -20,7 +20,7 @@ endif
 
 export USER_ID GROUP_ID
 
-.PHONY: install setup up up-gpu down build shell root-shell logs restart help
+.PHONY: install setup up up-gpu down build shell logs restart help
 
 # Default target
 all: help
@@ -34,11 +34,11 @@ else
 	bash install.sh
 endif
 
-up: build
-	docker compose up -d
+up:
+	docker compose up -d --wait
 
-up-gpu: build
-	docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+up-gpu:
+	docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --wait
 
 build:
 	docker compose build
@@ -47,24 +47,20 @@ down:
 	docker compose down
 
 restart:
-	docker compose restart sandbox
+	docker compose restart control agent-runtime hermes-webui
 
 shell:
-	docker compose exec --user $(USER_ID) sandbox zsh
-
-root-shell:
-	docker compose exec --user root sandbox zsh
+	docker compose exec agent-runtime zsh
 
 logs:
-	docker compose logs -f sandbox
+	docker compose logs -f
 
 help:
 	@echo "aiOS-ui Cross-Platform Management Commands:"
 	@echo "  make install    - Run auto-installer script (creates directories, .env, builds & boots)"
-	@echo "  make up         - Build and start container (Universal CPU/Metal mode)"
-	@echo "  make up-gpu     - Build and start container with NVIDIA GPU passthrough"
-	@echo "  make down       - Stop container"
-	@echo "  make build      - Rebuild container"
-	@echo "  make shell      - Attach interactive zsh shell as user ($(USER_ID))"
-	@echo "  make root-shell - Attach interactive zsh shell as root"
-	@echo "  make logs       - Tail container logs"
+	@echo "  make up         - Start the local Compose service stack"
+	@echo "  make up-gpu     - Start with the NVIDIA Compose override"
+	@echo "  make down       - Stop all services"
+	@echo "  make build      - Rebuild service images"
+	@echo "  make shell      - Attach a shell in agent-runtime"
+	@echo "  make logs       - Tail all service logs"

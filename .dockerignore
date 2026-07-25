@@ -1,0 +1,17 @@
+.git
+.github
+.codegraph
+.tokensave
+.agents
+aiOS-ui/persistent
+aiOS-ui/apps/control-web/node_modules
+aiOS-ui/apps/control-web/dist
+aiOS-ui/config-file/*.log
+aiOS-ui/config-file/credentials
+sandbox-data
+working-space
+outputs
+note-docs
+**/__pycache__
+**/*.pyc
+**/.DS_Store

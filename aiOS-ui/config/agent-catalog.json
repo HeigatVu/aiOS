@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "agents": [
+    {
+      "id": "hermes",
+      "display_name": "Hermes",
+      "source": "installer",
+      "package": "hermes-agent",
+      "version_command": ["hermes", "--version"],
+      "update_command": ["hermes", "update"]
+    },
+    {
+      "id": "codex",
+      "display_name": "Codex",
+      "source": "installer",
+      "package": "codex",
+      "version_command": ["codex", "--version"],
+      "update_command": ["codex", "update"]
+    },
+    {
+      "id": "mimo",
+      "display_name": "MiMo",
+      "source": "npm",
+      "package": "@mimo-ai/cli",
+      "version_command": ["mimo", "--version"],
+      "update_command": ["npm", "install", "--global", "@mimo-ai/cli@latest"]
+    },
+    {
+      "id": "reasonix",
+      "display_name": "Reasonix",
+      "source": "npm",
+      "package": "reasonix",
+      "version_command": ["reasonix", "--version"],
+      "update_command": ["npm", "install", "--global", "reasonix@latest"]
+    },
+    {
+      "id": "agentmemory",
+      "display_name": "AgentMemory",
+      "source": "npm",
+      "package": "@agentmemory/agentmemory",
+      "version_command": ["agentmemory", "--version"],
+      "update_command": ["npm", "install", "--global", "@agentmemory/agentmemory@latest"]
+    },
+    {
+      "id": "codegraph",
+      "display_name": "CodeGraph",
+      "source": "installer",
+      "package": "codegraph",
+      "version_command": ["codegraph", "--version"],
+      "update_command": ["codegraph", "upgrade"]
+    }
+  ]
+}

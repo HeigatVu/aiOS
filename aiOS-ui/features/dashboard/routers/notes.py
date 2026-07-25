@@ -6,15 +6,19 @@ from datetime import datetime, timezone
 from typing import List, Dict, Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from services.paths import RuntimePaths
 
 router = APIRouter(prefix="/api/notes", tags=["notes"])
 
 # Path resolver
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+RUNTIME_PATHS = RuntimePaths.from_project_root(
+    Path(os.environ.get("AIOS_PROJECT_ROOT", PROJECT_ROOT.parent))
+)
 if os.environ.get("NOTES_DIR_MOCK") == "1":
     NOTES_DIR = PROJECT_ROOT / "private-notes-test"
 else:
-    NOTES_DIR = PROJECT_ROOT / "private-notes"
+    NOTES_DIR = Path(os.environ.get("AIOS_PRIVATE_NOTES", RUNTIME_PATHS.private_notes))
 
 class NoteMeta(BaseModel):
     filename: str

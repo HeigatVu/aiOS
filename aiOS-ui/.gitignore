@@ -54,6 +54,8 @@ sandbox-data/working-space/*
 **/*.pyd
 .DS_Store
 .env
+apps/control-web/node_modules/
+apps/control-web/dist/
 
 # Agent
 .antigravitycli/

@@ -1,76 +1,99 @@
+name: aios
+
 services:
-  sandbox:
+  control:
     build:
-      context: .
-      args:
-        USER_ID: ${USER_ID:-2000}
-        GROUP_ID: ${GROUP_ID:-2000}
-    container_name: ai_tui_sandbox
+      context: ..
+      dockerfile: aiOS-ui/docker/control.Dockerfile
     environment:
-      - TERM=xterm-256color
-      - COLORTERM=truecolor
-      - LANG=C.UTF-8
-      - LC_ALL=C.UTF-8
-      - HERMES_WEBUI_TRUST_FORWARDED_HOST=1
+      AIOS_PROJECT_ROOT: /aios
+      AIOS_PRIVATE_NOTES: /aios/sandbox-data/private-notes
+      HERMES_SKIP_SUBPROCESS: "1"
+      HERMES_SUB_HOST: hermes-webui
+      HERMES_SUB_PORT: "8501"
+      AGENTMEMORY_BASE_URL: http://agent-runtime:3113
+      AGENTMEMORY_SECRET_FILE: /aios/sandbox-data/state/credentials/agentmemory-viewer-secret
+      NPM_CONFIG_PREFIX: /aios/sandbox-data/state/tools/npm
+      UV_TOOL_DIR: /aios/sandbox-data/state/tools/uv
+      PATH: /aios/sandbox-data/state/tools/npm/bin:/aios/sandbox-data/state/tools/uv/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     ports:
-      # Ports WITHOUT 127.0.0.1: prefix so they are reachable from any LAN device.
-      # Do NOT add "127.0.0.1:" in front — that restricts access to localhost only.
-      - "3113:3113" # agentmemory viewer (via viewer-proxy)
-      - "8501:8501" # hermes-webui (upstream server.py)
-      - "8888:8888"
-      - "9119:9119" # Hermes dashboard (via dashboard-proxy)
-      # General Development Ports (Left open for external testing)
-      - "3000:3000"
-      - "4000:4000"
-      - "5000:5000"
-      - "5173:5173"
-      - "8000:8000"
-      - "8080:8080"
-      - "8081:8081"
-      - "8443:8443"
-      - "9000:9000"
-      - "9001:9001"
-      - "9090:9090"
+      - "127.0.0.1:${AIOS_PORT:-9119}:9119"
     volumes:
-      # 1. Code & Data
-      - ../sandbox-data/working-space:/workspace:rw,z
-      - ../sandbox-data/my-data:/my-data:ro,z
-      - ../sandbox-data/outputs:/outputs:rw,z
-      - ./config-file:/config-file:rw,z
+      - ../working-space:/workspace:rw
+      - ../working-space:/aios/working-space:rw
+      - ../outputs:/outputs:rw
+      - ../outputs:/aios/outputs:rw
+      - ../sandbox-data/my-data:/my-data:ro
+      - ../sandbox-data/my-data:/aios/sandbox-data/my-data:ro
+      - ../sandbox-data/state:/aios/sandbox-data/state:rw
+      - ../sandbox-data/private-notes:/aios/sandbox-data/private-notes:rw
+    command: ["python3", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "9119"]
+    depends_on:
+      hermes-webui:
+        condition: service_healthy
+      agent-runtime:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9119/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 15s
+    restart: unless-stopped
+    networks: [backend]
 
-      # 2. Persistent Caches & Environments
-      - ./persistent/ml-env:/home/ai_user/miniconda3/envs/ai-baseline:rw,z
-      - ./persistent/uv-cache:/home/ai_user/.cache/uv:rw,z
-      - ./persistent/conda-pkgs:/home/ai_user/miniconda3/pkgs:rw,z
+  agent-runtime:
+    build:
+      context: ..
+      dockerfile: aiOS-ui/docker/control.Dockerfile
+    environment:
+      AIOS_PROJECT_ROOT: /aios
+      AIOS_AGENT_CATALOG: /aios/aiOS-ui/config/agent-catalog.json
+      AGENTMEMORY_HOME: /aios/sandbox-data/state/agentmemory
+      CODEGRAPH_PROJECT: /aios/working-space
+      NPM_CONFIG_PREFIX: /aios/sandbox-data/state/tools/npm
+      UV_TOOL_DIR: /aios/sandbox-data/state/tools/uv
+      PATH: /aios/sandbox-data/state/tools/npm/bin:/aios/sandbox-data/state/tools/uv/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    volumes:
+      - ../working-space:/workspace:rw
+      - ../working-space:/aios/working-space:rw
+      - ../outputs:/outputs:rw
+      - ../outputs:/aios/outputs:rw
+      - ../sandbox-data/my-data:/my-data:ro
+      - ../sandbox-data/my-data:/aios/sandbox-data/my-data:ro
+      - ../sandbox-data/state:/aios/sandbox-data/state:rw
+    command: ["python3", "-m", "services.runtime"]
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; request=urllib.request.Request('http://127.0.0.1:3113', headers={'Host': 'localhost:3113'}); urllib.request.urlopen(request, timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 15s
+    restart: unless-stopped
+    networks: [backend]
 
-      # 3. Agent Configurations
-      - ./persistent/agentmemory:/home/ai_user/.agentmemory:rw,z
-      - ./persistent/hermes:/home/ai_user/.hermes:rw,z
-      - ./persistent/mimocode:/home/ai_user/.mimocode:rw,z
-      - ./persistent/agents:/home/ai_user/.agents:rw,z
-      - ./persistent/iii:/home/ai_user/.iii:rw,z
-      - ./persistent/reasonix:/home/ai_user/.reasonix:rw,z
+  hermes-webui:
+    build:
+      context: ..
+      dockerfile: aiOS-ui/docker/hermes.Dockerfile
+    environment:
+      HERMES_WEBUI_HOST: 0.0.0.0
+      HERMES_WEBUI_PORT: "8501"
+      HERMES_WEBUI_DEFAULT_WORKSPACE: /workspace
+      HERMES_HOME: /aios/sandbox-data/state/hermes
+    volumes:
+      - ../working-space:/workspace:rw
+      - ../outputs:/outputs:rw
+      - ../sandbox-data/state:/aios/sandbox-data/state:rw
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 15s
+    restart: unless-stopped
+    networks: [backend]
 
-      # 4. Shell Configurations
-      - ./config-file/system-config/.p10k.zsh:/home/ai_user/.p10k.zsh:rw,z
-      - ./config-file/system-config/.zshrc:/home/ai_user/.zshrc_host:rw,z
-      - ./persistent/zshrc_docker:/home/ai_user/.zshrc:rw,z
-
-      # 5. Editor Configurations
-      - ./config-file/system-config/nvim:/home/ai_user/.config/nvim:rw,z
-
-      # 6. Docker configs
-      - .:/aiOS-ui:rw,z
-
-    deploy:
-      resources:
-        limits:
-          cpus: '8'
-          memory: 16G
-
-    # Auto-start the container when Docker daemon starts (e.g. on laptop boot).
-    # Requires: sudo systemctl enable docker
-    restart: always
-    stdin_open: true
-    tty: true
-    network_mode: "bridge"
+networks:
+  backend:
+    driver: bridge
